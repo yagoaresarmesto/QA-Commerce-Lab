@@ -39,14 +39,14 @@ export class HealthController {
   ) {}
 
   @Get('health')
-  @ApiOperation({ summary: 'Liveness: el proceso responde' })
+  @ApiOperation({ summary: 'Liveness: the process responds' })
   @ApiOkResponse({ type: HealthDto })
   liveness(): HealthDto {
     return { status: 'ok', uptimeSeconds: Math.round(process.uptime()), timestamp: new Date().toISOString() };
   }
 
   @Get('health/ready')
-  @ApiOperation({ summary: 'Readiness: el proceso y la base de datos están disponibles' })
+  @ApiOperation({ summary: 'Readiness: the process and the database are available' })
   @ApiOkResponse({ type: HealthDto })
   @ApiServiceUnavailableResponse({ type: HealthDto })
   async readiness(@Res({ passthrough: true }) res: Response): Promise<HealthDto> {
@@ -70,8 +70,8 @@ export class HealthController {
 
   @Get('info')
   @ApiOperation({
-    summary: 'Información del entorno',
-    description: 'Permite a la automatización saber contra qué entorno se ejecuta y qué capacidades de testing están activas.',
+    summary: 'Environment information',
+    description: 'Lets test automation know which environment it runs against and which testing capabilities are enabled.',
   })
   @ApiOkResponse({ type: InfoDto })
   info(): InfoDto {

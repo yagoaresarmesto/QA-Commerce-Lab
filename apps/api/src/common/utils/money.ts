@@ -11,5 +11,5 @@ export function discountPercent(priceCents: number, compareAtPriceCents: number 
 }
 
 export function formatEur(cents: number): string {
-  return new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(cents / 100);
+  return new Intl.NumberFormat('en-IE', { style: 'currency', currency: 'EUR' }).format(cents / 100);
 }

@@ -6,7 +6,7 @@ export class BannerDto {
   title: string;
   subtitle: string | null;
   ctaLabel: string;
-  /** Internal storefront link, e.g. /categoria/portatiles */
+  /** Internal storefront link, e.g. /category/laptops */
   ctaHref: string;
   theme: string;
   imageKind: string | null;

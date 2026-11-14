@@ -7,38 +7,38 @@ export type CartIssueCode = (typeof CART_ISSUES)[number];
 
 export class AddCartItemDto {
   @ApiProperty({ example: 1 })
-  @IsInt({ message: 'productId debe ser un número entero' })
+  @IsInt({ message: 'productId must be an integer' })
   @Min(1)
   productId: number;
 
   /** Units to add (1-10). Added to the existing quantity if the product is already in the cart. */
   @ApiProperty({ example: 1, minimum: 1, maximum: 10 })
-  @IsInt({ message: 'La cantidad debe ser un número entero' })
-  @Min(1, { message: 'La cantidad mínima es 1' })
-  @Max(10, { message: 'La cantidad máxima por producto es 10' })
+  @IsInt({ message: 'The quantity must be an integer' })
+  @Min(1, { message: 'The minimum quantity is 1' })
+  @Max(10, { message: 'The maximum quantity per product is 10' })
   quantity: number;
 }
 
 export class UpdateCartItemDto {
   /** New quantity (1-10). Use DELETE to remove the item. */
   @ApiProperty({ example: 2, minimum: 1, maximum: 10 })
-  @IsInt({ message: 'La cantidad debe ser un número entero' })
-  @Min(1, { message: 'La cantidad mínima es 1. Usa DELETE para eliminar el producto' })
-  @Max(10, { message: 'La cantidad máxima por producto es 10' })
+  @IsInt({ message: 'The quantity must be an integer' })
+  @Min(1, { message: 'The minimum quantity is 1. Use DELETE to remove the product' })
+  @Max(10, { message: 'The maximum quantity per product is 10' })
   quantity: number;
 }
 
 export class ApplyCouponDto {
-  @ApiProperty({ example: 'BIENVENIDA10' })
+  @ApiProperty({ example: 'WELCOME10' })
   @IsString()
-  @IsNotEmpty({ message: 'El código del cupón es obligatorio' })
+  @IsNotEmpty({ message: 'The coupon code is required' })
   @MaxLength(40)
   code: string;
 }
 
 export class MergeCartDto {
   /** Token of the guest cart (X-Cart-Token) to merge into the user's cart */
-  @IsUUID('4', { message: 'guestCartToken debe ser un UUID' })
+  @IsUUID('4', { message: 'guestCartToken must be a UUID' })
   guestCartToken: string;
 }
 

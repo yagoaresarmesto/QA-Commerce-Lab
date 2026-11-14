@@ -8,34 +8,34 @@ export function buildOpenApiDocument(app: INestApplication, config: AppConfig) {
     .setVersion(config.version)
     .setDescription(
       [
-        'API REST de **QA Commerce Lab**, tienda de electrónica ficticia diseñada como *System Under Test* para automatización.',
+        'REST API of **QA Commerce Lab**, a fictional electronics store designed as a *System Under Test* for test automation.',
         '',
-        `Entorno actual: **${config.env}** · API de testing: **${config.testApi.enabled ? 'habilitada' : 'deshabilitada'}** · Rate limiting: **${config.rateLimit.enabled ? 'activo' : 'inactivo'}**`,
+        `Current environment: **${config.env}** · Testing API: **${config.testApi.enabled ? 'enabled' : 'disabled'}** · Rate limiting: **${config.rateLimit.enabled ? 'on' : 'off'}**`,
         '',
-        '- Importes en **céntimos de euro** (enteros), IVA incluido.',
-        '- Autenticación: `POST /api/auth/login` → usa `accessToken` con el botón **Authorize** (Bearer).',
-        '- Todos los errores siguen el mismo esquema (`ErrorResponseDto`) con un `code` estable.',
-        '- Cabeceras útiles: `Idempotency-Key` (pedidos y pagos), `X-Cart-Token` (carrito de invitado), `X-Request-Id`, `X-Test-Run-Id`.',
-        '- Especificación OpenAPI: [/api/docs-json](/api/docs-json) · [/api/docs-yaml](/api/docs-yaml)',
+        '- Amounts in **euro cents** (integers), VAT included.',
+        '- Authentication: `POST /api/auth/login` → use the `accessToken` with the **Authorize** button (Bearer).',
+        '- Every error follows the same schema (`ErrorResponseDto`) with a stable `code`.',
+        '- Useful headers: `Idempotency-Key` (orders and payments), `X-Cart-Token` (guest cart), `X-Request-Id`, `X-Test-Run-Id`.',
+        '- OpenAPI specification: [/api/docs-json](/api/docs-json) · [/api/docs-yaml](/api/docs-yaml)',
       ].join('\n'),
     )
     .addBearerAuth({ type: 'http', scheme: 'bearer', bearerFormat: 'JWT' }, 'access-token')
     .addCookieAuth('qcl_rt', { type: 'apiKey', in: 'cookie', name: 'qcl_rt' }, 'refresh-cookie')
-    .addTag('Health', 'Estado del servicio e información del entorno')
-    .addTag('Auth', 'Registro, login, sesiones y recuperación de contraseña')
-    .addTag('Users', 'Perfil, contraseña, sesiones y direcciones del usuario autenticado')
-    .addTag('Catalog', 'Productos, categorías, marcas y home')
-    .addTag('Cart', 'Carrito persistente (usuario o invitado) y cupones')
-    .addTag('Checkout', 'Métodos de envío, puntos de recogida y presupuesto del pedido')
-    .addTag('Orders', 'Pedidos del usuario, pagos, cancelaciones y devoluciones')
-    .addTag('Favorites', 'Lista de favoritos')
-    .addTag('Reviews', 'Reseñas de productos')
-    .addTag('Admin', 'Panel de administración (rol ADMIN)');
+    .addTag('Health', 'Service status and environment information')
+    .addTag('Auth', 'Registration, login, sessions and password recovery')
+    .addTag('Users', 'Profile, password, sessions and addresses of the authenticated user')
+    .addTag('Catalog', 'Products, categories, brands and home page')
+    .addTag('Cart', 'Persistent cart (user or guest) and coupons')
+    .addTag('Checkout', 'Shipping methods, pickup points and order quote')
+    .addTag('Orders', 'User orders, payments, cancellations and returns')
+    .addTag('Favorites', 'Favorites list')
+    .addTag('Reviews', 'Product reviews')
+    .addTag('Admin', 'Administration panel (ADMIN role)');
 
   if (config.testApi.enabled) {
     builder
       .addApiKey({ type: 'apiKey', in: 'header', name: 'X-Test-Api-Key' }, 'test-api-key')
-      .addTag('Testing', 'Infraestructura para automatización (solo entornos local/testing). Requiere X-Test-Api-Key');
+      .addTag('Testing', 'Test automation support (local/testing environments only). Requires X-Test-Api-Key');
   }
   return SwaggerModule.createDocument(app, builder.build(), {
     operationIdFactory: (controllerKey: string, methodKey: string) =>

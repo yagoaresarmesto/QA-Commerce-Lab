@@ -61,27 +61,27 @@ export class CouponsService {
     db: Tx | PrismaService = this.prisma,
   ): Promise<{ coupon: Coupon; pricing: PricingCoupon }> {
     const now = ctx.now ?? new Date();
-    if (!coupon) throw unprocessable(ErrorCode.COUPON_INVALID, 'El cupón no existe');
-    if (!coupon.isActive) throw unprocessable(ErrorCode.COUPON_INACTIVE, 'El cupón no está activo');
+    if (!coupon) throw unprocessable(ErrorCode.COUPON_INVALID, 'The coupon does not exist');
+    if (!coupon.isActive) throw unprocessable(ErrorCode.COUPON_INACTIVE, 'The coupon is not active');
     if (coupon.startsAt && coupon.startsAt > now) {
-      throw unprocessable(ErrorCode.COUPON_NOT_STARTED, 'El cupón todavía no está disponible', {
+      throw unprocessable(ErrorCode.COUPON_NOT_STARTED, 'The coupon is not available yet', {
         startsAt: coupon.startsAt,
       });
     }
     if (coupon.expiresAt && coupon.expiresAt <= now) {
-      throw unprocessable(ErrorCode.COUPON_EXPIRED, 'El cupón ha caducado', { expiresAt: coupon.expiresAt });
+      throw unprocessable(ErrorCode.COUPON_EXPIRED, 'The coupon has expired', { expiresAt: coupon.expiresAt });
     }
     if (coupon.usageLimit !== null && coupon.timesUsed >= coupon.usageLimit) {
-      throw unprocessable(ErrorCode.COUPON_USAGE_LIMIT_REACHED, 'El cupón ha alcanzado su límite de usos');
+      throw unprocessable(ErrorCode.COUPON_USAGE_LIMIT_REACHED, 'The coupon has reached its usage limit');
     }
     if (!ctx.userId) {
-      throw unprocessable(ErrorCode.COUPON_REQUIRES_LOGIN, 'Inicia sesión para aplicar cupones');
+      throw unprocessable(ErrorCode.COUPON_REQUIRES_LOGIN, 'Sign in to apply coupons');
     }
     const used = await db.couponRedemption.count({
       where: { couponId: coupon.id, userId: ctx.userId, order: { status: { in: REDEMPTION_COUNTS_STATUSES } } },
     });
     if (used >= coupon.perUserLimit) {
-      throw unprocessable(ErrorCode.COUPON_ALREADY_USED, 'Ya has utilizado este cupón', {
+      throw unprocessable(ErrorCode.COUPON_ALREADY_USED, 'You have already used this coupon', {
         perUserLimit: coupon.perUserLimit,
       });
     }
@@ -89,7 +89,7 @@ export class CouponsService {
     if (coupon.minSubtotalCents !== null && subtotal < coupon.minSubtotalCents) {
       throw unprocessable(
         ErrorCode.COUPON_MIN_SUBTOTAL_NOT_REACHED,
-        `El cupón requiere un pedido mínimo de ${formatEur(coupon.minSubtotalCents)}`,
+        `The coupon requires a minimum order of ${formatEur(coupon.minSubtotalCents)}`,
         { minSubtotalCents: coupon.minSubtotalCents, missingCents: coupon.minSubtotalCents - subtotal },
       );
     }
@@ -97,7 +97,7 @@ export class CouponsService {
     if (pricing.eligibleCategoryIds && couponDiscount(ctx.lines, pricing).eligible === 0) {
       throw unprocessable(
         ErrorCode.COUPON_NOT_APPLICABLE,
-        'El cupón no es aplicable a ninguno de los productos del carrito',
+        'The coupon does not apply to any product in the cart',
         { categoryId: coupon.categoryId },
       );
     }

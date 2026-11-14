@@ -58,13 +58,13 @@ export class EngagementService {
 
   async addFavorite(userId: number, productId: number): Promise<FavoriteDto> {
     const product = await this.prisma.product.findUnique({ where: { id: productId }, include: productSummaryInclude });
-    if (!product) throw notFound(ErrorCode.PRODUCT_NOT_FOUND, 'Producto no encontrado');
+    if (!product) throw notFound(ErrorCode.PRODUCT_NOT_FOUND, 'Product not found');
     try {
       const fav = await this.prisma.favorite.create({ data: { userId, productId } });
       return { productId, addedAt: fav.createdAt, product: toProductSummary(product) };
     } catch (err) {
       if ((err as { code?: string }).code === 'P2002') {
-        throw conflict(ErrorCode.FAVORITE_ALREADY_EXISTS, 'El producto ya está en tu lista de favoritos');
+        throw conflict(ErrorCode.FAVORITE_ALREADY_EXISTS, 'The product is already in your favorites');
       }
       throw err;
     }
@@ -72,14 +72,14 @@ export class EngagementService {
 
   async removeFavorite(userId: number, productId: number): Promise<void> {
     const res = await this.prisma.favorite.deleteMany({ where: { userId, productId } });
-    if (res.count === 0) throw notFound(ErrorCode.FAVORITE_NOT_FOUND, 'El producto no está en tu lista de favoritos');
+    if (res.count === 0) throw notFound(ErrorCode.FAVORITE_NOT_FOUND, 'The product is not in your favorites');
   }
 
   // ─── Reviews ───────────────────────────────────────────────────────────
 
   async listReviews(productId: number, query: ReviewListQueryDto): Promise<ReviewListResponseDto> {
     const product = await this.prisma.product.findUnique({ where: { id: productId }, select: { id: true } });
-    if (!product) throw notFound(ErrorCode.PRODUCT_NOT_FOUND, 'Producto no encontrado');
+    if (!product) throw notFound(ErrorCode.PRODUCT_NOT_FOUND, 'Product not found');
     const page = query.page ?? 1;
     const pageSize = query.pageSize ?? 10;
     const where: Prisma.ReviewWhereInput = { productId, ...(query.rating ? { rating: query.rating } : {}) };
@@ -119,7 +119,7 @@ export class EngagementService {
 
   async createReview(userId: number, productId: number, dto: CreateReviewDto): Promise<ReviewDto> {
     const product = await this.prisma.product.findUnique({ where: { id: productId }, select: { id: true } });
-    if (!product) throw notFound(ErrorCode.PRODUCT_NOT_FOUND, 'Producto no encontrado');
+    if (!product) throw notFound(ErrorCode.PRODUCT_NOT_FOUND, 'Product not found');
     const verified = await this.prisma.orderItem.count({
       where: { productId, order: { userId, status: { in: [OrderStatus.DELIVERED, OrderStatus.RETURN_REQUESTED] } } },
     });
@@ -135,7 +135,7 @@ export class EngagementService {
       return toReviewDto(review);
     } catch (err) {
       if ((err as { code?: string }).code === 'P2002') {
-        throw conflict(ErrorCode.REVIEW_ALREADY_EXISTS, 'Ya has publicado una reseña de este producto. Puedes editarla');
+        throw conflict(ErrorCode.REVIEW_ALREADY_EXISTS, 'You have already reviewed this product. You can edit your review');
       }
       throw err;
     }
@@ -143,9 +143,9 @@ export class EngagementService {
 
   private async ownedReview(user: { id: number; role: Role }, reviewId: number, allowAdmin: boolean) {
     const review = await this.prisma.review.findUnique({ where: { id: reviewId } });
-    if (!review) throw notFound(ErrorCode.REVIEW_NOT_FOUND, 'Reseña no encontrada');
+    if (!review) throw notFound(ErrorCode.REVIEW_NOT_FOUND, 'Review not found');
     if (review.userId !== user.id && !(allowAdmin && user.role === Role.ADMIN)) {
-      throw forbidden(ErrorCode.NOT_RESOURCE_OWNER, 'Solo el autor puede modificar esta reseña');
+      throw forbidden(ErrorCode.NOT_RESOURCE_OWNER, 'Only the author can modify this review');
     }
     return review;
   }

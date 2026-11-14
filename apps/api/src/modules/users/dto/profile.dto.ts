@@ -11,11 +11,11 @@ import {
 
 export class UpdateProfileDto {
   @IsOptional()
-  @StrictString(2, 50, 'El nombre')
+  @StrictString(2, 50, 'First name')
   firstName?: string;
 
   @IsOptional()
-  @StrictString(2, 80, 'El apellido')
+  @StrictString(2, 80, 'Last name')
   lastName?: string;
 
   /** Spanish phone number. Send null or "" to remove it. */
@@ -23,7 +23,7 @@ export class UpdateProfileDto {
   @IsOptional()
   @Trim()
   @ValidateIf((_o, v) => v !== null && v !== '')
-  @Matches(SPANISH_PHONE, { message: 'El teléfono debe ser un número español válido (9 dígitos)' })
+  @Matches(SPANISH_PHONE, { message: 'The phone must be a valid Spanish number (9 digits)' })
   phone?: string | null;
 
   @IsOptional()
@@ -33,11 +33,11 @@ export class UpdateProfileDto {
 
 export class ChangePasswordDto {
   @IsString()
-  @IsNotEmpty({ message: 'La contraseña actual es obligatoria' })
+  @IsNotEmpty({ message: 'The current password is required' })
   @MaxLength(128)
   currentPassword: string;
 
-  @ApiProperty({ example: 'NuevaClave123' })
+  @ApiProperty({ example: 'NewPass123' })
   @IsStrongPassword()
   newPassword: string;
 }
@@ -45,43 +45,43 @@ export class ChangePasswordDto {
 export class AddressInputDto {
   /** Optional label, e.g. "Casa" or "Trabajo" */
   @IsOptional()
-  @StrictString(1, 40, 'La etiqueta')
+  @StrictString(1, 40, 'Label')
   label?: string;
 
   @ApiProperty({ example: 'Ana García López' })
-  @StrictString(3, 100, 'El nombre del destinatario')
+  @StrictString(3, 100, 'Recipient name')
   fullName: string;
 
   @ApiProperty({ example: '600123123' })
   @Trim()
-  @Matches(SPANISH_PHONE, { message: 'El teléfono debe ser un número español válido (9 dígitos)' })
+  @Matches(SPANISH_PHONE, { message: 'The phone must be a valid Spanish number (9 digits)' })
   phone: string;
 
   @ApiProperty({ example: 'Calle Mayor 10, 3º B' })
-  @StrictString(5, 120, 'La dirección')
+  @StrictString(5, 120, 'Address line 1')
   line1: string;
 
   @IsOptional()
-  @StrictString(1, 120, 'La línea 2 de la dirección')
+  @StrictString(1, 120, 'Address line 2')
   line2?: string;
 
   @ApiProperty({ example: 'Madrid' })
-  @StrictString(2, 80, 'La ciudad')
+  @StrictString(2, 80, 'City')
   city: string;
 
   @ApiProperty({ example: 'Madrid', enum: SPANISH_PROVINCES })
   @Trim()
-  @IsIn(SPANISH_PROVINCES as unknown as string[], { message: 'La provincia no es válida' })
+  @IsIn(SPANISH_PROVINCES as unknown as string[], { message: 'The province is not valid' })
   province: string;
 
-  @ApiProperty({ example: '28013', description: 'Código postal español (01000-52999)' })
+  @ApiProperty({ example: '28013', description: 'Spanish postal code (01000-52999)' })
   @Trim()
-  @Matches(SPANISH_POSTAL_CODE, { message: 'El código postal debe tener 5 dígitos y ser español (01000-52999)' })
+  @Matches(SPANISH_POSTAL_CODE, { message: 'The postal code must be a 5-digit Spanish postal code (01000-52999)' })
   postalCode: string;
 
   /** Only Spain (ES) is supported */
   @IsOptional()
-  @IsIn(['ES'], { message: 'Solo se realizan envíos a España (ES)' })
+  @IsIn(['ES'], { message: 'We only ship to Spain (ES)' })
   country?: string;
 
   @IsOptional()
@@ -91,45 +91,45 @@ export class AddressInputDto {
 
 export class UpdateAddressDto {
   @IsOptional()
-  @StrictString(1, 40, 'La etiqueta')
+  @StrictString(1, 40, 'Label')
   label?: string;
 
   @IsOptional()
-  @StrictString(3, 100, 'El nombre del destinatario')
+  @StrictString(3, 100, 'Recipient name')
   fullName?: string;
 
   @IsOptional()
   @Trim()
-  @Matches(SPANISH_PHONE, { message: 'El teléfono debe ser un número español válido (9 dígitos)' })
+  @Matches(SPANISH_PHONE, { message: 'The phone must be a valid Spanish number (9 digits)' })
   phone?: string;
 
   @IsOptional()
-  @StrictString(5, 120, 'La dirección')
+  @StrictString(5, 120, 'Address line 1')
   line1?: string;
 
   @ApiProperty({ required: false, nullable: true })
   @IsOptional()
   @ValidateIf((_o, v) => v !== null)
-  @StrictString(1, 120, 'La línea 2 de la dirección')
+  @StrictString(1, 120, 'Address line 2')
   line2?: string | null;
 
   @IsOptional()
-  @StrictString(2, 80, 'La ciudad')
+  @StrictString(2, 80, 'City')
   city?: string;
 
   @ApiProperty({ required: false, enum: SPANISH_PROVINCES })
   @IsOptional()
   @Trim()
-  @IsIn(SPANISH_PROVINCES as unknown as string[], { message: 'La provincia no es válida' })
+  @IsIn(SPANISH_PROVINCES as unknown as string[], { message: 'The province is not valid' })
   province?: string;
 
   @IsOptional()
   @Trim()
-  @Matches(SPANISH_POSTAL_CODE, { message: 'El código postal debe tener 5 dígitos y ser español (01000-52999)' })
+  @Matches(SPANISH_POSTAL_CODE, { message: 'The postal code must be a 5-digit Spanish postal code (01000-52999)' })
   postalCode?: string;
 
   @IsOptional()
-  @IsIn(['ES'], { message: 'Solo se realizan envíos a España (ES)' })
+  @IsIn(['ES'], { message: 'We only ship to Spain (ES)' })
   country?: string;
 
   @IsOptional()

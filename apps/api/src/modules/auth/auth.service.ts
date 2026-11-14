@@ -28,7 +28,7 @@ export class AuthService {
   async register(dto: RegisterDto, meta: SessionMeta): Promise<AuthResponseDto> {
     const existing = await this.prisma.user.findUnique({ where: { email: dto.email } });
     if (existing) {
-      throw conflict(ErrorCode.EMAIL_ALREADY_REGISTERED, 'Ya existe una cuenta registrada con ese email');
+      throw conflict(ErrorCode.EMAIL_ALREADY_REGISTERED, 'An account with that e-mail already exists');
     }
     const user = await this.prisma.user
       .create({
@@ -45,15 +45,15 @@ export class AuthService {
       })
       .catch((err: { code?: string }) => {
         if (err.code === 'P2002') {
-          throw conflict(ErrorCode.EMAIL_ALREADY_REGISTERED, 'Ya existe una cuenta registrada con ese email');
+          throw conflict(ErrorCode.EMAIL_ALREADY_REGISTERED, 'An account with that e-mail already exists');
         }
         throw err;
       });
     await this.mail.send({
       to: user.email,
-      subject: '¡Bienvenido a QA Commerce Lab!',
+      subject: 'Welcome to QA Commerce Lab!',
       template: 'welcome',
-      text: `Hola ${user.firstName}, tu cuenta se ha creado correctamente. ¡Gracias por registrarte!`,
+      text: `Hi ${user.firstName}, your account has been created. Thanks for signing up!`,
       metadata: { userId: user.id },
     });
     const tokens = await this.tokens.issueSession(user, meta);
@@ -64,12 +64,12 @@ export class AuthService {
     const user = await this.prisma.user.findUnique({ where: { email } });
     if (!user) {
       await verifyPassword(password, await DUMMY_HASH_PROMISE);
-      throw unauthorized(ErrorCode.INVALID_CREDENTIALS, 'Email o contraseña incorrectos');
+      throw unauthorized(ErrorCode.INVALID_CREDENTIALS, 'Incorrect e-mail or password');
     }
     const ok = await verifyPassword(password, user.passwordHash);
-    if (!ok) throw unauthorized(ErrorCode.INVALID_CREDENTIALS, 'Email o contraseña incorrectos');
+    if (!ok) throw unauthorized(ErrorCode.INVALID_CREDENTIALS, 'Incorrect e-mail or password');
     if (user.status === UserStatus.DISABLED) {
-      throw forbidden(ErrorCode.ACCOUNT_DISABLED, 'La cuenta está desactivada. Contacta con atención al cliente');
+      throw forbidden(ErrorCode.ACCOUNT_DISABLED, 'The account is disabled. Please contact customer support');
     }
     const updated = await this.prisma.user.update({ where: { id: user.id }, data: { lastLoginAt: new Date() } });
     const tokens = await this.tokens.issueSession(updated, meta);
@@ -77,7 +77,7 @@ export class AuthService {
   }
 
   async refresh(refreshToken: string | undefined): Promise<AuthResponseDto> {
-    if (!refreshToken) throw unauthorized(ErrorCode.REFRESH_TOKEN_INVALID, 'Falta el token de refresco');
+    if (!refreshToken) throw unauthorized(ErrorCode.REFRESH_TOKEN_INVALID, 'The refresh token is missing');
     const { user, tokens } = await this.tokens.refresh(refreshToken);
     return this.toAuthResponse(user, tokens);
   }
@@ -102,17 +102,17 @@ export class AuthService {
     const token = randomToken(32);
     const expiresAt = new Date(Date.now() + this.config.passwordResetTtlMinutes * 60_000);
     await this.prisma.passwordResetToken.create({ data: { userId: user.id, tokenHash: sha256(token), expiresAt } });
-    const link = `${this.config.publicWebUrl}/restablecer-contrasena?token=${encodeURIComponent(token)}`;
+    const link = `${this.config.publicWebUrl}/reset-password?token=${encodeURIComponent(token)}`;
     await this.mail.send(
       {
         to: user.email,
-        subject: 'Restablece tu contraseña',
+        subject: 'Reset your password',
         template: 'password-reset',
         text:
-          `Hola ${user.firstName},\n\nHemos recibido una solicitud para restablecer tu contraseña.\n` +
-          `Abre este enlace (válido ${this.config.passwordResetTtlMinutes} minutos):\n${link}\n\n` +
-          `Si no has sido tú, ignora este mensaje.`,
-        html: `<p>Hola ${escapeHtml(user.firstName)},</p><p>Para restablecer tu contraseña pulsa en <a href="${link}">este enlace</a> (válido ${this.config.passwordResetTtlMinutes} minutos).</p>`,
+          `Hi ${user.firstName},\n\nWe received a request to reset your password.\n` +
+          `Open this link (valid for ${this.config.passwordResetTtlMinutes} minutes):\n${link}\n\n` +
+          `If this wasn't you, please ignore this message.`,
+        html: `<p>Hi ${escapeHtml(user.firstName)},</p><p>To reset your password, click <a href="${link}">this link</a> (valid for ${this.config.passwordResetTtlMinutes} minutes).</p>`,
         metadata: { userId: user.id, token, link, expiresAt: expiresAt.toISOString() },
       },
       user.testRunId,
@@ -134,16 +134,16 @@ export class AuthService {
         where: { id: record.id, usedAt: null },
         data: { usedAt: new Date() },
       });
-      if (used.count === 0) throw badRequest(ErrorCode.RESET_TOKEN_USED, 'Este enlace ya se ha utilizado');
+      if (used.count === 0) throw badRequest(ErrorCode.RESET_TOKEN_USED, 'This link has already been used');
       await tx.user.update({ where: { id: record.userId }, data: { passwordHash, passwordChangedAt: new Date() } });
       await tx.session.updateMany({ where: { userId: record.userId, revokedAt: null }, data: { revokedAt: new Date() } });
     });
     await this.mail.send(
       {
         to: record.user.email,
-        subject: 'Tu contraseña se ha cambiado',
+        subject: 'Your password has been changed',
         template: 'password-changed',
-        text: `Hola ${record.user.firstName}, la contraseña de tu cuenta se ha cambiado correctamente.`,
+        text: `Hi ${record.user.firstName}, your account password has been changed.`,
         metadata: { userId: record.userId },
       },
       record.user.testRunId,
@@ -155,10 +155,10 @@ export class AuthService {
       where: { tokenHash: sha256(token) },
       include: { user: true },
     });
-    if (!record) throw badRequest(ErrorCode.RESET_TOKEN_INVALID, 'El enlace de recuperación no es válido');
-    if (record.usedAt) throw badRequest(ErrorCode.RESET_TOKEN_USED, 'Este enlace ya se ha utilizado');
+    if (!record) throw badRequest(ErrorCode.RESET_TOKEN_INVALID, 'The password reset link is not valid');
+    if (record.usedAt) throw badRequest(ErrorCode.RESET_TOKEN_USED, 'This link has already been used');
     if (record.expiresAt.getTime() <= Date.now()) {
-      throw badRequest(ErrorCode.RESET_TOKEN_EXPIRED, 'El enlace de recuperación ha caducado. Solicita uno nuevo');
+      throw badRequest(ErrorCode.RESET_TOKEN_EXPIRED, 'The password reset link has expired. Please request a new one');
     }
     return record;
   }

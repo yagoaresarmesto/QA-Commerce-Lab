@@ -2,7 +2,7 @@ import { HttpException, HttpStatus } from '@nestjs/common';
 
 /**
  * Stable, documented error codes. Automation should assert on `code`, never on `message`.
- * See docs/API.md#catálogo-de-errores
+ * See docs/API.md#error-catalog
  */
 export const ErrorCode = {
   // generic

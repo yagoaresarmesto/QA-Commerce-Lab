@@ -21,7 +21,7 @@ import {
 } from 'class-validator';
 import { TEST_RUN_ID_PATTERN } from '../../../common/request-context';
 
-const RunId = () => Matches(TEST_RUN_ID_PATTERN, { message: 'runId: 3-64 caracteres [A-Za-z0-9._-], empezando por letra o número' });
+const RunId = () => Matches(TEST_RUN_ID_PATTERN, { message: 'runId: 3-64 characters [A-Za-z0-9._-], starting with a letter or digit' });
 
 export class RunScopedDto {
   /** Automation run identifier. Defaults to the X-Test-Run-Id header, or a generated one (returned in the response). */
@@ -33,7 +33,7 @@ export class RunScopedDto {
 export class ResetDto {
   /** Must be the literal string "RESET" */
   @ApiProperty({ example: 'RESET' })
-  @Equals('RESET', { message: 'Envía { "confirm": "RESET" } para confirmar el reset global' })
+  @Equals('RESET', { message: 'Send { "confirm": "RESET" } to confirm the global reset' })
   confirm: string;
 }
 
@@ -397,7 +397,7 @@ export class CreateFaultDto extends RunScopedDto {
   /** Path pattern: exact path, `*` = one segment, `**` = anything. Example: /api/orders/** */
   @ApiProperty({ example: '/api/orders' })
   @IsString()
-  @Matches(/^\/api\/[A-Za-z0-9/*_.-]*$/, { message: 'path debe empezar por /api/' })
+  @Matches(/^\/api\/[A-Za-z0-9/*_.-]*$/, { message: 'path must start with /api/' })
   path: string;
 
   @ApiProperty({ enum: ['error', 'delay', 'timeout'] })

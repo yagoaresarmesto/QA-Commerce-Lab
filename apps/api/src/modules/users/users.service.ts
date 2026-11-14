@@ -20,7 +20,7 @@ export class UsersService {
 
   async getMe(userId: number): Promise<UserDto> {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
-    if (!user) throw notFound(ErrorCode.USER_NOT_FOUND, 'Usuario no encontrado');
+    if (!user) throw notFound(ErrorCode.USER_NOT_FOUND, 'User not found');
     return toUserDto(user);
   }
 
@@ -41,10 +41,10 @@ export class UsersService {
   async changePassword(userId: number, currentSessionId: string, dto: ChangePasswordDto): Promise<void> {
     const user = await this.prisma.user.findUniqueOrThrow({ where: { id: userId } });
     if (!(await verifyPassword(dto.currentPassword, user.passwordHash))) {
-      throw badRequest(ErrorCode.CURRENT_PASSWORD_INCORRECT, 'La contraseña actual no es correcta');
+      throw badRequest(ErrorCode.CURRENT_PASSWORD_INCORRECT, 'The current password is incorrect');
     }
     if (dto.currentPassword === dto.newPassword) {
-      throw badRequest(ErrorCode.PASSWORD_REUSED, 'La nueva contraseña debe ser distinta de la actual');
+      throw badRequest(ErrorCode.PASSWORD_REUSED, 'The new password must be different from the current one');
     }
     await this.prisma.user.update({
       where: { id: userId },
@@ -54,9 +54,9 @@ export class UsersService {
     await this.mail.send(
       {
         to: user.email,
-        subject: 'Tu contraseña se ha cambiado',
+        subject: 'Your password has been changed',
         template: 'password-changed',
-        text: `Hola ${user.firstName}, la contraseña de tu cuenta se ha cambiado correctamente.`,
+        text: `Hi ${user.firstName}, your account password has been changed.`,
         metadata: { userId },
       },
       user.testRunId,
@@ -84,7 +84,7 @@ export class UsersService {
       where: { id: sessionId, userId, revokedAt: null },
       data: { revokedAt: new Date() },
     });
-    if (res.count === 0) throw notFound(ErrorCode.NOT_FOUND, 'Sesión no encontrada');
+    if (res.count === 0) throw notFound(ErrorCode.NOT_FOUND, 'Session not found');
   }
 
   revokeOtherSessions(userId: number, currentSessionId: string): Promise<number> {
@@ -103,7 +103,7 @@ export class UsersService {
 
   async getAddress(userId: number, id: number): Promise<Address> {
     const address = await this.prisma.address.findFirst({ where: { id, userId } });
-    if (!address) throw notFound(ErrorCode.ADDRESS_NOT_FOUND, 'Dirección no encontrada');
+    if (!address) throw notFound(ErrorCode.ADDRESS_NOT_FOUND, 'Address not found');
     return address;
   }
 
@@ -111,7 +111,7 @@ export class UsersService {
     return this.prisma.$transaction(async (tx) => {
       const count = await tx.address.count({ where: { userId } });
       if (count >= MAX_ADDRESSES) {
-        throw unprocessable(ErrorCode.ADDRESS_LIMIT_REACHED, `Puedes guardar como máximo ${MAX_ADDRESSES} direcciones`);
+        throw unprocessable(ErrorCode.ADDRESS_LIMIT_REACHED, `You can save at most ${MAX_ADDRESSES} addresses`);
       }
       const makeDefault = dto.isDefault === true || count === 0;
       if (makeDefault) await tx.address.updateMany({ where: { userId }, data: { isDefault: false } });
@@ -143,7 +143,7 @@ export class UsersService {
       if (dto.isDefault === false && current.isDefault) {
         throw unprocessable(
           ErrorCode.VALIDATION_ERROR,
-          'Debe existir una dirección predeterminada. Marca otra como predeterminada en su lugar',
+          'There must be a default address. Set another address as default instead',
         );
       }
       const updated = await tx.address.update({

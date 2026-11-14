@@ -66,8 +66,8 @@ export class ProductsService {
     const page = query.page ?? 1;
     const pageSize = query.pageSize ?? 24;
     if (query.minPriceCents !== undefined && query.maxPriceCents !== undefined && query.minPriceCents > query.maxPriceCents) {
-      throw badRequest(ErrorCode.VALIDATION_ERROR, 'El precio mínimo no puede ser mayor que el máximo', [
-        { field: 'minPriceCents', message: 'minPriceCents debe ser menor o igual que maxPriceCents' },
+      throw badRequest(ErrorCode.VALIDATION_ERROR, 'The minimum price cannot be greater than the maximum price', [
+        { field: 'minPriceCents', message: 'minPriceCents must be less than or equal to maxPriceCents' },
       ]);
     }
 
@@ -151,7 +151,7 @@ export class ProductsService {
       where,
       include: { brand: true, category: { include: { parent: true } }, images: { orderBy: { position: 'asc' } } },
     });
-    if (!product) throw notFound(ErrorCode.PRODUCT_NOT_FOUND, 'Producto no encontrado');
+    if (!product) throw notFound(ErrorCode.PRODUCT_NOT_FOUND, 'Product not found');
     return toProductDetail(product);
   }
 

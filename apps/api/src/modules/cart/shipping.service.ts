@@ -30,7 +30,7 @@ export class ShippingService {
   async getMethod(code: string, db: Tx | PrismaService = this.prisma): Promise<ShippingMethod> {
     const method = await db.shippingMethod.findUnique({ where: { code: code.toUpperCase() } });
     if (!method || !method.isActive) {
-      throw unprocessable(ErrorCode.SHIPPING_METHOD_NOT_FOUND, `El método de envío "${code}" no existe`);
+      throw unprocessable(ErrorCode.SHIPPING_METHOD_NOT_FOUND, `Shipping method "${code}" does not exist`);
     }
     return method;
   }
@@ -43,10 +43,10 @@ export class ShippingService {
   async resolvePickupPoint(method: ShippingMethod, pickupPointId: number | undefined, db: Tx | PrismaService = this.prisma): Promise<PickupPoint | null> {
     if (!method.requiresPickupPoint) return null;
     if (!pickupPointId) {
-      throw unprocessable(ErrorCode.PICKUP_POINT_REQUIRED, 'Selecciona un punto de recogida para este método de envío');
+      throw unprocessable(ErrorCode.PICKUP_POINT_REQUIRED, 'Select a pickup point for this shipping method');
     }
     const point = await db.pickupPoint.findUnique({ where: { id: pickupPointId } });
-    if (!point || !point.isActive) throw notFound(ErrorCode.PICKUP_POINT_NOT_FOUND, 'Punto de recogida no encontrado');
+    if (!point || !point.isActive) throw notFound(ErrorCode.PICKUP_POINT_NOT_FOUND, 'Pickup point not found');
     return point;
   }
 }

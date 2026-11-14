@@ -14,7 +14,7 @@ export class CategoriesService {
       where: { slug },
       include: { children: { orderBy: [{ position: 'asc' }, { id: 'asc' }] }, parent: true },
     });
-    if (!category) throw notFound(ErrorCode.CATEGORY_NOT_FOUND, `La categoría "${slug}" no existe`);
+    if (!category) throw notFound(ErrorCode.CATEGORY_NOT_FOUND, `Category "${slug}" does not exist`);
     return category;
   }
 

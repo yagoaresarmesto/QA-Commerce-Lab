@@ -31,14 +31,14 @@ export class FavoritesController {
   constructor(private readonly engagement: EngagementService) {}
 
   @Get()
-  @ApiOperation({ summary: 'Listar favoritos del usuario' })
+  @ApiOperation({ summary: 'List the user favorites' })
   @ApiOkResponse({ type: [FavoriteDto] })
   list(@CurrentUser() user: AuthUser): Promise<FavoriteDto[]> {
     return this.engagement.listFavorites(user.id);
   }
 
   @Post()
-  @ApiOperation({ summary: 'Añadir producto a favoritos' })
+  @ApiOperation({ summary: 'Add a product to favorites' })
   @ApiCreatedResponse({ type: FavoriteDto })
   @ApiNotFoundResponse({ description: 'PRODUCT_NOT_FOUND', type: ErrorResponseDto })
   @ApiConflictResponse({ description: 'FAVORITE_ALREADY_EXISTS', type: ErrorResponseDto })
@@ -48,7 +48,7 @@ export class FavoritesController {
 
   @Delete(':productId')
   @HttpCode(HttpStatus.NO_CONTENT)
-  @ApiOperation({ summary: 'Quitar producto de favoritos' })
+  @ApiOperation({ summary: 'Remove a product from favorites' })
   @ApiNoContentResponse()
   @ApiNotFoundResponse({ description: 'FAVORITE_NOT_FOUND', type: ErrorResponseDto })
   async remove(@CurrentUser() user: AuthUser, @Param('productId', ParseIntPipe) productId: number): Promise<void> {
@@ -63,7 +63,7 @@ export class ReviewsController {
 
   @Get('products/:productId/reviews')
   @Public()
-  @ApiOperation({ summary: 'Reseñas de un producto (paginadas, con resumen de valoraciones)' })
+  @ApiOperation({ summary: 'Product reviews (paginated, with rating summary)' })
   @ApiOkResponse({ type: ReviewListResponseDto })
   @ApiNotFoundResponse({ description: 'PRODUCT_NOT_FOUND', type: ErrorResponseDto })
   list(@Param('productId', ParseIntPipe) productId: number, @Query() query: ReviewListQueryDto): Promise<ReviewListResponseDto> {
@@ -73,8 +73,8 @@ export class ReviewsController {
   @Post('products/:productId/reviews')
   @Authenticated()
   @ApiOperation({
-    summary: 'Publicar una reseña',
-    description: 'Una reseña por usuario y producto. Se marca como compra verificada si el usuario recibió el producto.',
+    summary: 'Post a review',
+    description: 'One review per user and product. Marked as a verified purchase when the user received the product.',
   })
   @ApiCreatedResponse({ type: ReviewDto })
   @ApiConflictResponse({ description: 'REVIEW_ALREADY_EXISTS', type: ErrorResponseDto })
@@ -88,7 +88,7 @@ export class ReviewsController {
 
   @Get('users/me/reviews')
   @Authenticated()
-  @ApiOperation({ summary: 'Reseñas publicadas por el usuario autenticado' })
+  @ApiOperation({ summary: 'Reviews posted by the authenticated user' })
   @ApiOkResponse({ type: [MyReviewDto] })
   mine(@CurrentUser() user: AuthUser): Promise<MyReviewDto[]> {
     return this.engagement.myReviews(user.id);
@@ -96,7 +96,7 @@ export class ReviewsController {
 
   @Patch('reviews/:id')
   @Authenticated()
-  @ApiOperation({ summary: 'Editar una reseña propia' })
+  @ApiOperation({ summary: 'Edit your own review' })
   @ApiOkResponse({ type: ReviewDto })
   @ApiForbiddenResponse({ description: 'NOT_RESOURCE_OWNER', type: ErrorResponseDto })
   @ApiNotFoundResponse({ description: 'REVIEW_NOT_FOUND', type: ErrorResponseDto })
@@ -107,7 +107,7 @@ export class ReviewsController {
   @Delete('reviews/:id')
   @Authenticated()
   @HttpCode(HttpStatus.NO_CONTENT)
-  @ApiOperation({ summary: 'Eliminar una reseña (autor o administrador)' })
+  @ApiOperation({ summary: 'Delete a review (author or administrator)' })
   @ApiNoContentResponse()
   @ApiForbiddenResponse({ description: 'NOT_RESOURCE_OWNER', type: ErrorResponseDto })
   @ApiNotFoundResponse({ description: 'REVIEW_NOT_FOUND', type: ErrorResponseDto })

@@ -6,32 +6,32 @@ import { UserDto } from '../../users/dto/user.dto';
 export class RegisterDto {
   @ApiProperty({ example: 'ana.garcia@example.com' })
   @NormalizeEmail()
-  @IsEmail({}, { message: 'El email no tiene un formato válido' })
+  @IsEmail({}, { message: 'The e-mail format is not valid' })
   @MaxLength(254)
   email: string;
 
-  @ApiProperty({ example: 'Secreta123', description: '8-64 caracteres, con mayúscula, minúscula y número' })
+  @ApiProperty({ example: 'Secret123', description: '8-64 characters, with uppercase, lowercase and a number' })
   @IsStrongPassword()
   password: string;
 
   @ApiProperty({ example: 'Ana' })
-  @StrictString(2, 50, 'El nombre')
+  @StrictString(2, 50, 'First name')
   firstName: string;
 
   @ApiProperty({ example: 'García López' })
-  @StrictString(2, 80, 'El apellido')
+  @StrictString(2, 80, 'Last name')
   lastName: string;
 
   @ApiProperty({ required: false, example: '600123123' })
   @IsOptional()
   @Trim()
-  @Matches(SPANISH_PHONE, { message: 'El teléfono debe ser un número español válido (9 dígitos)' })
+  @Matches(SPANISH_PHONE, { message: 'The phone must be a valid Spanish number (9 digits)' })
   phone?: string;
 
   /** Must be true: the user accepts the terms and conditions */
   @ApiProperty({ example: true })
-  @IsBoolean({ message: 'Debes aceptar los términos y condiciones' })
-  @Equals(true, { message: 'Debes aceptar los términos y condiciones' })
+  @IsBoolean({ message: 'You must accept the terms and conditions' })
+  @Equals(true, { message: 'You must accept the terms and conditions' })
   acceptTerms: boolean;
 
   @IsOptional()
@@ -42,12 +42,12 @@ export class RegisterDto {
 export class LoginDto {
   @ApiProperty({ example: 'customer@qacommerce.test' })
   @NormalizeEmail()
-  @IsEmail({}, { message: 'El email no tiene un formato válido' })
+  @IsEmail({}, { message: 'The e-mail format is not valid' })
   email: string;
 
   @ApiProperty({ example: 'Customer123!' })
   @IsString()
-  @IsNotEmpty({ message: 'La contraseña es obligatoria' })
+  @IsNotEmpty({ message: 'Password is required' })
   @MaxLength(128)
   password: string;
 }
@@ -63,17 +63,17 @@ export class RefreshDto {
 export class ForgotPasswordDto {
   @ApiProperty({ example: 'customer@qacommerce.test' })
   @NormalizeEmail()
-  @IsEmail({}, { message: 'El email no tiene un formato válido' })
+  @IsEmail({}, { message: 'The e-mail format is not valid' })
   email: string;
 }
 
 export class ResetPasswordDto {
   @IsString()
-  @IsNotEmpty({ message: 'El token es obligatorio' })
+  @IsNotEmpty({ message: 'The token is required' })
   @MaxLength(200)
   token: string;
 
-  @ApiProperty({ example: 'NuevaClave123' })
+  @ApiProperty({ example: 'NewPass123' })
   @IsStrongPassword()
   newPassword: string;
 }

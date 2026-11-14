@@ -33,16 +33,16 @@ export type CartWithItems = Cart & { coupon: Coupon | null; items: CartItemWithP
 
 export function itemIssues(item: { quantity: number; product: Pick<Product, 'isActive' | 'stock'> }): CartIssueDto[] {
   if (!item.product.isActive) {
-    return [{ code: 'UNAVAILABLE', message: 'Este producto ya no está disponible' }];
+    return [{ code: 'UNAVAILABLE', message: 'This product is no longer available' }];
   }
   if (item.product.stock <= 0) {
-    return [{ code: 'OUT_OF_STOCK', message: 'Producto agotado', availableStock: 0 }];
+    return [{ code: 'OUT_OF_STOCK', message: 'Out of stock', availableStock: 0 }];
   }
   if (item.quantity > item.product.stock) {
     return [
       {
         code: 'INSUFFICIENT_STOCK',
-        message: `Solo quedan ${item.product.stock} unidades disponibles`,
+        message: `Only ${item.product.stock} units left`,
         availableStock: item.product.stock,
       },
     ];
@@ -93,16 +93,16 @@ export class CartService {
 
   async addItem(owner: CartOwner, productId: number, quantity: number): Promise<CartDto> {
     const product = await this.prisma.product.findUnique({ where: { id: productId } });
-    if (!product) throw notFound(ErrorCode.PRODUCT_NOT_FOUND, 'Producto no encontrado');
-    if (!product.isActive) throw unprocessable(ErrorCode.PRODUCT_UNAVAILABLE, 'Este producto ya no está disponible');
-    if (product.stock <= 0) throw conflict(ErrorCode.OUT_OF_STOCK, 'El producto está agotado', { availableStock: 0 });
+    if (!product) throw notFound(ErrorCode.PRODUCT_NOT_FOUND, 'Product not found');
+    if (!product.isActive) throw unprocessable(ErrorCode.PRODUCT_UNAVAILABLE, 'This product is no longer available');
+    if (product.stock <= 0) throw conflict(ErrorCode.OUT_OF_STOCK, 'The product is out of stock', { availableStock: 0 });
 
     const cart = await this.findOrCreateCart(owner);
     const existing = cart.items.find((i) => i.productId === productId);
     const newQuantity = (existing?.quantity ?? 0) + quantity;
     this.assertQuantity(newQuantity, product, existing?.quantity ?? 0);
     if (!existing && cart.items.length >= MAX_CART_LINES) {
-      throw unprocessable(ErrorCode.MAX_QUANTITY_EXCEEDED, `El carrito admite como máximo ${MAX_CART_LINES} productos distintos`);
+      throw unprocessable(ErrorCode.MAX_QUANTITY_EXCEEDED, `The cart can hold at most ${MAX_CART_LINES} different products`);
     }
 
     try {
@@ -126,12 +126,12 @@ export class CartService {
   async updateItem(owner: CartOwner, itemId: number, quantity: number): Promise<CartDto> {
     const cart = await this.findCart(owner);
     const item = cart?.items.find((i) => i.id === itemId);
-    if (!cart || !item) throw notFound(ErrorCode.CART_ITEM_NOT_FOUND, 'El producto no está en el carrito');
+    if (!cart || !item) throw notFound(ErrorCode.CART_ITEM_NOT_FOUND, 'The product is not in the cart');
     if (!item.product.isActive) {
-      throw unprocessable(ErrorCode.PRODUCT_UNAVAILABLE, 'Este producto ya no está disponible. Elimínalo del carrito');
+      throw unprocessable(ErrorCode.PRODUCT_UNAVAILABLE, 'This product is no longer available. Remove it from the cart');
     }
     if (item.product.stock <= 0) {
-      throw conflict(ErrorCode.OUT_OF_STOCK, 'El producto está agotado. Elimínalo del carrito', { availableStock: 0 });
+      throw conflict(ErrorCode.OUT_OF_STOCK, 'The product is out of stock. Remove it from the cart', { availableStock: 0 });
     }
     this.assertQuantity(quantity, item.product, 0);
     await this.prisma.cartItem.update({
@@ -145,7 +145,7 @@ export class CartService {
   async removeItem(owner: CartOwner, itemId: number): Promise<CartDto> {
     const cart = await this.findCart(owner);
     const item = cart?.items.find((i) => i.id === itemId);
-    if (!cart || !item) throw notFound(ErrorCode.CART_ITEM_NOT_FOUND, 'El producto no está en el carrito');
+    if (!cart || !item) throw notFound(ErrorCode.CART_ITEM_NOT_FOUND, 'The product is not in the cart');
     await this.prisma.cartItem.delete({ where: { id: item.id } });
     await this.touch(cart.id);
     return this.reload(cart.id, owner.userId);
@@ -163,7 +163,7 @@ export class CartService {
 
   async applyCoupon(owner: CartOwner, code: string): Promise<CartDto> {
     const cart = await this.findCart(owner);
-    if (!cart || cart.items.length === 0) throw unprocessable(ErrorCode.CART_EMPTY, 'El carrito está vacío');
+    if (!cart || cart.items.length === 0) throw unprocessable(ErrorCode.CART_EMPTY, 'The cart is empty');
     const coupon = await this.coupons.findByCode(code);
     await this.coupons.validate(coupon, { userId: owner.userId, lines: this.pricingLines(cart) });
     await this.prisma.cart.update({ where: { id: cart.id }, data: { couponId: coupon!.id } });
@@ -184,7 +184,7 @@ export class CartService {
    */
   async merge(userId: number, guestToken: string): Promise<CartDto> {
     const guest = await this.findCart({ guestToken });
-    if (!guest) throw notFound(ErrorCode.CART_NOT_FOUND, 'Carrito de invitado no encontrado');
+    if (!guest) throw notFound(ErrorCode.CART_NOT_FOUND, 'Guest cart not found');
     const cartId = await this.prisma.$transaction(async (tx) => {
       const userCart = await this.findOrCreateCart({ userId }, tx);
       for (const item of guest.items) {
@@ -237,12 +237,12 @@ export class CartService {
     if (quantity > MAX_QUANTITY_PER_PRODUCT) {
       throw unprocessable(
         ErrorCode.MAX_QUANTITY_EXCEEDED,
-        `Puedes comprar como máximo ${MAX_QUANTITY_PER_PRODUCT} unidades de este producto`,
+        `You can buy at most ${MAX_QUANTITY_PER_PRODUCT} units of this product`,
         { maxQuantity: MAX_QUANTITY_PER_PRODUCT },
       );
     }
     if (quantity > product.stock) {
-      throw conflict(ErrorCode.INSUFFICIENT_STOCK, `Solo quedan ${product.stock} unidades disponibles`, {
+      throw conflict(ErrorCode.INSUFFICIENT_STOCK, `Only ${product.stock} units left`, {
         availableStock: product.stock,
         requested: quantity,
       });

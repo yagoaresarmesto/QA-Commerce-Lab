@@ -32,20 +32,20 @@ import {
 const DAY = 86_400_000;
 
 export const SKU_PREFIX: Record<string, string> = {
-  portatiles: 'LAP',
-  sobremesa: 'DSK',
-  'tarjetas-graficas': 'GPU',
-  procesadores: 'CPU',
-  'placas-base': 'MBD',
-  'memorias-ram': 'RAM',
-  'almacenamiento-ssd': 'SSD',
-  monitores: 'MON',
-  teclados: 'KBD',
-  ratones: 'MOU',
-  auriculares: 'AUD',
+  laptops: 'LAP',
+  desktops: 'DSK',
+  'graphics-cards': 'GPU',
+  processors: 'CPU',
+  motherboards: 'MBD',
+  memory: 'RAM',
+  'ssd-storage': 'SSD',
+  monitors: 'MON',
+  keyboards: 'KBD',
+  mice: 'MOU',
+  headphones: 'AUD',
   smartphones: 'PHN',
   tablets: 'TAB',
-  accesorios: 'ACC',
+  accessories: 'ACC',
 };
 
 /** Documented special inventory states (see docs/TESTING.md) */
@@ -124,7 +124,7 @@ export function buildSeedProducts(): SeedProduct[] {
       const color = BRANDS[brand];
       const kind = CATEGORY_KIND[cat.slug];
       const specList = Object.entries(specs).map(([n, v]) => ({ name: n, value: v }));
-      const highlights = specList.slice(0, 4).map((s) => `${s.name.toLowerCase()}: ${s.value}`).join(', ');
+      const highlights = specList.slice(0, 4).map((s) => `${s.name}: ${s.value}`).join(', ');
       out.push({
         sku,
         slug: slugify(name),
@@ -134,9 +134,9 @@ export function buildSeedProducts(): SeedProduct[] {
         categoryName: cat.name,
         shortDescription: short,
         description:
-          `${name} de ${brand}. ${short}. ` +
-          `Entre sus características destacan ${highlights}. ` +
-          `Producto nuevo con 3 años de garantía, IVA incluido y devolución gratuita durante 14 días.`,
+          `${name} by ${brand}. ${short}. ` +
+          `Key features: ${highlights}. ` +
+          `Brand-new product with a 3-year warranty, VAT included and free returns within 14 days.`,
         priceCents,
         compareAtPriceCents: compareAtPriceCents && compareAtPriceCents > priceCents ? compareAtPriceCents : null,
         stock,
@@ -418,7 +418,7 @@ export class ReferenceSeeder {
     const address = await this.prisma.address.findFirstOrThrow({ where: { userId, isDefault: true } });
     const standard = await this.prisma.shippingMethod.findUniqueOrThrow({ where: { code: 'STANDARD' } });
     const express = await this.prisma.shippingMethod.findUniqueOrThrow({ where: { code: 'EXPRESS' } });
-    const welcome = await this.prisma.coupon.findUniqueOrThrow({ where: { code: 'BIENVENIDA10' } });
+    const welcome = await this.prisma.coupon.findUniqueOrThrow({ where: { code: 'WELCOME10' } });
     type Spec = {
       n: number;
       status: OrderStatus;
@@ -461,7 +461,7 @@ export class ReferenceSeeder {
         return flow.indexOf(target) <= flow.indexOf(s.status) && flow.indexOf(s.status) >= 0;
       };
       const history: Prisma.OrderStatusHistoryCreateWithoutOrderInput[] = [
-        { fromStatus: null, toStatus: OrderStatus.PENDING, actorType: ActorType.CUSTOMER, actorUserId: userId, note: 'Pedido creado', createdAt: created },
+        { fromStatus: null, toStatus: OrderStatus.PENDING, actorType: ActorType.CUSTOMER, actorUserId: userId, note: 'Order created', createdAt: created },
       ];
       let prev: OrderStatus = OrderStatus.PENDING;
       const push = (to: OrderStatus, h: number, actor: ActorType, note?: string) => {
@@ -469,13 +469,13 @@ export class ReferenceSeeder {
         prev = to;
       };
       const paid = reached(OrderStatus.PAID);
-      if (paid) push(OrderStatus.PAID, 0.1, ActorType.SYSTEM, 'Pago con tarjeta VISA ****4242');
+      if (paid) push(OrderStatus.PAID, 0.1, ActorType.SYSTEM, 'Card payment VISA ****4242');
       if (reached(OrderStatus.PREPARING)) push(OrderStatus.PREPARING, 5, ActorType.ADMIN);
       if (reached(OrderStatus.SHIPPED)) push(OrderStatus.SHIPPED, 20, ActorType.ADMIN);
       if (reached(OrderStatus.DELIVERED)) push(OrderStatus.DELIVERED, 44, ActorType.ADMIN);
-      if (reached(OrderStatus.RETURN_REQUESTED)) push(OrderStatus.RETURN_REQUESTED, 70, ActorType.CUSTOMER, 'El producto no cumple mis expectativas');
+      if (reached(OrderStatus.RETURN_REQUESTED)) push(OrderStatus.RETURN_REQUESTED, 70, ActorType.CUSTOMER, 'The product does not meet my expectations');
       if (reached(OrderStatus.RETURNED)) push(OrderStatus.RETURNED, 120, ActorType.ADMIN);
-      if (s.status === OrderStatus.CANCELLED) push(OrderStatus.CANCELLED, 3, ActorType.CUSTOMER, 'He encontrado otra opción');
+      if (s.status === OrderStatus.CANCELLED) push(OrderStatus.CANCELLED, 3, ActorType.CUSTOMER, 'I found a better option');
 
       const refunded = s.status === OrderStatus.CANCELLED || s.status === OrderStatus.RETURNED;
       const isTransfer = s.payment === 'BANK_TRANSFER';
@@ -513,10 +513,10 @@ export class ReferenceSeeder {
           shippedAt: reached(OrderStatus.SHIPPED) ? step(20) : null,
           deliveredAt: reached(OrderStatus.DELIVERED) ? step(44) : null,
           returnRequestedAt: reached(OrderStatus.RETURN_REQUESTED) ? step(70) : null,
-          returnReason: reached(OrderStatus.RETURN_REQUESTED) ? 'El producto no cumple mis expectativas' : null,
+          returnReason: reached(OrderStatus.RETURN_REQUESTED) ? 'The product does not meet my expectations' : null,
           returnedAt: reached(OrderStatus.RETURNED) ? step(120) : null,
           cancelledAt: s.status === OrderStatus.CANCELLED ? step(3) : null,
-          cancelReason: s.status === OrderStatus.CANCELLED ? 'He encontrado otra opción' : null,
+          cancelReason: s.status === OrderStatus.CANCELLED ? 'I found a better option' : null,
           isReference: true,
           stockReserved: !refunded,
           createdAt: created,

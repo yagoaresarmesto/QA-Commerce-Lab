@@ -20,33 +20,33 @@ export class FavoriteDto {
 
 export class CreateReviewDto {
   @ApiProperty({ minimum: 1, maximum: 5, example: 5 })
-  @IsInt({ message: 'La valoración debe ser un número entero' })
-  @Min(1, { message: 'La valoración mínima es 1' })
-  @Max(5, { message: 'La valoración máxima es 5' })
+  @IsInt({ message: 'The rating must be an integer' })
+  @Min(1, { message: 'The minimum rating is 1' })
+  @Max(5, { message: 'The maximum rating is 5' })
   rating: number;
 
-  @ApiProperty({ example: 'Muy buena relación calidad-precio' })
-  @StrictString(3, 120, 'El título')
+  @ApiProperty({ example: 'Great value for money' })
+  @StrictString(3, 120, 'Title')
   title: string;
 
-  @ApiProperty({ example: 'Lo uso a diario y funciona perfectamente. La batería dura todo el día.' })
-  @StrictString(10, 2000, 'El comentario')
+  @ApiProperty({ example: 'I use it every day and it works perfectly. The battery lasts all day.' })
+  @StrictString(10, 2000, 'Comment')
   comment: string;
 }
 
 export class UpdateReviewDto {
   @IsOptional()
-  @IsInt({ message: 'La valoración debe ser un número entero' })
-  @Min(1, { message: 'La valoración mínima es 1' })
-  @Max(5, { message: 'La valoración máxima es 5' })
+  @IsInt({ message: 'The rating must be an integer' })
+  @Min(1, { message: 'The minimum rating is 1' })
+  @Max(5, { message: 'The maximum rating is 5' })
   rating?: number;
 
   @IsOptional()
-  @StrictString(3, 120, 'El título')
+  @StrictString(3, 120, 'Title')
   title?: string;
 
   @IsOptional()
-  @StrictString(10, 2000, 'El comentario')
+  @StrictString(10, 2000, 'Comment')
   comment?: string;
 }
 

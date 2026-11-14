@@ -39,7 +39,7 @@ import { TestAuditService } from './test-audit.service';
 
 function assertRunId(runId: string): string {
   if (!TEST_RUN_ID_PATTERN.test(runId)) {
-    throw badRequest(ErrorCode.VALIDATION_ERROR, 'runId no válido', [{ field: 'runId', message: '3-64 caracteres [A-Za-z0-9._-]' }]);
+    throw badRequest(ErrorCode.VALIDATION_ERROR, 'Invalid runId', [{ field: 'runId', message: '3-64 characters [A-Za-z0-9._-]' }]);
   }
   return runId;
 }
@@ -65,7 +65,7 @@ export class TestingController {
   ) {}
 
   @Get('info')
-  @ApiOperation({ summary: 'Capacidades de la API de testing y datos de referencia' })
+  @ApiOperation({ summary: 'Testing API capabilities and reference data' })
   info() {
     return {
       environment: this.config.env,
@@ -91,12 +91,12 @@ export class TestingController {
   @Post('reset')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: 'Reset GLOBAL: borra TODOS los datos y recarga el dataset de referencia',
-    description: 'Solo para entornos dedicados sin ejecuciones concurrentes (ALLOW_GLOBAL_RESET=true). IDs deterministas.',
+    summary: 'GLOBAL reset: deletes ALL data and reloads the reference dataset',
+    description: 'Only for dedicated environments without concurrent runs (ALLOW_GLOBAL_RESET=true). Deterministic IDs.',
   })
   async reset(@Body() _dto: ResetDto, @Ip() ip: string) {
     if (!this.config.testApi.allowGlobalReset) {
-      throw forbidden(ErrorCode.GLOBAL_RESET_DISABLED, 'El reset global está deshabilitado en este entorno. Usa la limpieza por runId');
+      throw forbidden(ErrorCode.GLOBAL_RESET_DISABLED, 'Global reset is disabled in this environment. Use the per-runId cleanup instead');
     }
     const summary = await this.seed.reset();
     this.faults.clear();
@@ -107,10 +107,10 @@ export class TestingController {
   @Post('seed')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: 'Restaurar los datos de referencia',
+    summary: 'Restore the reference data',
     description:
-      'Vuelve a dejar productos, cupones y usuarios de referencia en su estado inicial (stock, precios, contraseñas, pedidos...). ' +
-      'No borra los datos creados por ejecuciones (runId).',
+      'Puts reference products, coupons and users back into their initial state (stock, prices, passwords, orders...). ' +
+      'Does not delete data created by runs (runId).',
   })
   async restore(@Ip() ip: string) {
     const summary = await this.seed.seed();
@@ -121,17 +121,17 @@ export class TestingController {
   // ─── Runs ───
 
   @Get('runs/:runId')
-  @ApiOperation({ summary: 'Resumen de los datos creados por una ejecución' })
+  @ApiOperation({ summary: 'Summary of the data created by a run' })
   runSummary(@Param('runId') runId: string) {
     return this.cleanupService.summary(assertRunId(runId));
   }
 
   @Delete('runs/:runId')
   @ApiOperation({
-    summary: 'Limpiar los datos de una ejecución',
+    summary: 'Clean up the data of a run',
     description:
-      'Elimina usuarios, pedidos, productos, cupones, emails y faults del runId (y usuarios cuyo email contiene el runId). ' +
-      'Revierte stock, contadores de ventas, usos de cupones y valoraciones de los datos compartidos.',
+      'Deletes the users, orders, products, coupons, e-mails and faults of the runId (and users whose e-mail contains the runId). ' +
+      'Reverts stock, sales counters, coupon usages and ratings of the shared data.',
   })
   async cleanup(@Param('runId') runId: string, @Ip() ip: string) {
     const removed = await this.cleanupService.cleanup(assertRunId(runId));
@@ -142,7 +142,7 @@ export class TestingController {
   // ─── Fixtures ───
 
   @Post('users')
-  @ApiOperation({ summary: 'Crear usuario de prueba (opcionalmente con dirección y tokens)' })
+  @ApiOperation({ summary: 'Create a test user (optionally with an address and tokens)' })
   async createUser(@Body() dto: CreateTestUserDto, @Ip() ip: string) {
     const res = await this.fixtures.createUser(dto);
     await this.audit.log('create-user', res.runId, ip, { userId: res.user.id });
@@ -150,14 +150,14 @@ export class TestingController {
   }
 
   @Post('auth/token')
-  @ApiOperation({ summary: 'Emitir tokens para un usuario sin contraseña (TTL configurable)' })
+  @ApiOperation({ summary: 'Issue tokens for a user without a password (configurable TTL)' })
   async token(@Body() dto: TestTokenDto) {
     return this.fixtures.issueToken(dto, dto.accessTtlSeconds, dto.refreshTtlSeconds);
   }
 
   @Post('sessions/expire')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Caducar o revocar todas las sesiones de un usuario' })
+  @ApiOperation({ summary: 'Expire or revoke every session of a user' })
   async expireSessions(@Body() dto: ExpireSessionsDto, @Ip() ip: string) {
     const res = await this.fixtures.expireSessions(dto, dto.mode);
     await this.audit.log('expire-sessions', null, ip, res);
@@ -165,13 +165,13 @@ export class TestingController {
   }
 
   @Post('password-reset-token')
-  @ApiOperation({ summary: 'Generar un token de recuperación de contraseña y devolverlo directamente' })
+  @ApiOperation({ summary: 'Generate a password reset token and return it directly' })
   passwordResetToken(@Body() dto: PasswordResetTokenDto) {
     return this.fixtures.passwordResetToken(dto.email);
   }
 
   @Post('products')
-  @ApiOperation({ summary: 'Crear producto de prueba (solo visible en listados para su runId)' })
+  @ApiOperation({ summary: 'Create a test product (only visible in listings for its runId)' })
   async createProduct(@Body() dto: CreateTestProductDto, @Ip() ip: string) {
     const res = await this.fixtures.createProduct(dto);
     await this.audit.log('create-product', res.runId, ip, { productId: res.product.id });
@@ -179,7 +179,7 @@ export class TestingController {
   }
 
   @Patch('products/:id')
-  @ApiOperation({ summary: 'Fijar inventario, precio o estado de cualquier producto' })
+  @ApiOperation({ summary: 'Set the stock, price or status of any product' })
   async patchProduct(@Param('id', ParseIntPipe) id: number, @Body() dto: PatchTestProductDto, @Ip() ip: string) {
     const product = await this.fixtures.patchProduct(id, dto);
     await this.audit.log('patch-product', product.testRunId, ip, { productId: id, ...dto });
@@ -187,13 +187,13 @@ export class TestingController {
   }
 
   @Post('carts')
-  @ApiOperation({ summary: 'Preparar el carrito de un usuario (force: true permite carritos con incidencias)' })
+  @ApiOperation({ summary: 'Prepare a user cart (force: true allows carts with issues)' })
   prepareCart(@Body() dto: PrepareCartDto) {
     return this.fixtures.prepareCart(dto);
   }
 
   @Post('orders')
-  @ApiOperation({ summary: 'Crear un pedido directamente en un estado concreto' })
+  @ApiOperation({ summary: 'Create an order directly in a given status' })
   async createOrder(@Body() dto: CreateTestOrderDto, @Ip() ip: string) {
     const res = await this.fixtures.createOrder(dto);
     await this.audit.log('create-order', res.runId, ip, { orderId: res.order.id, status: dto.status });
@@ -202,17 +202,17 @@ export class TestingController {
 
   @Post('orders/:id/expire-reservation')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Caducar la reserva de un pedido pendiente y ejecutar el job de expiración' })
+  @ApiOperation({ summary: 'Expire the reservation of a pending order and run the expiry job' })
   async expireReservation(@Param('id', ParseIntPipe) id: number) {
     const order = await this.prisma.order.findUnique({ where: { id } });
-    if (!order) throw notFound(ErrorCode.ORDER_NOT_FOUND, 'Pedido no encontrado');
+    if (!order) throw notFound(ErrorCode.ORDER_NOT_FOUND, 'Order not found');
     await this.prisma.order.update({ where: { id }, data: { reservationExpiresAt: new Date(Date.now() - 1000) } });
     const job = await this.jobs.run('expire-reservations');
     return { job, order: await this.orders.getById(id) };
   }
 
   @Post('coupons')
-  @ApiOperation({ summary: 'Crear cupón de prueba (válido, caducado, futuro, agotado...)' })
+  @ApiOperation({ summary: 'Create a test coupon (valid, expired, upcoming, exhausted...)' })
   async createCoupon(@Body() dto: CreateTestCouponDto, @Ip() ip: string) {
     const res = await this.fixtures.createCoupon(dto);
     await this.audit.log('create-coupon', res.runId, ip, { couponId: res.coupon.id });
@@ -221,7 +221,7 @@ export class TestingController {
 
   @Post('payments/:id/resolve')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Resolver inmediatamente un pago pendiente (APPROVED/DECLINED)' })
+  @ApiOperation({ summary: 'Resolve a pending payment immediately (APPROVED/DECLINED)' })
   async resolvePayment(@Param('id', ParseIntPipe) id: number, @Body() dto: ResolvePaymentDto) {
     const payment = await this.payments.resolvePending(id, dto.outcome);
     return { payment: toPaymentDto(payment), order: await this.orders.getById(payment.orderId) };
@@ -229,7 +229,7 @@ export class TestingController {
 
   @Post('jobs/:name/run')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Ejecutar un job en segundo plano inmediatamente' })
+  @ApiOperation({ summary: 'Run a background job immediately' })
   runJob(@Param('name') name: string) {
     if (!(JOB_NAMES as readonly string[]).includes(name)) {
       throw notFound(ErrorCode.NOT_FOUND, `Job desconocido. Disponibles: ${JOB_NAMES.join(', ')}`);
@@ -240,13 +240,13 @@ export class TestingController {
   // ─── Scenarios ───
 
   @Get('scenarios')
-  @ApiOperation({ summary: 'Listar escenarios preparados' })
+  @ApiOperation({ summary: 'List the prepared scenarios' })
   listScenarios() {
     return this.scenarios.list();
   }
 
   @Post('scenarios/:name')
-  @ApiOperation({ summary: 'Preparar un escenario aislado (datos nuevos etiquetados con el runId)' })
+  @ApiOperation({ summary: 'Prepare an isolated scenario (new data tagged with the runId)' })
   async runScenario(@Param('name') name: string, @Body() dto: ScenarioDto, @Ip() ip: string) {
     const res = await this.scenarios.run(name, dto.runId);
     await this.audit.log(`scenario:${name}`, res.runId, ip);
@@ -256,7 +256,7 @@ export class TestingController {
   // ─── Mail outbox ───
 
   @Get('emails')
-  @ApiOperation({ summary: 'Consultar el buzón simulado (más recientes primero)' })
+  @ApiOperation({ summary: 'Read the simulated mailbox (most recent first)' })
   emails(@Query() q: EmailQueryDto) {
     return this.prisma.emailMessage.findMany({
       where: this.emailWhere(q),
@@ -266,18 +266,18 @@ export class TestingController {
   }
 
   @Get('emails/latest')
-  @ApiOperation({ summary: 'Último email que cumple el filtro (404 si no hay)' })
+  @ApiOperation({ summary: 'Latest e-mail matching the filter (404 if none)' })
   async latestEmail(@Query() q: EmailQueryDto) {
     const email = await this.prisma.emailMessage.findFirst({ where: this.emailWhere(q), orderBy: { id: 'desc' } });
-    if (!email) throw notFound(ErrorCode.NOT_FOUND, 'No hay emails que cumplan el filtro');
+    if (!email) throw notFound(ErrorCode.NOT_FOUND, 'No e-mails match the filter');
     return email;
   }
 
   @Delete('emails')
-  @ApiOperation({ summary: 'Vaciar el buzón (filtrable por destinatario o runId)' })
+  @ApiOperation({ summary: 'Empty the mailbox (filterable by recipient or runId)' })
   async clearEmails(@Query() q: EmailQueryDto) {
     if (!q.to && !q.runId && !this.config.testApi.allowGlobalReset) {
-      throw forbidden(ErrorCode.GLOBAL_RESET_DISABLED, 'Indica "to" o "runId": el borrado global está deshabilitado en este entorno');
+      throw forbidden(ErrorCode.GLOBAL_RESET_DISABLED, 'Provide "to" or "runId": global deletion is disabled in this environment');
     }
     const res = await this.prisma.emailMessage.deleteMany({ where: this.emailWhere(q) });
     return { deleted: res.count };
@@ -294,25 +294,25 @@ export class TestingController {
   // ─── Fault injection ───
 
   @Get('faults')
-  @ApiOperation({ summary: 'Listar reglas de simulación de fallos activas' })
+  @ApiOperation({ summary: 'List active fault simulation rules' })
   listFaults(@Query('runId') runId?: string) {
     return this.faults.list({ runId });
   }
 
   @Post('faults')
   @ApiOperation({
-    summary: 'Registrar una regla de fallo (500/503, latencia, timeout...)',
+    summary: 'Register a fault rule (500/503, latency, timeout...)',
     description:
-      'Siempre acotada: por runId (cabecera X-Test-Run-Id de las peticiones), por userId autenticado o global (solo con ALLOW_GLOBAL_FAULTS). ' +
-      'Caduca tras ttlSeconds y puede limitarse a N peticiones (times) para simular fallos transitorios.',
+      'Always scoped: by runId (X-Test-Run-Id request header), by authenticated userId or global (only with ALLOW_GLOBAL_FAULTS). ' +
+      'Expires after ttlSeconds and can be limited to N requests (times) to simulate transient failures.',
   })
   async createFault(@Body() dto: CreateFaultDto, @Ip() ip: string) {
     if (dto.global && !this.config.testApi.allowGlobalFaults) {
-      throw forbidden(ErrorCode.FAULT_SCOPE_REQUIRED, 'Las reglas globales están deshabilitadas en este entorno');
+      throw forbidden(ErrorCode.FAULT_SCOPE_REQUIRED, 'Global rules are disabled in this environment');
     }
     const runId = dto.global || dto.userId ? dto.runId : resolveRunId(dto.runId);
     if (!runId && !dto.userId && !dto.global) {
-      throw badRequest(ErrorCode.FAULT_SCOPE_REQUIRED, 'Indica runId, userId o global');
+      throw badRequest(ErrorCode.FAULT_SCOPE_REQUIRED, 'Provide runId, userId or global');
     }
     const rule = this.faults.add({
       runId,
@@ -335,16 +335,16 @@ export class TestingController {
 
   @Delete('faults/:id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  @ApiOperation({ summary: 'Eliminar una regla de fallo' })
+  @ApiOperation({ summary: 'Delete a fault rule' })
   deleteFault(@Param('id', ParseUUIDPipe) id: string): void {
-    if (!this.faults.remove(id)) throw notFound(ErrorCode.NOT_FOUND, 'Regla no encontrada');
+    if (!this.faults.remove(id)) throw notFound(ErrorCode.NOT_FOUND, 'Rule not found');
   }
 
   @Delete('faults')
-  @ApiOperation({ summary: 'Eliminar las reglas de un runId (o todas si se permite)' })
+  @ApiOperation({ summary: 'Delete the rules of a runId (or all of them when allowed)' })
   clearFaults(@Query('runId') runId?: string) {
     if (!runId && !this.config.testApi.allowGlobalFaults) {
-      throw forbidden(ErrorCode.FAULT_SCOPE_REQUIRED, 'Indica runId');
+      throw forbidden(ErrorCode.FAULT_SCOPE_REQUIRED, 'Provide runId');
     }
     return { deleted: this.faults.clear({ runId }) };
   }
@@ -352,7 +352,7 @@ export class TestingController {
   // ─── Audit ───
 
   @Get('audit')
-  @ApiOperation({ summary: 'Registro de operaciones de la API de testing' })
+  @ApiOperation({ summary: 'Testing API operation log' })
   auditLog(@Query('runId') runId?: string, @Query('limit') limit?: string) {
     return this.audit.list(runId, limit ? Number(limit) : 100);
   }

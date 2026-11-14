@@ -69,14 +69,14 @@ export class FixturesService {
     const password = dto.password ?? DEFAULT_TEST_PASSWORD;
     const email = (dto.email ?? `user.${randomCode(6).toLowerCase()}.${emailSafe(runId)}@run.qacommerce.test`).toLowerCase();
     if (await this.prisma.user.findUnique({ where: { email } })) {
-      throw conflict(ErrorCode.EMAIL_ALREADY_REGISTERED, 'Ya existe un usuario con ese email');
+      throw conflict(ErrorCode.EMAIL_ALREADY_REGISTERED, 'A user with that e-mail already exists');
     }
     const user = await this.prisma.user.create({
       data: {
         email,
         passwordHash: await hashPassword(password),
         firstName: dto.firstName ?? 'Test',
-        lastName: dto.lastName ?? `Usuario ${randomCode(4)}`,
+        lastName: dto.lastName ?? `User ${randomCode(4)}`,
         phone: '600123123',
         role: dto.role ?? Role.CUSTOMER,
         status: dto.status ?? UserStatus.ACTIVE,
@@ -89,7 +89,7 @@ export class FixturesService {
         : await this.prisma.address.create({
             data: {
               userId: user.id,
-              label: 'Casa',
+              label: 'Home',
               fullName: `${user.firstName} ${user.lastName}`,
               phone: '600123123',
               line1: 'Calle de Prueba 1, 2º A',
@@ -141,25 +141,25 @@ export class FixturesService {
 
   async createProduct(dto: CreateTestProductDto) {
     const runId = resolveRunId(dto.runId);
-    const category = await this.prisma.category.findUnique({ where: { slug: dto.categorySlug ?? 'accesorios' } });
-    if (!category) throw notFound(ErrorCode.CATEGORY_NOT_FOUND, 'Categoría no encontrada');
+    const category = await this.prisma.category.findUnique({ where: { slug: dto.categorySlug ?? 'accessories' } });
+    if (!category) throw notFound(ErrorCode.CATEGORY_NOT_FOUND, 'Category not found');
     const brand = await this.prisma.brand.findUnique({ where: { slug: dto.brandSlug ?? 'anker' } });
     if (!brand) throw notFound(ErrorCode.BRAND_NOT_FOUND, 'Marca no encontrada');
     const code = randomCode(6);
     const product = await this.catalog.create(
       {
         sku: `TST-${code}`,
-        name: dto.name ?? `Producto de prueba ${code}`,
+        name: dto.name ?? `Test product ${code}`,
         brandId: brand.id,
         categoryId: category.id,
-        shortDescription: 'Producto creado por la API de testing',
-        description: `Producto de prueba creado para la ejecución ${runId}. No forma parte del catálogo de referencia.`,
+        shortDescription: 'Product created by the testing API',
+        description: `Test product created for run ${runId}. It is not part of the reference catalog.`,
         priceCents: dto.priceCents ?? 4999,
         compareAtPriceCents: dto.compareAtPriceCents ?? null,
         stock: dto.stock ?? 10,
         isActive: dto.isActive ?? true,
         isFeatured: dto.isFeatured ?? false,
-        specs: [{ name: 'Origen', value: 'API de testing' }],
+        specs: [{ name: 'Source', value: 'Testing API' }],
         imageColor: '64748b',
       },
       { testRunId: runId },
@@ -183,14 +183,14 @@ export class FixturesService {
     const runId = resolveRunId(dto.runId);
     const day = 86_400_000;
     const category = dto.categorySlug ? await this.prisma.category.findUnique({ where: { slug: dto.categorySlug } }) : null;
-    if (dto.categorySlug && !category) throw notFound(ErrorCode.CATEGORY_NOT_FOUND, 'Categoría no encontrada');
+    if (dto.categorySlug && !category) throw notFound(ErrorCode.CATEGORY_NOT_FOUND, 'Category not found');
     const startsAt = dto.startsInDays !== undefined ? new Date(Date.now() + dto.startsInDays * day) : new Date(Date.now() - day);
     const expiresAt = dto.expiresInDays !== undefined ? new Date(Date.now() + dto.expiresInDays * day) : new Date(Date.now() + 30 * day);
     const type = dto.type ?? CouponType.PERCENTAGE;
     const coupon = await this.prisma.coupon.create({
       data: {
         code: dto.code ?? `T${emailSafe(runId).replace(/-/g, '').toUpperCase().slice(0, 20)}${randomCode(5)}`,
-        description: 'Cupón creado por la API de testing',
+        description: 'Coupon created by the testing API',
         type,
         value: type === CouponType.FREE_SHIPPING ? 0 : (dto.value ?? 10),
         minSubtotalCents: dto.minSubtotalCents ?? null,
@@ -229,7 +229,7 @@ export class FixturesService {
     for (const item of dto.items) {
       const product = await this.resolveProduct(item);
       if (!dto.force) {
-        if (!product.isActive) throw conflict(ErrorCode.PRODUCT_UNAVAILABLE, `${product.sku} no está activo (usa force: true)`);
+        if (!product.isActive) throw conflict(ErrorCode.PRODUCT_UNAVAILABLE, `${product.sku} is not active (use force: true)`);
         if (item.quantity > Math.min(product.stock, MAX_QUANTITY_PER_PRODUCT)) {
           throw conflict(ErrorCode.INSUFFICIENT_STOCK, `${product.sku}: stock ${product.stock} insuficiente (usa force: true)`);
         }
@@ -242,7 +242,7 @@ export class FixturesService {
     }
     if (dto.couponCode) {
       const coupon = await this.prisma.coupon.findUnique({ where: { code: dto.couponCode.toUpperCase() } });
-      if (!coupon) throw notFound(ErrorCode.COUPON_INVALID, 'Cupón no encontrado');
+      if (!coupon) throw notFound(ErrorCode.COUPON_INVALID, 'Coupon not found');
       await this.prisma.cart.update({ where: { id: cart.id }, data: { couponId: coupon.id } });
     }
     return this.cart.getCart({ userId: user.id });
@@ -258,7 +258,7 @@ export class FixturesService {
     address ??= await this.prisma.address.create({
       data: {
         userId: user.id,
-        label: 'Casa',
+        label: 'Home',
         fullName: `${user.firstName} ${user.lastName}`,
         phone: '600123123',
         line1: 'Calle de Prueba 1, 2º A',
@@ -271,7 +271,7 @@ export class FixturesService {
     const products = await Promise.all(dto.items.map((i) => this.resolveProduct(i)));
     const lines = dto.items.map((i, idx) => ({ product: products[idx], quantity: i.quantity }));
     const coupon = dto.couponCode ? await this.prisma.coupon.findUnique({ where: { code: dto.couponCode.toUpperCase() } }) : null;
-    if (dto.couponCode && !coupon) throw notFound(ErrorCode.COUPON_INVALID, 'Cupón no encontrado');
+    if (dto.couponCode && !coupon) throw notFound(ErrorCode.COUPON_INVALID, 'Coupon not found');
     const pricing = computePricing(
       lines.map((l) => ({ productId: l.product.id, categoryId: l.product.categoryId, unitPriceCents: l.product.priceCents, quantity: l.quantity })),
       coupon ? await this.couponPricing(coupon.id) : null,
@@ -287,7 +287,7 @@ export class FixturesService {
         for (const l of lines) {
           const res = await tx.product.updateMany({ where: { id: l.product.id, stock: { gte: l.quantity } }, data: { stock: { decrement: l.quantity } } });
           if (res.count === 0) {
-            throw conflict(ErrorCode.INSUFFICIENT_STOCK, `Stock insuficiente de ${l.product.sku} (usa decrementStock: false)`, {
+            throw conflict(ErrorCode.INSUFFICIENT_STOCK, `Not enough stock of ${l.product.sku} (use decrementStock: false)`, {
               productId: l.product.id,
               availableStock: l.product.stock,
             });
@@ -346,7 +346,7 @@ export class FixturesService {
               lineTotalCents: l.product.priceCents * l.quantity,
             })),
           },
-          history: { create: { toStatus: OrderStatus.PENDING, actorType: ActorType.CUSTOMER, actorUserId: user.id, note: 'Pedido creado (API de testing)', createdAt: base } },
+          history: { create: { toStatus: OrderStatus.PENDING, actorType: ActorType.CUSTOMER, actorUserId: user.id, note: 'Order created (testing API)', createdAt: base } },
         },
       });
       if (coupon) {
@@ -370,7 +370,7 @@ export class FixturesService {
         });
       if (dto.status === OrderStatus.PENDING) {
         if (dto.failedPayment) {
-          await payment(PaymentStatus.DECLINED, { failureCode: 'card_declined', failureMessage: 'La entidad emisora ha rechazado el pago', resolvedAt: at(0.06) });
+          await payment(PaymentStatus.DECLINED, { failureCode: 'card_declined', failureMessage: 'The card issuer declined the payment', resolvedAt: at(0.06) });
         } else if (paymentMethod === PaymentMethod.BANK_TRANSFER) {
           await payment(PaymentStatus.PENDING);
         }
@@ -386,13 +386,13 @@ export class FixturesService {
     const walk = async (to: OrderStatus, hours: number, extra: object = {}) =>
       this.lifecycle.transition(order.id, to, system, { force: true, at: at(hours), ...extra });
     if (target === OrderStatus.CANCELLED) {
-      await walk(OrderStatus.CANCELLED, 1, { reason: 'Cancelado (API de testing)' });
+      await walk(OrderStatus.CANCELLED, 1, { reason: 'Cancelled (testing API)' });
     } else if (target !== OrderStatus.PENDING) {
       const finalIndex =
         target === OrderStatus.RETURN_REQUESTED || target === OrderStatus.RETURNED ? ORDER_PATH.length - 1 : ORDER_PATH.indexOf(target);
       for (let i = 0; i <= finalIndex; i++) await walk(ORDER_PATH[i], [0.1, 4, 20, 44][i]);
       if (target === OrderStatus.RETURN_REQUESTED || target === OrderStatus.RETURNED) {
-        await walk(OrderStatus.RETURN_REQUESTED, 60, { reason: 'Devolución de prueba' });
+        await walk(OrderStatus.RETURN_REQUESTED, 60, { reason: 'Test return' });
       }
       if (target === OrderStatus.RETURNED) await walk(OrderStatus.RETURNED, 90);
     }
@@ -414,6 +414,6 @@ export class FixturesService {
   async passwordResetToken(email: string) {
     const user = await this.findUser({ email });
     const { token, expiresAt } = await this.auth.createResetToken(user);
-    return { email: user.email, token, expiresAt, link: `${this.config.publicWebUrl}/restablecer-contrasena?token=${encodeURIComponent(token)}` };
+    return { email: user.email, token, expiresAt, link: `${this.config.publicWebUrl}/reset-password?token=${encodeURIComponent(token)}` };
   }
 }

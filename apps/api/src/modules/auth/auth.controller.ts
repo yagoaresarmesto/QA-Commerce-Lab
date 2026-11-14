@@ -49,13 +49,13 @@ export class AuthController {
   @Public()
   @Throttle(AUTH_THROTTLE)
   @ApiOperation({
-    summary: 'Registrar un nuevo usuario',
-    description: 'Crea la cuenta (rol CUSTOMER), inicia sesión y devuelve los tokens. No requiere verificación de email.',
+    summary: 'Register a new user',
+    description: 'Creates the account (CUSTOMER role), signs in and returns the tokens. No e-mail verification required.',
   })
   @ApiCreatedResponse({ type: AuthResponseDto })
-  @ApiBadRequestResponse({ description: 'Datos no válidos (VALIDATION_ERROR)', type: ErrorResponseDto })
-  @ApiConflictResponse({ description: 'Email ya registrado (EMAIL_ALREADY_REGISTERED)', type: ErrorResponseDto })
-  @ApiTooManyRequestsResponse({ description: 'Solo si el rate limiting está habilitado (demo)', type: ErrorResponseDto })
+  @ApiBadRequestResponse({ description: 'Invalid data (VALIDATION_ERROR)', type: ErrorResponseDto })
+  @ApiConflictResponse({ description: 'E-mail already registered (EMAIL_ALREADY_REGISTERED)', type: ErrorResponseDto })
+  @ApiTooManyRequestsResponse({ description: 'Only when rate limiting is enabled (demo)', type: ErrorResponseDto })
   async register(@Body() dto: RegisterDto, @Req() req: Request, @Res({ passthrough: true }) res: Response) {
     const result = await this.auth.register(dto, this.meta(req));
     this.setRefreshCookie(res, result.refreshToken, result.refreshTokenExpiresAt);
@@ -67,14 +67,14 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @Throttle(AUTH_THROTTLE)
   @ApiOperation({
-    summary: 'Iniciar sesión',
+    summary: 'Sign in',
     description:
-      'Devuelve access token (JWT, cabecera Authorization: Bearer) y refresh token (también como cookie httpOnly qcl_rt). ' +
-      'Nunca bloquea cuentas por intentos fallidos.',
+      'Returns an access token (JWT, Authorization: Bearer header) and a refresh token (also set as the httpOnly cookie qcl_rt). ' +
+      'Accounts are never locked after failed attempts.',
   })
   @ApiOkResponse({ type: AuthResponseDto })
   @ApiUnauthorizedResponse({ description: 'Credenciales incorrectas (INVALID_CREDENTIALS)', type: ErrorResponseDto })
-  @ApiForbiddenResponse({ description: 'Cuenta desactivada (ACCOUNT_DISABLED)', type: ErrorResponseDto })
+  @ApiForbiddenResponse({ description: 'Account disabled (ACCOUNT_DISABLED)', type: ErrorResponseDto })
   async login(@Body() dto: LoginDto, @Req() req: Request, @Res({ passthrough: true }) res: Response) {
     const result = await this.auth.login(dto.email, dto.password, this.meta(req));
     this.setRefreshCookie(res, result.refreshToken, result.refreshTokenExpiresAt);
@@ -86,8 +86,8 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @ApiCookieAuth('refresh-cookie')
   @ApiOperation({
-    summary: 'Renovar el access token',
-    description: 'Acepta el refresh token en el cuerpo ({ refreshToken }) o en la cookie qcl_rt.',
+    summary: 'Refresh the access token',
+    description: 'Accepts the refresh token in the body ({ refreshToken }) or in the qcl_rt cookie.',
   })
   @ApiOkResponse({ type: AuthResponseDto })
   @ApiUnauthorizedResponse({
@@ -108,9 +108,9 @@ export class AuthController {
   @OptionalAuth()
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({
-    summary: 'Cerrar sesión',
+    summary: 'Sign out',
     description:
-      'Revoca la sesión del access token enviado o, si no hay, la del refresh token (cuerpo o cookie). Idempotente.',
+      'Revokes the session of the access token sent or, if there is none, the session of the refresh token (body or cookie). Idempotent.',
   })
   @ApiNoContentResponse()
   async logout(
@@ -128,19 +128,19 @@ export class AuthController {
   @HttpCode(HttpStatus.ACCEPTED)
   @Throttle(AUTH_THROTTLE)
   @ApiOperation({
-    summary: 'Solicitar recuperación de contraseña',
+    summary: 'Request a password reset',
     description:
-      'Siempre responde 202 (no revela si el email existe). Si existe, se envía un email al buzón simulado con un enlace de un solo uso.',
+      'Always responds 202 (does not reveal whether the e-mail exists). If it does, an e-mail with a single-use link is sent to the simulated mailbox.',
   })
   @ApiAcceptedResponse({ type: MessageResponseDto })
   async forgotPassword(@Body() dto: ForgotPasswordDto): Promise<MessageResponseDto> {
     await this.auth.forgotPassword(dto.email);
-    return { message: 'Si el email está registrado, recibirás un enlace para restablecer la contraseña' };
+    return { message: 'If the e-mail is registered, you will receive a link to reset your password' };
   }
 
   @Get('reset-password/validate')
   @Public()
-  @ApiOperation({ summary: 'Comprobar si un token de recuperación es válido' })
+  @ApiOperation({ summary: 'Check whether a password reset token is valid' })
   @ApiQuery({ name: 'token', required: true })
   @ApiOkResponse({ type: ResetTokenStatusDto })
   @ApiBadRequestResponse({
@@ -148,7 +148,7 @@ export class AuthController {
     type: ErrorResponseDto,
   })
   validateResetToken(@Query('token') token?: string): Promise<ResetTokenStatusDto> {
-    if (!token) throw badRequest(ErrorCode.RESET_TOKEN_INVALID, 'El enlace de recuperación no es válido');
+    if (!token) throw badRequest(ErrorCode.RESET_TOKEN_INVALID, 'The password reset link is not valid');
     return this.auth.validateResetToken(token);
   }
 
@@ -156,8 +156,8 @@ export class AuthController {
   @Public()
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({
-    summary: 'Restablecer la contraseña con el token recibido por email',
-    description: 'El token es de un solo uso y caduca (PASSWORD_RESET_TTL_MINUTES). Cierra todas las sesiones abiertas.',
+    summary: 'Reset the password with the token received by e-mail',
+    description: 'The token is single-use and expires (PASSWORD_RESET_TTL_MINUTES). Signs out every open session.',
   })
   @ApiNoContentResponse()
   @ApiBadRequestResponse({

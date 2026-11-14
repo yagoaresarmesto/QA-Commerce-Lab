@@ -162,7 +162,7 @@ export class AdminSalesService {
 
   async getOrder(id: number): Promise<AdminOrderDto> {
     const order = await this.prisma.order.findUnique({ where: { id }, include: { ...orderDetailInclude, user: true } });
-    if (!order) throw notFound(ErrorCode.ORDER_NOT_FOUND, 'Pedido no encontrado');
+    if (!order) throw notFound(ErrorCode.ORDER_NOT_FOUND, 'Order not found');
     const dto = toOrderDto(order, this.config.orders.returnWindowDays);
     const canConfirmPayment =
       order.status === OrderStatus.PENDING &&
@@ -181,12 +181,12 @@ export class AdminSalesService {
     if (dto.status === OrderStatus.PAID) {
       throw conflict(
         ErrorCode.INVALID_STATUS_TRANSITION,
-        'Un pedido solo pasa a PAID mediante un pago aprobado o confirmando la transferencia (POST /admin/orders/:id/confirm-payment)',
+        'An order only becomes PAID through an approved payment or by confirming the bank transfer (POST /admin/orders/:id/confirm-payment)',
       );
     }
     await this.lifecycle.transition(id, dto.status, { type: ActorType.ADMIN, userId: adminId }, {
       note: dto.note,
-      reason: dto.status === OrderStatus.CANCELLED ? dto.note || 'Cancelado por la tienda' : undefined,
+      reason: dto.status === OrderStatus.CANCELLED ? dto.note || 'Cancelled by the store' : undefined,
       trackingNumber: dto.trackingNumber,
     });
     return this.getOrder(id);
@@ -256,17 +256,17 @@ export class AdminSalesService {
 
   async getUser(id: number): Promise<AdminUserDto> {
     const user = await this.prisma.user.findUnique({ where: { id } });
-    if (!user) throw notFound(ErrorCode.USER_NOT_FOUND, 'Usuario no encontrado');
+    if (!user) throw notFound(ErrorCode.USER_NOT_FOUND, 'User not found');
     const stats = (await this.userStats([id])).get(id)!;
     return { ...toUserDto(user), ...stats, isReference: user.isReference, testRunId: user.testRunId, updatedAt: user.updatedAt };
   }
 
   async updateUser(id: number, adminId: number, dto: AdminUpdateUserDto): Promise<AdminUserDto> {
     if (id === adminId && (dto.status !== undefined || dto.role !== undefined)) {
-      throw unprocessable(ErrorCode.CANNOT_MODIFY_OWN_ACCOUNT, 'No puedes cambiar tu propio rol ni estado');
+      throw unprocessable(ErrorCode.CANNOT_MODIFY_OWN_ACCOUNT, 'You cannot change your own role or status');
     }
     const user = await this.prisma.user.findUnique({ where: { id } });
-    if (!user) throw notFound(ErrorCode.USER_NOT_FOUND, 'Usuario no encontrado');
+    if (!user) throw notFound(ErrorCode.USER_NOT_FOUND, 'User not found');
     await this.prisma.user.update({ where: { id }, data: { status: dto.status, role: dto.role } });
     if (dto.status === UserStatus.DISABLED) await this.tokens.revokeAllForUser(id);
     return this.getUser(id);
@@ -288,24 +288,24 @@ export class AdminSalesService {
 
   async getCoupon(id: number): Promise<AdminCouponDto> {
     const c = await this.prisma.coupon.findUnique({ where: { id }, include: { category: true } });
-    if (!c) throw notFound(ErrorCode.NOT_FOUND, 'Cupón no encontrado');
+    if (!c) throw notFound(ErrorCode.NOT_FOUND, 'Coupon not found');
     return this.toCouponDto(c);
   }
 
   private validateCouponRules(type: CouponType, value: number, startsAt?: Date | null, expiresAt?: Date | null): void {
     if (type === CouponType.PERCENTAGE && (value < 1 || value > 100)) {
-      throw badRequest(ErrorCode.VALIDATION_ERROR, 'Un cupón porcentual debe tener un valor entre 1 y 100', [
-        { field: 'value', message: 'Debe estar entre 1 y 100' },
+      throw badRequest(ErrorCode.VALIDATION_ERROR, 'A percentage coupon must have a value between 1 and 100', [
+        { field: 'value', message: 'Must be between 1 and 100' },
       ]);
     }
     if (type === CouponType.FIXED_AMOUNT && value < 1) {
-      throw badRequest(ErrorCode.VALIDATION_ERROR, 'Un cupón de importe fijo debe tener un valor mayor que 0', [
-        { field: 'value', message: 'Debe ser mayor que 0 (céntimos)' },
+      throw badRequest(ErrorCode.VALIDATION_ERROR, 'A fixed-amount coupon must have a value greater than 0', [
+        { field: 'value', message: 'Must be greater than 0 (cents)' },
       ]);
     }
     if (startsAt && expiresAt && expiresAt <= startsAt) {
-      throw badRequest(ErrorCode.VALIDATION_ERROR, 'La fecha de caducidad debe ser posterior a la de inicio', [
-        { field: 'expiresAt', message: 'Debe ser posterior a startsAt' },
+      throw badRequest(ErrorCode.VALIDATION_ERROR, 'The expiry date must be after the start date', [
+        { field: 'expiresAt', message: 'Must be after startsAt' },
       ]);
     }
   }
@@ -313,10 +313,10 @@ export class AdminSalesService {
   async createCoupon(dto: CreateCouponDto, opts: { testRunId?: string | null; isReference?: boolean } = {}): Promise<AdminCouponDto> {
     this.validateCouponRules(dto.type, dto.value, dto.startsAt, dto.expiresAt);
     if (dto.categoryId && !(await this.prisma.category.findUnique({ where: { id: dto.categoryId } }))) {
-      throw notFound(ErrorCode.CATEGORY_NOT_FOUND, 'Categoría no encontrada');
+      throw notFound(ErrorCode.CATEGORY_NOT_FOUND, 'Category not found');
     }
     if (await this.prisma.coupon.findUnique({ where: { code: dto.code } })) {
-      throw conflict(ErrorCode.COUPON_CODE_EXISTS, `Ya existe un cupón con el código ${dto.code}`);
+      throw conflict(ErrorCode.COUPON_CODE_EXISTS, `A coupon with code ${dto.code} already exists`);
     }
     const c = await this.prisma.coupon.create({
       data: {
@@ -342,7 +342,7 @@ export class AdminSalesService {
 
   async updateCoupon(id: number, dto: UpdateCouponDto): Promise<AdminCouponDto> {
     const current = await this.prisma.coupon.findUnique({ where: { id } });
-    if (!current) throw notFound(ErrorCode.NOT_FOUND, 'Cupón no encontrado');
+    if (!current) throw notFound(ErrorCode.NOT_FOUND, 'Coupon not found');
     const type = dto.type ?? current.type;
     const value = dto.value ?? current.value;
     const startsAt = dto.startsAt !== undefined ? dto.startsAt : current.startsAt;

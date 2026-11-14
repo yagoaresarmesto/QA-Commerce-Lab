@@ -40,7 +40,7 @@ export class FaultInjectionInterceptor implements NestInterceptor {
       case 'timeout':
         return timer(delay || 30_000).pipe(
           mergeMap(() =>
-            throwError(() => new AppException(504, ErrorCode.GATEWAY_TIMEOUT, rule.message ?? 'Tiempo de espera agotado (simulado)')),
+            throwError(() => new AppException(504, ErrorCode.GATEWAY_TIMEOUT, rule.message ?? 'Request timed out (simulated)')),
           ),
         );
       case 'error':
@@ -49,7 +49,7 @@ export class FaultInjectionInterceptor implements NestInterceptor {
           mergeMap(() =>
             throwError(
               () =>
-                new AppException(rule.status ?? 500, rule.code ?? ErrorCode.FAULT_INJECTED, rule.message ?? 'Fallo simulado por la API de testing', {
+                new AppException(rule.status ?? 500, rule.code ?? ErrorCode.FAULT_INJECTED, rule.message ?? 'Failure simulated by the testing API', {
                   faultId: rule.id,
                 }),
             ),

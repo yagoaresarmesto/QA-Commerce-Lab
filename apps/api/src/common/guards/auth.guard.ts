@@ -36,7 +36,7 @@ export class AuthGuard implements CanActivate {
     const header = req.headers.authorization;
     if (!header) {
       if (optional) return true;
-      throw unauthorized(ErrorCode.UNAUTHENTICATED, 'Necesitas iniciar sesión para acceder a este recurso');
+      throw unauthorized(ErrorCode.UNAUTHENTICATED, 'You need to sign in to access this resource');
     }
     const [scheme, token] = header.split(' ');
     if (scheme?.toLowerCase() !== 'bearer' || !token) {
@@ -53,20 +53,20 @@ export class AuthGuard implements CanActivate {
       },
     });
     if (!session || session.userId !== payload.sub) {
-      throw unauthorized(ErrorCode.TOKEN_INVALID, 'El token de acceso no es válido');
+      throw unauthorized(ErrorCode.TOKEN_INVALID, 'The access token is not valid');
     }
-    if (session.revokedAt) throw unauthorized(ErrorCode.SESSION_REVOKED, 'La sesión ha sido cerrada');
+    if (session.revokedAt) throw unauthorized(ErrorCode.SESSION_REVOKED, 'The session has been signed out');
     if (session.expiresAt.getTime() <= Date.now()) {
-      throw unauthorized(ErrorCode.SESSION_EXPIRED, 'La sesión ha caducado. Inicia sesión de nuevo');
+      throw unauthorized(ErrorCode.SESSION_EXPIRED, 'The session has expired. Please sign in again');
     }
     if (session.user.status === UserStatus.DISABLED) {
-      throw forbidden(ErrorCode.ACCOUNT_DISABLED, 'La cuenta está desactivada');
+      throw forbidden(ErrorCode.ACCOUNT_DISABLED, 'The account is disabled');
     }
     req.user = { id: session.user.id, email: session.user.email, role: session.user.role, sessionId: payload.sid };
     RequestContext.setUser(session.user.id);
 
     if (roles?.length && !roles.includes(session.user.role)) {
-      throw forbidden(ErrorCode.FORBIDDEN, 'No tienes permisos para realizar esta acción');
+      throw forbidden(ErrorCode.FORBIDDEN, 'You do not have permission to perform this action');
     }
     return true;
   }

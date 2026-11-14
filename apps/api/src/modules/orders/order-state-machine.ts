@@ -50,12 +50,12 @@ export const SALES_COUNTED_STATUSES: OrderStatus[] = [
 ];
 
 export const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
-  PENDING: 'Pendiente',
-  PAID: 'Pagado',
-  PREPARING: 'Preparando',
-  SHIPPED: 'Enviado',
-  DELIVERED: 'Entregado',
-  CANCELLED: 'Cancelado',
-  RETURN_REQUESTED: 'Devolución solicitada',
-  RETURNED: 'Devuelto',
+  PENDING: 'Pending',
+  PAID: 'Paid',
+  PREPARING: 'Preparing',
+  SHIPPED: 'Shipped',
+  DELIVERED: 'Delivered',
+  CANCELLED: 'Cancelled',
+  RETURN_REQUESTED: 'Return requested',
+  RETURNED: 'Returned',
 };

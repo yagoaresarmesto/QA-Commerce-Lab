@@ -59,16 +59,16 @@ export class AllExceptionsFilter implements ExceptionFilter {
       return {
         status: HttpStatus.TOO_MANY_REQUESTS,
         code: ErrorCode.RATE_LIMITED,
-        message: 'Demasiadas peticiones. Inténtalo de nuevo en unos segundos.',
+        message: 'Too many requests. Please try again in a few seconds.',
       };
     }
     // body-parser errors (Nest may wrap them in a BadRequestException)
     const bodyError = (exception as { type?: string } | null)?.type ?? ((exception as { cause?: { type?: string } } | null)?.cause?.type);
     if (bodyError === 'entity.parse.failed' || (exception instanceof SyntaxError && 'body' in (exception as object))) {
-      return { status: 400, code: ErrorCode.INVALID_JSON, message: 'El cuerpo de la petición no es un JSON válido' };
+      return { status: 400, code: ErrorCode.INVALID_JSON, message: 'The request body is not valid JSON' };
     }
     if (bodyError === 'entity.too.large') {
-      return { status: 413, code: ErrorCode.PAYLOAD_TOO_LARGE, message: 'El cuerpo de la petición es demasiado grande' };
+      return { status: 413, code: ErrorCode.PAYLOAD_TOO_LARGE, message: 'The request body is too large' };
     }
     if (exception instanceof HttpException) {
       const status = exception.getStatus();
@@ -81,7 +81,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
         message = Array.isArray(m) ? m.join('; ') : typeof m === 'string' ? m : exception.message;
       }
       if (status === 400 && /in JSON at position|Unexpected token|Unexpected end of JSON/.test(message)) {
-        return { status: 400, code: ErrorCode.INVALID_JSON, message: 'El cuerpo de la petición no es un JSON válido' };
+        return { status: 400, code: ErrorCode.INVALID_JSON, message: 'The request body is not valid JSON' };
       }
       return { status, code: this.codeForStatus(status, message), message };
     }
@@ -90,21 +90,21 @@ export class AllExceptionsFilter implements ExceptionFilter {
         return {
           status: 409,
           code: ErrorCode.CONFLICT,
-          message: 'El recurso ya existe',
+          message: 'The resource already exists',
           details: { target: exception.meta?.target },
         };
       }
       if (exception.code === 'P2025') {
-        return { status: 404, code: ErrorCode.NOT_FOUND, message: 'Recurso no encontrado' };
+        return { status: 404, code: ErrorCode.NOT_FOUND, message: 'Resource not found' };
       }
       if (exception.code === 'P2003') {
-        return { status: 409, code: ErrorCode.CONFLICT, message: 'El recurso está referenciado por otros datos' };
+        return { status: 409, code: ErrorCode.CONFLICT, message: 'The resource is referenced by other data' };
       }
     }
     if (exception instanceof Prisma.PrismaClientInitializationError) {
-      return { status: 503, code: ErrorCode.SERVICE_UNAVAILABLE, message: 'Base de datos no disponible' };
+      return { status: 503, code: ErrorCode.SERVICE_UNAVAILABLE, message: 'Database unavailable' };
     }
-    return { status: 500, code: ErrorCode.INTERNAL_ERROR, message: 'Error interno del servidor' };
+    return { status: 500, code: ErrorCode.INTERNAL_ERROR, message: 'Internal server error' };
   }
 
   private codeForStatus(status: number, message: string): string {

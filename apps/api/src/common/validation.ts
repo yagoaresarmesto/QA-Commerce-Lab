@@ -21,6 +21,6 @@ export function createValidationPipe(): ValidationPipe {
     transformOptions: { enableImplicitConversion: false },
     stopAtFirstError: true,
     exceptionFactory: (errors) =>
-      new AppException(400, ErrorCode.VALIDATION_ERROR, 'La petición contiene datos no válidos', flatten(errors)),
+      new AppException(400, ErrorCode.VALIDATION_ERROR, 'The request contains invalid data', flatten(errors)),
   });
 }

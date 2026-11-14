@@ -27,7 +27,7 @@ export class ScenariosService {
     this.scenarios = [
       {
         name: 'user-with-cart',
-        description: 'Usuario con dirección y un carrito con 3 productos en stock',
+        description: 'User with an address and a cart with 3 in-stock products',
         run: async (runId) => {
           const u = await this.fx.createUser({ runId });
           const products = await Promise.all([20, 10, 5].map((stock, i) => this.fx.createProduct({ runId, stock, priceCents: 2999 + i * 1000 })));
@@ -37,7 +37,7 @@ export class ScenariosService {
       },
       {
         name: 'checkout-ready',
-        description: 'Usuario con dirección y carrito listo para pagar; incluye las tarjetas de prueba',
+        description: 'User with an address and a cart ready to pay; includes the test cards',
         run: async (runId) => {
           const u = await this.fx.createUser({ runId });
           const p = await this.fx.createProduct({ runId, stock: 10, priceCents: 12999 });
@@ -47,7 +47,7 @@ export class ScenariosService {
       },
       {
         name: 'payment-declined',
-        description: 'Usuario con carrito listo y la tarjeta de prueba que provoca un pago rechazado',
+        description: 'User with a ready cart and the test card that triggers a declined payment',
         run: async (runId) => {
           const u = await this.fx.createUser({ runId });
           const p = await this.fx.createProduct({ runId, stock: 10, priceCents: 5999 });
@@ -57,7 +57,7 @@ export class ScenariosService {
       },
       {
         name: 'order-with-failed-payment',
-        description: 'Pedido PENDING con un intento de pago rechazado (reintento de pago)',
+        description: 'PENDING order with a declined payment attempt (payment retry)',
         run: async (runId) => {
           const u = await this.fx.createUser({ runId });
           const p = await this.fx.createProduct({ runId, stock: 10 });
@@ -67,22 +67,22 @@ export class ScenariosService {
       },
       {
         name: 'out-of-stock-product',
-        description: 'Producto activo sin stock',
-        run: async (runId) => ({ runId, product: (await this.fx.createProduct({ runId, stock: 0, name: `Producto agotado ${runId}` })).product }),
+        description: 'Active product without stock',
+        run: async (runId) => ({ runId, product: (await this.fx.createProduct({ runId, stock: 0, name: `Out of stock ${runId}` })).product }),
       },
       {
         name: 'last-unit-product',
-        description: 'Producto con una única unidad disponible',
-        run: async (runId) => ({ runId, product: (await this.fx.createProduct({ runId, stock: 1, name: `Última unidad ${runId}` })).product }),
+        description: 'Product with a single unit available',
+        run: async (runId) => ({ runId, product: (await this.fx.createProduct({ runId, stock: 1, name: `Last unit ${runId}` })).product }),
       },
       {
         name: 'discontinued-product',
-        description: 'Producto desactivado (descatalogado)',
+        description: 'Deactivated (discontinued) product',
         run: async (runId) => ({ runId, product: (await this.fx.createProduct({ runId, stock: 10, isActive: false })).product }),
       },
       {
         name: 'concurrent-last-unit',
-        description: 'Producto con 1 unidad en el carrito de dos usuarios distintos (prueba de concurrencia en el checkout)',
+        description: 'Product with 1 unit in the carts of two different users (checkout concurrency test)',
         run: async (runId) => {
           const p = await this.fx.createProduct({ runId, stock: 1, priceCents: 19999 });
           const users = await Promise.all([this.fx.createUser({ runId }), this.fx.createUser({ runId })]);
@@ -92,15 +92,15 @@ export class ScenariosService {
       },
       {
         name: 'cart-with-issues',
-        description: 'Carrito con un producto agotado, uno descatalogado, una cantidad superior al stock y un cambio de precio',
+        description: 'Cart with an out-of-stock product, a discontinued one, a quantity above stock and a price change',
         run: async (runId) => {
           const u = await this.fx.createUser({ runId });
           const [ok, outOfStock, discontinued, scarce, priceChange] = await Promise.all([
-            this.fx.createProduct({ runId, stock: 10, name: `Disponible ${runId}` }),
-            this.fx.createProduct({ runId, stock: 5, name: `Se agotará ${runId}` }),
-            this.fx.createProduct({ runId, stock: 5, name: `Se descatalogará ${runId}` }),
-            this.fx.createProduct({ runId, stock: 5, name: `Stock escaso ${runId}` }),
-            this.fx.createProduct({ runId, stock: 10, priceCents: 5000, name: `Cambio de precio ${runId}` }),
+            this.fx.createProduct({ runId, stock: 10, name: `Available ${runId}` }),
+            this.fx.createProduct({ runId, stock: 5, name: `Will sell out ${runId}` }),
+            this.fx.createProduct({ runId, stock: 5, name: `Will be discontinued ${runId}` }),
+            this.fx.createProduct({ runId, stock: 5, name: `Low stock ${runId}` }),
+            this.fx.createProduct({ runId, stock: 10, priceCents: 5000, name: `Price change ${runId}` }),
           ]);
           await this.fx.prepareCart({
             userId: u.user.id,
@@ -116,7 +116,7 @@ export class ScenariosService {
       },
       ...(['PENDING', 'PAID', 'PREPARING', 'SHIPPED', 'DELIVERED', 'CANCELLED', 'RETURN_REQUESTED', 'RETURNED'] as OrderStatus[]).map((status) => ({
         name: `${status.toLowerCase().replace('_', '-')}-order`,
-        description: `Usuario con un pedido en estado ${status}`,
+        description: `User with an order in ${status} status`,
         run: async (runId: string) => {
           const u = await this.fx.createUser({ runId });
           const p = await this.fx.createProduct({ runId, stock: 10, priceCents: 7999 });
@@ -126,7 +126,7 @@ export class ScenariosService {
       })),
       {
         name: 'bank-transfer-pending-order',
-        description: 'Pedido PENDING pagado por transferencia (el administrador puede confirmar el pago)',
+        description: 'PENDING order paid by bank transfer (the administrator can confirm the payment)',
         run: async (runId) => {
           const u = await this.fx.createUser({ runId });
           const p = await this.fx.createProduct({ runId, stock: 10 });
@@ -136,7 +136,7 @@ export class ScenariosService {
       },
       {
         name: 'delivered-order-return-expired',
-        description: 'Pedido entregado hace 30 días (fuera del plazo de devolución)',
+        description: 'Order delivered 30 days ago (outside the return window)',
         run: async (runId) => {
           const u = await this.fx.createUser({ runId });
           const p = await this.fx.createProduct({ runId, stock: 10 });
@@ -146,7 +146,7 @@ export class ScenariosService {
       },
       {
         name: 'user-with-order-history',
-        description: 'Usuario con 5 pedidos en distintos estados',
+        description: 'User with 5 orders in different statuses',
         run: async (runId) => {
           const u = await this.fx.createUser({ runId });
           const p = await this.fx.createProduct({ runId, stock: 50 });
@@ -159,7 +159,7 @@ export class ScenariosService {
       },
       {
         name: 'expired-coupon',
-        description: 'Cupón caducado y usuario con carrito para intentar aplicarlo',
+        description: 'Expired coupon and a user with a cart to try to apply it',
         run: async (runId) => {
           const u = await this.fx.createUser({ runId });
           const p = await this.fx.createProduct({ runId, stock: 10, priceCents: 9999 });
@@ -170,7 +170,7 @@ export class ScenariosService {
       },
       {
         name: 'coupon-already-used',
-        description: 'Usuario que ya utilizó un cupón de un solo uso y tiene un carrito nuevo',
+        description: 'User who already used a single-use coupon and has a new cart',
         run: async (runId) => {
           const u = await this.fx.createUser({ runId });
           const p = await this.fx.createProduct({ runId, stock: 10, priceCents: 9999 });
@@ -182,17 +182,17 @@ export class ScenariosService {
       },
       {
         name: 'disabled-user',
-        description: 'Usuario desactivado (el login devuelve 403 ACCOUNT_DISABLED)',
+        description: 'Disabled user (login returns 403 ACCOUNT_DISABLED)',
         run: async (runId) => this.fx.createUser({ runId, status: UserStatus.DISABLED, login: false }),
       },
       {
         name: 'admin-user',
-        description: 'Administrador propio de la ejecución (no compartido con otras suites)',
+        description: 'Administrator owned by the run (not shared with other suites)',
         run: async (runId) => this.fx.createUser({ runId, role: Role.ADMIN, withAddress: false }),
       },
       {
         name: 'password-reset',
-        description: 'Usuario con un token de recuperación de contraseña válido',
+        description: 'User with a valid password reset token',
         run: async (runId) => {
           const u = await this.fx.createUser({ runId, login: false });
           return { ...u, reset: await this.fx.passwordResetToken(u.credentials.email) };
@@ -200,7 +200,7 @@ export class ScenariosService {
       },
       {
         name: 'expired-session',
-        description: 'Usuario con tokens de una sesión ya caducada (access y refresh devuelven 401 SESSION_EXPIRED)',
+        description: 'User with tokens of an already expired session (access and refresh return 401 SESSION_EXPIRED)',
         run: async (runId) => {
           const u = await this.fx.createUser({ runId });
           await this.fx.expireSessions({ userId: u.user.id }, 'expire');
@@ -209,7 +209,7 @@ export class ScenariosService {
       },
       {
         name: 'short-lived-token',
-        description: 'Usuario con un access token que caduca en 5 segundos (renovación con refresh token)',
+        description: 'User with an access token that expires in 5 seconds (refresh token renewal)',
         run: async (runId) => this.fx.createUser({ runId, accessTtlSeconds: 5 }),
       },
     ];

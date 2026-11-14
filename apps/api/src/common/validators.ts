@@ -3,12 +3,12 @@ import { Transform } from 'class-transformer';
 import { IsNotEmpty, IsString, Matches, MaxLength, MinLength } from 'class-validator';
 
 export const PASSWORD_POLICY_MESSAGE =
-  'La contraseña debe tener entre 8 y 64 caracteres e incluir al menos una mayúscula, una minúscula y un número';
+  'The password must be 8-64 characters long and include at least one uppercase letter, one lowercase letter and one number';
 
 /** Password policy: 8-64 chars, at least one lowercase, one uppercase and one digit. */
 export function IsStrongPassword() {
   return applyDecorators(
-    IsNotEmpty({ message: 'La contraseña es obligatoria' }),
+    IsNotEmpty({ message: 'Password is required' }),
     IsString(),
     MinLength(8, { message: PASSWORD_POLICY_MESSAGE }),
     MaxLength(64, { message: PASSWORD_POLICY_MESSAGE }),
@@ -38,9 +38,9 @@ export const SPANISH_PROVINCES = [
 export function StrictString(min: number, max: number, label: string) {
   return applyDecorators(
     Trim(),
-    IsNotEmpty({ message: `${label} es obligatorio` }),
-    IsString({ message: `${label} debe ser un texto` }),
-    MinLength(min, { message: `${label} debe tener al menos ${min} caracteres` }),
-    MaxLength(max, { message: `${label} no puede superar ${max} caracteres` }),
+    IsNotEmpty({ message: `${label} is required` }),
+    IsString({ message: `${label} must be a string` }),
+    MinLength(min, { message: `${label} must be at least ${min} characters long` }),
+    MaxLength(max, { message: `${label} must be at most ${max} characters long` }),
   );
 }

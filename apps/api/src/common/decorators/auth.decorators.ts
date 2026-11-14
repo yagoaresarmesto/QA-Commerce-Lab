@@ -17,7 +17,7 @@ export const OptionalAuth = () =>
   applyDecorators(
     SetMetadata(IS_OPTIONAL_AUTH_KEY, true),
     ApiBearerAuth('access-token'),
-    ApiUnauthorizedResponse({ description: 'Token inválido o caducado', type: ErrorResponseDto }),
+    ApiUnauthorizedResponse({ description: 'Invalid or expired token', type: ErrorResponseDto }),
   );
 
 /**
@@ -29,7 +29,7 @@ export const Authenticated = () =>
     SetMetadata(IS_PUBLIC_KEY, false),
     SetMetadata(IS_OPTIONAL_AUTH_KEY, false),
     ApiBearerAuth('access-token'),
-    ApiUnauthorizedResponse({ description: 'No autenticado / token inválido o caducado', type: ErrorResponseDto }),
+    ApiUnauthorizedResponse({ description: 'Not authenticated / invalid or expired token', type: ErrorResponseDto }),
   );
 
 /** Requires one of the given roles. */

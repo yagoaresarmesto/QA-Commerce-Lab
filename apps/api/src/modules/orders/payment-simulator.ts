@@ -25,15 +25,15 @@ export interface TestCard {
 }
 
 export const TEST_CARDS: TestCard[] = [
-  { number: '4242424242424242', brand: 'VISA', scenario: 'APPROVED', description: 'Pago aprobado' },
-  { number: '5555555555554444', brand: 'MASTERCARD', scenario: 'APPROVED', description: 'Pago aprobado (Mastercard)' },
-  { number: '4000000000000002', brand: 'VISA', scenario: 'DECLINED', description: 'Pago rechazado (card_declined)' },
-  { number: '4000000000009995', brand: 'VISA', scenario: 'INSUFFICIENT_FUNDS', description: 'Fondos insuficientes (insufficient_funds)' },
-  { number: '4000000000000069', brand: 'VISA', scenario: 'EXPIRED_CARD', description: 'Tarjeta caducada según el emisor (expired_card)' },
-  { number: '4000000000000077', brand: 'VISA', scenario: 'PENDING_THEN_APPROVED', description: 'Pago pendiente que se aprueba tras PAYMENT_PENDING_DELAY_MS' },
-  { number: '4000000000000085', brand: 'VISA', scenario: 'PENDING_THEN_DECLINED', description: 'Pago pendiente que se rechaza tras PAYMENT_PENDING_DELAY_MS' },
-  { number: '4000000000000119', brand: 'VISA', scenario: 'PROCESSING_ERROR', description: 'Error de procesamiento de la pasarela (HTTP 502)' },
-  { number: '4000000000000408', brand: 'VISA', scenario: 'TIMEOUT', description: 'Timeout de la pasarela tras PAYMENT_TIMEOUT_DELAY_MS (HTTP 504)' },
+  { number: '4242424242424242', brand: 'VISA', scenario: 'APPROVED', description: 'Payment approved' },
+  { number: '5555555555554444', brand: 'MASTERCARD', scenario: 'APPROVED', description: 'Payment approved (Mastercard)' },
+  { number: '4000000000000002', brand: 'VISA', scenario: 'DECLINED', description: 'Payment declined (card_declined)' },
+  { number: '4000000000009995', brand: 'VISA', scenario: 'INSUFFICIENT_FUNDS', description: 'Insufficient funds (insufficient_funds)' },
+  { number: '4000000000000069', brand: 'VISA', scenario: 'EXPIRED_CARD', description: 'Card expired according to the issuer (expired_card)' },
+  { number: '4000000000000077', brand: 'VISA', scenario: 'PENDING_THEN_APPROVED', description: 'Pending payment approved after PAYMENT_PENDING_DELAY_MS' },
+  { number: '4000000000000085', brand: 'VISA', scenario: 'PENDING_THEN_DECLINED', description: 'Pending payment declined after PAYMENT_PENDING_DELAY_MS' },
+  { number: '4000000000000119', brand: 'VISA', scenario: 'PROCESSING_ERROR', description: 'Gateway processing error (HTTP 502)' },
+  { number: '4000000000000408', brand: 'VISA', scenario: 'TIMEOUT', description: 'Gateway timeout after PAYMENT_TIMEOUT_DELAY_MS (HTTP 504)' },
 ];
 
 export interface CardInput {
@@ -70,17 +70,17 @@ export function luhnValid(number: string): boolean {
 export function validateCard(input: CardInput, now = new Date()): ValidatedCard {
   const number = input.number.replace(/[\s-]/g, '');
   if (!/^\d{12,19}$/.test(number) || !luhnValid(number)) {
-    throw unprocessable(ErrorCode.CARD_INVALID, 'El número de tarjeta no es válido');
+    throw unprocessable(ErrorCode.CARD_INVALID, 'The card number is not valid');
   }
   const expiry = new Date(input.expYear, input.expMonth, 1); // first day of the following month
   if (expiry <= now) {
-    throw unprocessable(ErrorCode.CARD_EXPIRED, 'La tarjeta ha caducado');
+    throw unprocessable(ErrorCode.CARD_EXPIRED, 'The card has expired');
   }
   const card = TEST_CARDS.find((c) => c.number === number);
   if (!card) {
     throw unprocessable(
       ErrorCode.CARD_NOT_ALLOWED,
-      'Este entorno solo acepta tarjetas de prueba. Nunca introduzcas datos de tarjetas reales',
+      'This environment only accepts test cards. Never enter real card details',
     );
   }
   return { last4: number.slice(-4), brand: card.brand, holderName: input.holderName.trim(), scenario: card.scenario };
@@ -98,11 +98,11 @@ export function outcomeFor(scenario: PaymentScenario): SimulatedOutcome {
     case 'APPROVED':
       return { kind: 'approved' };
     case 'DECLINED':
-      return { kind: 'declined', failureCode: 'card_declined', message: 'La entidad emisora ha rechazado el pago' };
+      return { kind: 'declined', failureCode: 'card_declined', message: 'The card issuer declined the payment' };
     case 'INSUFFICIENT_FUNDS':
       return { kind: 'declined', failureCode: 'insufficient_funds', message: 'Fondos insuficientes' };
     case 'EXPIRED_CARD':
-      return { kind: 'declined', failureCode: 'expired_card', message: 'La tarjeta ha caducado según la entidad emisora' };
+      return { kind: 'declined', failureCode: 'expired_card', message: 'The card has expired according to the issuer' };
     case 'PENDING_THEN_APPROVED':
       return { kind: 'pending', finalOutcome: 'approved' };
     case 'PENDING_THEN_DECLINED':

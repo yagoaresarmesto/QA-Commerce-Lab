@@ -19,7 +19,7 @@ import { ShippingService } from './shipping.service';
 const CART_TOKEN_HEADER = {
   name: 'X-Cart-Token',
   required: false,
-  description: 'Token del carrito de invitado (se ignora si hay usuario autenticado)',
+  description: 'Guest cart token (ignored when a user is authenticated)',
 };
 
 @ApiTags('Cart')
@@ -35,10 +35,10 @@ export class CartController {
 
   @Get()
   @ApiOperation({
-    summary: 'Consultar el carrito',
+    summary: 'Get the cart',
     description:
-      'Usuario autenticado: su carrito persistente. Invitado: el carrito del X-Cart-Token (vacío si no existe). ' +
-      'Los totales se calculan siempre en el servidor con los precios actuales.',
+      'Authenticated user: their persistent cart. Guest: the cart of the X-Cart-Token (empty when it does not exist). ' +
+      'Totals are always computed on the server with current prices.',
   })
   @ApiOkResponse({ type: CartDto })
   get(@CurrentUser() user: AuthUser | undefined, @Headers('x-cart-token') token?: string): Promise<CartDto> {
@@ -48,10 +48,10 @@ export class CartController {
   @Post('items')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: 'Añadir producto al carrito',
+    summary: 'Add a product to the cart',
     description:
-      'Si el producto ya está en el carrito se suma la cantidad. Para invitados sin token se crea un carrito nuevo: ' +
-      'guarda el `token` de la respuesta y envíalo en X-Cart-Token.',
+      'If the product is already in the cart the quantity is added. For guests without a token a new cart is created: ' +
+      'store the `token` from the response and send it in X-Cart-Token.',
   })
   @ApiOkResponse({ type: CartDto })
   @ApiNotFoundResponse({ description: 'PRODUCT_NOT_FOUND', type: ErrorResponseDto })
@@ -66,7 +66,7 @@ export class CartController {
   }
 
   @Patch('items/:itemId')
-  @ApiOperation({ summary: 'Cambiar la cantidad de una línea del carrito' })
+  @ApiOperation({ summary: 'Change the quantity of a cart line' })
   @ApiOkResponse({ type: CartDto })
   @ApiNotFoundResponse({ description: 'CART_ITEM_NOT_FOUND', type: ErrorResponseDto })
   @ApiConflictResponse({ description: 'OUT_OF_STOCK | INSUFFICIENT_STOCK', type: ErrorResponseDto })
@@ -81,7 +81,7 @@ export class CartController {
   }
 
   @Delete('items/:itemId')
-  @ApiOperation({ summary: 'Eliminar una línea del carrito (devuelve el carrito actualizado)' })
+  @ApiOperation({ summary: 'Remove a cart line (returns the updated cart)' })
   @ApiOkResponse({ type: CartDto })
   @ApiNotFoundResponse({ description: 'CART_ITEM_NOT_FOUND', type: ErrorResponseDto })
   removeItem(
@@ -93,7 +93,7 @@ export class CartController {
   }
 
   @Delete()
-  @ApiOperation({ summary: 'Vaciar el carrito (también quita el cupón)' })
+  @ApiOperation({ summary: 'Empty the cart (also removes the coupon)' })
   @ApiOkResponse({ type: CartDto })
   clear(@CurrentUser() user: AuthUser | undefined, @Headers('x-cart-token') token?: string): Promise<CartDto> {
     return this.cart.clear(this.owner(user, token));
@@ -101,7 +101,7 @@ export class CartController {
 
   @Post('coupon')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Aplicar cupón al carrito (requiere sesión)' })
+  @ApiOperation({ summary: 'Apply a coupon to the cart (requires sign-in)' })
   @ApiOkResponse({ type: CartDto })
   @ApiUnprocessableEntityResponse({
     description:
@@ -118,7 +118,7 @@ export class CartController {
   }
 
   @Delete('coupon')
-  @ApiOperation({ summary: 'Quitar el cupón del carrito' })
+  @ApiOperation({ summary: 'Remove the coupon from the cart' })
   @ApiOkResponse({ type: CartDto })
   removeCoupon(@CurrentUser() user: AuthUser | undefined, @Headers('x-cart-token') token?: string): Promise<CartDto> {
     return this.cart.removeCoupon(this.owner(user, token));
@@ -128,8 +128,8 @@ export class CartController {
   @Authenticated()
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: 'Fusionar un carrito de invitado con el del usuario',
-    description: 'Suma cantidades (limitadas por stock y máximo por producto) y elimina el carrito de invitado.',
+    summary: 'Merge a guest cart into the user cart',
+    description: 'Adds quantities (capped by stock and the per-product maximum) and deletes the guest cart.',
   })
   @ApiOkResponse({ type: CartDto })
   @ApiNotFoundResponse({ description: 'CART_NOT_FOUND', type: ErrorResponseDto })
@@ -145,14 +145,14 @@ export class ShippingController {
   constructor(private readonly shipping: ShippingService) {}
 
   @Get('methods')
-  @ApiOperation({ summary: 'Métodos de envío disponibles' })
+  @ApiOperation({ summary: 'Available shipping methods' })
   @ApiOkResponse({ type: [ShippingMethodDto] })
   methods(): Promise<ShippingMethodDto[]> {
     return this.shipping.methods();
   }
 
   @Get('pickup-points')
-  @ApiOperation({ summary: 'Puntos de recogida (filtrables por ciudad o código postal)' })
+  @ApiOperation({ summary: 'Pickup points (filterable by city or postal code)' })
   @ApiOkResponse({ type: [PickupPointDto] })
   pickupPoints(@Query() query: PickupPointQueryDto): Promise<PickupPointDto[]> {
     return this.shipping.pickupPoints(query);

@@ -73,9 +73,9 @@ export class TokenService {
       return await this.jwt.verifyAsync<AccessTokenPayload>(token);
     } catch (err) {
       if (err instanceof TokenExpiredError) {
-        throw unauthorized(ErrorCode.TOKEN_EXPIRED, 'El token de acceso ha caducado');
+        throw unauthorized(ErrorCode.TOKEN_EXPIRED, 'The access token has expired');
       }
-      throw unauthorized(ErrorCode.TOKEN_INVALID, 'El token de acceso no es válido');
+      throw unauthorized(ErrorCode.TOKEN_INVALID, 'The access token is not valid');
     }
   }
 
@@ -83,18 +83,18 @@ export class TokenService {
   async refresh(refreshToken: string): Promise<{ tokens: IssuedTokens; user: User }> {
     const [sessionId, secret] = refreshToken.split('.');
     if (!sessionId || !secret || !/^[0-9a-f-]{36}$/.test(sessionId)) {
-      throw unauthorized(ErrorCode.REFRESH_TOKEN_INVALID, 'El token de refresco no es válido');
+      throw unauthorized(ErrorCode.REFRESH_TOKEN_INVALID, 'The refresh token is not valid');
     }
     const session = await this.prisma.session.findUnique({ where: { id: sessionId }, include: { user: true } });
     if (!session || !safeEqual(session.refreshTokenHash, sha256(secret))) {
-      throw unauthorized(ErrorCode.REFRESH_TOKEN_INVALID, 'El token de refresco no es válido');
+      throw unauthorized(ErrorCode.REFRESH_TOKEN_INVALID, 'The refresh token is not valid');
     }
-    if (session.revokedAt) throw unauthorized(ErrorCode.SESSION_REVOKED, 'La sesión ha sido cerrada');
+    if (session.revokedAt) throw unauthorized(ErrorCode.SESSION_REVOKED, 'The session has been signed out');
     if (session.expiresAt.getTime() <= Date.now()) {
-      throw unauthorized(ErrorCode.SESSION_EXPIRED, 'La sesión ha caducado. Inicia sesión de nuevo');
+      throw unauthorized(ErrorCode.SESSION_EXPIRED, 'The session has expired. Please sign in again');
     }
     if (session.user.status === UserStatus.DISABLED) {
-      throw forbidden(ErrorCode.ACCOUNT_DISABLED, 'La cuenta está desactivada');
+      throw forbidden(ErrorCode.ACCOUNT_DISABLED, 'The account is disabled');
     }
     await this.prisma.session.update({ where: { id: session.id }, data: { lastUsedAt: new Date() } });
     const expiresIn = this.config.accessTokenTtlSeconds;

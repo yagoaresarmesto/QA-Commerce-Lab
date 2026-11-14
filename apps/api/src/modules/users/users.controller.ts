@@ -31,14 +31,14 @@ export class UsersController {
   constructor(private readonly users: UsersService) {}
 
   @Get()
-  @ApiOperation({ summary: 'Obtener el perfil del usuario autenticado' })
+  @ApiOperation({ summary: 'Get the authenticated user profile' })
   @ApiOkResponse({ type: UserDto })
   me(@CurrentUser() user: AuthUser): Promise<UserDto> {
     return this.users.getMe(user.id);
   }
 
   @Patch()
-  @ApiOperation({ summary: 'Actualizar datos personales', description: 'El email no se puede modificar.' })
+  @ApiOperation({ summary: 'Update personal details', description: 'The e-mail cannot be changed.' })
   @ApiOkResponse({ type: UserDto })
   @ApiBadRequestResponse({ type: ErrorResponseDto })
   updateMe(@CurrentUser() user: AuthUser, @Body() dto: UpdateProfileDto): Promise<UserDto> {
@@ -48,8 +48,8 @@ export class UsersController {
   @Post('password')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({
-    summary: 'Cambiar la contraseña',
-    description: 'Requiere la contraseña actual. Cierra el resto de sesiones del usuario (la actual sigue activa).',
+    summary: 'Change the password',
+    description: 'Requires the current password. Signs out the user\'s other sessions (the current one stays active).',
   })
   @ApiNoContentResponse()
   @ApiBadRequestResponse({
@@ -61,7 +61,7 @@ export class UsersController {
   }
 
   @Get('sessions')
-  @ApiOperation({ summary: 'Listar sesiones activas' })
+  @ApiOperation({ summary: 'List active sessions' })
   @ApiOkResponse({ type: [SessionDto] })
   sessions(@CurrentUser() user: AuthUser): Promise<SessionDto[]> {
     return this.users.listSessions(user.id, user.sessionId);
@@ -69,7 +69,7 @@ export class UsersController {
 
   @Post('sessions/revoke-others')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Cerrar todas las sesiones excepto la actual' })
+  @ApiOperation({ summary: 'Sign out every session except the current one' })
   @ApiOkResponse({ type: RevokedCountDto })
   async revokeOthers(@CurrentUser() user: AuthUser): Promise<RevokedCountDto> {
     return { revoked: await this.users.revokeOtherSessions(user.id, user.sessionId) };
@@ -77,7 +77,7 @@ export class UsersController {
 
   @Delete('sessions/:sessionId')
   @HttpCode(HttpStatus.NO_CONTENT)
-  @ApiOperation({ summary: 'Cerrar una sesión concreta' })
+  @ApiOperation({ summary: 'Sign out a specific session' })
   @ApiNoContentResponse()
   @ApiNotFoundResponse({ type: ErrorResponseDto })
   async revokeSession(@CurrentUser() user: AuthUser, @Param('sessionId', ParseUUIDPipe) sessionId: string): Promise<void> {
@@ -87,7 +87,7 @@ export class UsersController {
   // ─── Addresses ───
 
   @Get('addresses')
-  @ApiOperation({ summary: 'Listar direcciones (la predeterminada primero)' })
+  @ApiOperation({ summary: 'List addresses (default first)' })
   @ApiOkResponse({ type: [AddressDto] })
   addresses(@CurrentUser() user: AuthUser): Promise<AddressDto[]> {
     return this.users.listAddresses(user.id);
@@ -95,8 +95,8 @@ export class UsersController {
 
   @Post('addresses')
   @ApiOperation({
-    summary: 'Crear dirección',
-    description: 'La primera dirección se marca automáticamente como predeterminada. Máximo 10 direcciones.',
+    summary: 'Create an address',
+    description: 'The first address automatically becomes the default. Up to 10 addresses.',
   })
   @ApiCreatedResponse({ type: AddressDto })
   @ApiBadRequestResponse({ type: ErrorResponseDto })
@@ -106,15 +106,15 @@ export class UsersController {
   }
 
   @Get('addresses/:id')
-  @ApiOperation({ summary: 'Obtener una dirección' })
+  @ApiOperation({ summary: 'Get an address' })
   @ApiOkResponse({ type: AddressDto })
-  @ApiNotFoundResponse({ description: 'ADDRESS_NOT_FOUND (también si pertenece a otro usuario)', type: ErrorResponseDto })
+  @ApiNotFoundResponse({ description: 'ADDRESS_NOT_FOUND (also when it belongs to another user)', type: ErrorResponseDto })
   async getAddress(@CurrentUser() user: AuthUser, @Param('id', ParseIntPipe) id: number): Promise<AddressDto> {
     return toAddressDto(await this.users.getAddress(user.id, id));
   }
 
   @Patch('addresses/:id')
-  @ApiOperation({ summary: 'Editar dirección' })
+  @ApiOperation({ summary: 'Update an address' })
   @ApiOkResponse({ type: AddressDto })
   @ApiNotFoundResponse({ type: ErrorResponseDto })
   updateAddress(
@@ -127,7 +127,7 @@ export class UsersController {
 
   @Post('addresses/:id/default')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Marcar dirección como predeterminada' })
+  @ApiOperation({ summary: 'Set an address as default' })
   @ApiOkResponse({ type: AddressDto })
   @ApiNotFoundResponse({ type: ErrorResponseDto })
   setDefault(@CurrentUser() user: AuthUser, @Param('id', ParseIntPipe) id: number): Promise<AddressDto> {
@@ -137,8 +137,8 @@ export class UsersController {
   @Delete('addresses/:id')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({
-    summary: 'Eliminar dirección',
-    description: 'Si era la predeterminada, la más antigua de las restantes pasa a serlo.',
+    summary: 'Delete an address',
+    description: 'If it was the default, the oldest remaining address becomes the default.',
   })
   @ApiNoContentResponse()
   @ApiNotFoundResponse({ type: ErrorResponseDto })

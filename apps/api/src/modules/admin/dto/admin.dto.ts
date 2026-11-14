@@ -72,21 +72,21 @@ export class AdminProductQueryDto {
 }
 
 export class ProductSpecInputDto {
-  @StrictString(1, 60, 'El nombre de la especificación')
+  @StrictString(1, 60, 'Spec name')
   name: string;
 
-  @StrictString(1, 200, 'El valor de la especificación')
+  @StrictString(1, 200, 'Spec value')
   value: string;
 }
 
 export class CreateProductDto {
   @ApiProperty({ example: 'QCL-LAP-9001' })
   @Trim()
-  @Matches(/^[A-Z0-9][A-Z0-9-]{2,39}$/, { message: 'El SKU debe tener 3-40 caracteres en mayúsculas, números o guiones' })
+  @Matches(/^[A-Z0-9][A-Z0-9-]{2,39}$/, { message: 'The SKU must be 3-40 characters long (uppercase letters, digits or hyphens)' })
   sku: string;
 
-  @ApiProperty({ example: 'Portátil Nébula 15 Pro' })
-  @StrictString(3, 150, 'El nombre')
+  @ApiProperty({ example: 'ASUS Vivobook 15 OLED Core i5' })
+  @StrictString(3, 150, 'Name')
   name: string;
 
   @ApiProperty({ example: 1 })
@@ -100,15 +100,15 @@ export class CreateProductDto {
   @Min(1)
   categoryId: number;
 
-  @StrictString(10, 200, 'La descripción corta')
+  @StrictString(10, 200, 'Short description')
   shortDescription: string;
 
-  @StrictString(20, 5000, 'La descripción')
+  @StrictString(20, 5000, 'Description')
   description: string;
 
-  @ApiProperty({ example: 89999, description: 'Precio en céntimos (IVA incluido)' })
-  @IsInt({ message: 'El precio debe ser un número entero de céntimos' })
-  @Min(1, { message: 'El precio debe ser mayor que 0' })
+  @ApiProperty({ example: 89999, description: 'Price in cents (VAT included)' })
+  @IsInt({ message: 'The price must be an integer number of cents' })
+  @Min(1, { message: 'The price must be greater than 0' })
   @Max(100_000_000)
   priceCents: number;
 
@@ -122,8 +122,8 @@ export class CreateProductDto {
   compareAtPriceCents?: number | null;
 
   @ApiProperty({ example: 25 })
-  @IsInt({ message: 'El stock debe ser un número entero' })
-  @Min(0, { message: 'El stock no puede ser negativo' })
+  @IsInt({ message: 'Stock must be an integer' })
+  @Min(0, { message: 'Stock cannot be negative' })
   @Max(100_000)
   stock: number;
 
@@ -148,18 +148,18 @@ export class CreateProductDto {
   @IsArray()
   @ArrayMaxSize(6)
   @IsString({ each: true })
-  @Matches(/^(https?:\/\/|\/api\/media\/)[^\s]{1,500}$/, { each: true, message: 'Cada imagen debe ser una URL http(s) o una ruta /api/media/...' })
+  @Matches(/^(https?:\/\/|\/api\/media\/)[^\s]{1,500}$/, { each: true, message: 'Each image must be an http(s) URL or an /api/media/... path' })
   imageUrls?: string[];
 
   /** Accent colour (hex, without #) for the generated illustration */
   @IsOptional()
-  @Matches(/^[0-9a-fA-F]{6}$/, { message: 'El color debe ser un hexadecimal de 6 dígitos' })
+  @Matches(/^[0-9a-fA-F]{6}$/, { message: 'The color must be a 6-digit hexadecimal value' })
   imageColor?: string;
 }
 
 export class UpdateProductDto {
   @IsOptional()
-  @StrictString(3, 150, 'El nombre')
+  @StrictString(3, 150, 'Name')
   name?: string;
 
   @IsOptional()
@@ -173,16 +173,16 @@ export class UpdateProductDto {
   categoryId?: number;
 
   @IsOptional()
-  @StrictString(10, 200, 'La descripción corta')
+  @StrictString(10, 200, 'Short description')
   shortDescription?: string;
 
   @IsOptional()
-  @StrictString(20, 5000, 'La descripción')
+  @StrictString(20, 5000, 'Description')
   description?: string;
 
   @IsOptional()
-  @IsInt({ message: 'El precio debe ser un número entero de céntimos' })
-  @Min(1, { message: 'El precio debe ser mayor que 0' })
+  @IsInt({ message: 'The price must be an integer number of cents' })
+  @Min(1, { message: 'The price must be greater than 0' })
   @Max(100_000_000)
   priceCents?: number;
 
@@ -196,8 +196,8 @@ export class UpdateProductDto {
 
   /** Absolute stock value. For concurrent-safe changes use POST /admin/products/:id/stock-adjustments */
   @IsOptional()
-  @IsInt({ message: 'El stock debe ser un número entero' })
-  @Min(0, { message: 'El stock no puede ser negativo' })
+  @IsInt({ message: 'Stock must be an integer' })
+  @Min(0, { message: 'Stock cannot be negative' })
   @Max(100_000)
   stock?: number;
 
@@ -221,7 +221,7 @@ export class UpdateProductDto {
   @IsArray()
   @ArrayMaxSize(6)
   @IsString({ each: true })
-  @Matches(/^(https?:\/\/|\/api\/media\/)[^\s]{1,500}$/, { each: true, message: 'Cada imagen debe ser una URL http(s) o una ruta /api/media/...' })
+  @Matches(/^(https?:\/\/|\/api\/media\/)[^\s]{1,500}$/, { each: true, message: 'Each image must be an http(s) URL or an /api/media/... path' })
   imageUrls?: string[];
 }
 
@@ -229,7 +229,7 @@ export class StockAdjustmentDto {
   /** Units to add (positive) or remove (negative). The stock never goes below 0. */
   @ApiProperty({ example: -2 })
   @IsInt()
-  @NotEquals(0, { message: 'El ajuste no puede ser 0' })
+  @NotEquals(0, { message: 'The adjustment cannot be 0' })
   @Min(-100_000)
   @Max(100_000)
   delta: number;
@@ -312,7 +312,7 @@ export class UpdateOrderStatusDto {
 
   /** Optional tracking number when moving to SHIPPED (generated if omitted) */
   @IsOptional()
-  @Matches(/^[A-Z0-9-]{6,40}$/, { message: 'Número de seguimiento no válido' })
+  @Matches(/^[A-Z0-9-]{6,40}$/, { message: 'Invalid tracking number' })
   trackingNumber?: string;
 }
 
@@ -416,12 +416,12 @@ export class AdminCouponQueryDto {
 }
 
 export class CreateCouponDto {
-  @ApiProperty({ example: 'VERANO25' })
+  @ApiProperty({ example: 'SUMMER25' })
   @Transform(({ value }) => (typeof value === 'string' ? value.trim().toUpperCase() : value))
-  @Matches(/^[A-Z0-9_-]{3,30}$/, { message: 'El código debe tener 3-30 caracteres (A-Z, 0-9, _ o -)' })
+  @Matches(/^[A-Z0-9_-]{3,30}$/, { message: 'The code must be 3-30 characters long (A-Z, 0-9, _ or -)' })
   code: string;
 
-  @StrictString(3, 200, 'La descripción')
+  @StrictString(3, 200, 'Description')
   description: string;
 
   @ApiProperty({ enum: CouponType })
@@ -483,7 +483,7 @@ export class CreateCouponDto {
 
 export class UpdateCouponDto {
   @IsOptional()
-  @StrictString(3, 200, 'La descripción')
+  @StrictString(3, 200, 'Description')
   description?: string;
 
   @ApiProperty({ required: false, enum: CouponType })

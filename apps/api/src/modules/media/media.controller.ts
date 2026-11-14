@@ -24,7 +24,7 @@ export class MediaController {
     const kind = (ILLUSTRATION_KINDS as readonly string[]).includes(name)
       ? (name as IllustrationKind)
       : CATEGORY_KIND[name];
-    if (!kind) throw notFound(ErrorCode.NOT_FOUND, 'Imagen no encontrada');
+    if (!kind) throw notFound(ErrorCode.NOT_FOUND, 'Image not found');
     return renderProductIllustration(kind, color, Number.parseInt(variant, 10) || 0, label, bg === '0');
   }
 }

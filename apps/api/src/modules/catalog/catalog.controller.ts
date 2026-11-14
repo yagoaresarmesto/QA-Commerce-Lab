@@ -27,7 +27,7 @@ export class CatalogController {
   ) {}
 
   @Get('home')
-  @ApiOperation({ summary: 'Contenido de la página principal (banners, destacados, ofertas, novedades...)' })
+  @ApiOperation({ summary: 'Home page content (banners, featured products, deals, new arrivals...)' })
   @ApiOkResponse({ type: HomeResponseDto })
   home(): Promise<HomeResponseDto> {
     return this.homeService.home();
@@ -35,11 +35,11 @@ export class CatalogController {
 
   @Get('products')
   @ApiOperation({
-    summary: 'Listar/buscar productos',
+    summary: 'List/search products',
     description:
-      'Filtros combinables (q, category, brand, precio, stock, ofertas, valoración), ordenación determinista y paginación. ' +
-      'Incluye facetas (marcas, categorías, rango de precios) calculadas sobre los filtros aplicados. ' +
-      'Solo devuelve productos activos.',
+      'Combinable filters (q, category, brand, price, stock, on sale, rating), deterministic sorting and pagination. ' +
+      'Includes facets (brands, categories, price range) computed over the applied filters. ' +
+      'Only active products are returned.',
   })
   @ApiOkResponse({ type: ProductListResponseDto })
   @ApiBadRequestResponse({ type: ErrorResponseDto })
@@ -49,7 +49,7 @@ export class CatalogController {
   }
 
   @Get('products/suggestions')
-  @ApiOperation({ summary: 'Sugerencias de búsqueda (autocompletado)' })
+  @ApiOperation({ summary: 'Search suggestions (autocomplete)' })
   @ApiOkResponse({ type: SuggestionsResponseDto })
   suggestions(@Query() query: SuggestionsQueryDto): Promise<SuggestionsResponseDto> {
     return this.products.suggestions(query.q);
@@ -57,8 +57,8 @@ export class CatalogController {
 
   @Get('products/:idOrSlug')
   @ApiOperation({
-    summary: 'Detalle de producto por id o slug',
-    description: 'Los productos desactivados también se devuelven (availability = DISCONTINUED) pero no se pueden comprar.',
+    summary: 'Product detail by id or slug',
+    description: 'Deactivated products are also returned (availability = DISCONTINUED) but cannot be purchased.',
   })
   @ApiParam({ name: 'idOrSlug', example: '1' })
   @ApiOkResponse({ type: ProductDetailDto })
@@ -68,21 +68,21 @@ export class CatalogController {
   }
 
   @Get('products/:idOrSlug/related')
-  @ApiOperation({ summary: 'Productos relacionados (misma categoría, más vendidos)' })
+  @ApiOperation({ summary: 'Related products (same category, best sellers)' })
   @ApiOkResponse({ type: [ProductSummaryDto] })
   related(@Param('idOrSlug') idOrSlug: string): Promise<ProductSummaryDto[]> {
     return this.products.related(idOrSlug);
   }
 
   @Get('categories')
-  @ApiOperation({ summary: 'Árbol de categorías con número de productos activos' })
+  @ApiOperation({ summary: 'Category tree with the number of active products' })
   @ApiOkResponse({ type: [CategoryNodeDto] })
   categoriesTree(): Promise<CategoryNodeDto[]> {
     return this.categories.tree();
   }
 
   @Get('categories/:slug')
-  @ApiOperation({ summary: 'Detalle de categoría' })
+  @ApiOperation({ summary: 'Category detail' })
   @ApiOkResponse({ type: CategoryDetailDto })
   @ApiNotFoundResponse({ description: 'CATEGORY_NOT_FOUND', type: ErrorResponseDto })
   category(@Param('slug') slug: string): Promise<CategoryDetailDto> {
@@ -90,7 +90,7 @@ export class CatalogController {
   }
 
   @Get('brands')
-  @ApiOperation({ summary: 'Marcas (opcionalmente filtradas por categoría)' })
+  @ApiOperation({ summary: 'Brands (optionally filtered by category)' })
   @ApiOkResponse({ type: [BrandWithCountDto] })
   brands(@Query() query: BrandsQueryDto): Promise<BrandWithCountDto[]> {
     return this.categories.brands(query.category);

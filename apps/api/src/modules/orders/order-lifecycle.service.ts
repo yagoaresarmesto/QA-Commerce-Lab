@@ -55,27 +55,27 @@ export class OrderLifecycleService {
     emails: OutgoingEmail[],
   ): Promise<Order> {
     const order = await tx.order.findUnique({ where: { id: orderId }, include: { items: true, user: true } });
-    if (!order) throw notFound(ErrorCode.ORDER_NOT_FOUND, 'Pedido no encontrado');
+    if (!order) throw notFound(ErrorCode.ORDER_NOT_FOUND, 'Order not found');
     const from = order.status;
     const now = opts.at ?? new Date();
 
     if (!opts.force && !canTransition(from, to, actor.type)) {
       const code = to === OrderStatus.CANCELLED ? ErrorCode.ORDER_NOT_CANCELLABLE : to === OrderStatus.RETURN_REQUESTED ? ErrorCode.ORDER_NOT_RETURNABLE : ErrorCode.INVALID_STATUS_TRANSITION;
-      throw conflict(code, `No se puede pasar un pedido de "${ORDER_STATUS_LABELS[from]}" a "${ORDER_STATUS_LABELS[to]}"`, {
+      throw conflict(code, `An order cannot move from "${ORDER_STATUS_LABELS[from]}" to "${ORDER_STATUS_LABELS[to]}"`, {
         from,
         to,
         allowed: allowedTransitions(from, actor.type),
       });
     }
     if (to === OrderStatus.CANCELLED && order.paymentStatus === OrderPaymentStatus.PROCESSING) {
-      throw conflict(ErrorCode.PAYMENT_IN_PROGRESS, 'Hay un pago en curso. Espera a que se resuelva antes de cancelar');
+      throw conflict(ErrorCode.PAYMENT_IN_PROGRESS, 'A payment is in progress. Wait until it is resolved before cancelling');
     }
     if (to === OrderStatus.RETURN_REQUESTED && !opts.force) {
       const deadline = returnDeadline(order, this.config.orders.returnWindowDays);
       if (!deadline || deadline <= now) {
         throw unprocessable(
           ErrorCode.RETURN_WINDOW_EXPIRED,
-          `El plazo de devolución (${this.config.orders.returnWindowDays} días desde la entrega) ha finalizado`,
+          `The return window (${this.config.orders.returnWindowDays} days from delivery) has ended`,
           { returnDeadline: deadline },
         );
       }
@@ -115,7 +115,7 @@ export class OrderLifecycleService {
     // Optimistic concurrency: the update only succeeds if nobody changed the status meanwhile.
     const updated = await tx.order.updateMany({ where: { id: orderId, status: from }, data });
     if (updated.count === 0) {
-      throw conflict(ErrorCode.CONFLICT, 'El pedido ha cambiado mientras se procesaba la operación. Vuelve a cargarlo');
+      throw conflict(ErrorCode.CONFLICT, 'The order changed while the operation was being processed. Please reload it');
     }
 
     const wasSalesCounted = SALES_COUNTED_STATUSES.includes(from);
@@ -149,7 +149,7 @@ export class OrderLifecycleService {
       } else {
         await tx.payment.updateMany({
           where: { orderId, status: PaymentStatus.PENDING },
-          data: { status: PaymentStatus.FAILED, failureCode: 'order_cancelled', failureMessage: 'Pedido cancelado', resolvedAt: now },
+          data: { status: PaymentStatus.FAILED, failureCode: 'order_cancelled', failureMessage: 'Order cancelled', resolvedAt: now },
         });
       }
       // A cancelled order releases its coupon redemption
@@ -191,17 +191,17 @@ export class OrderLifecycleService {
     const base = { to };
     switch (status) {
       case OrderStatus.PAID:
-        return { ...base, template: 'order-paid', subject: `Pedido ${orderNumber} confirmado`, text: `Hola ${name}, hemos recibido el pago de tu pedido ${orderNumber} (${formatEur(totalCents)}). Te avisaremos cuando salga del almacén.` };
+        return { ...base, template: 'order-paid', subject: `Order ${orderNumber} confirmed`, text: `Hi ${name}, we have received the payment for your order ${orderNumber} (${formatEur(totalCents)}). We will let you know when it leaves our warehouse.` };
       case OrderStatus.SHIPPED:
-        return { ...base, template: 'order-shipped', subject: `Tu pedido ${orderNumber} está en camino`, text: `Hola ${name}, tu pedido ${orderNumber} ha sido enviado. Número de seguimiento: ${tracking ?? '-'}.` };
+        return { ...base, template: 'order-shipped', subject: `Your order ${orderNumber} is on its way`, text: `Hi ${name}, your order ${orderNumber} has been shipped. Tracking number: ${tracking ?? '-'}.` };
       case OrderStatus.DELIVERED:
-        return { ...base, template: 'order-delivered', subject: `Pedido ${orderNumber} entregado`, text: `Hola ${name}, tu pedido ${orderNumber} ha sido entregado. Dispones de ${this.config.orders.returnWindowDays} días para devolverlo.` };
+        return { ...base, template: 'order-delivered', subject: `Order ${orderNumber} delivered`, text: `Hi ${name}, your order ${orderNumber} has been delivered. You have ${this.config.orders.returnWindowDays} days to return it.` };
       case OrderStatus.CANCELLED:
-        return { ...base, template: 'order-cancelled', subject: `Pedido ${orderNumber} cancelado`, text: `Hola ${name}, tu pedido ${orderNumber} ha sido cancelado. Si estaba pagado, recibirás el reembolso de ${formatEur(totalCents)}.` };
+        return { ...base, template: 'order-cancelled', subject: `Order ${orderNumber} cancelled`, text: `Hi ${name}, your order ${orderNumber} has been cancelled. If it was paid, you will be refunded ${formatEur(totalCents)}.` };
       case OrderStatus.RETURN_REQUESTED:
-        return { ...base, template: 'return-requested', subject: `Devolución solicitada · ${orderNumber}`, text: `Hola ${name}, hemos registrado tu solicitud de devolución del pedido ${orderNumber}.` };
+        return { ...base, template: 'return-requested', subject: `Return requested · ${orderNumber}`, text: `Hi ${name}, we have registered your return request for order ${orderNumber}.` };
       case OrderStatus.RETURNED:
-        return { ...base, template: 'order-returned', subject: `Devolución completada · ${orderNumber}`, text: `Hola ${name}, hemos procesado la devolución del pedido ${orderNumber} y reembolsado ${formatEur(totalCents)}.` };
+        return { ...base, template: 'order-returned', subject: `Return completed · ${orderNumber}`, text: `Hi ${name}, we have processed the return of order ${orderNumber} and refunded ${formatEur(totalCents)}.` };
       default:
         return null;
     }

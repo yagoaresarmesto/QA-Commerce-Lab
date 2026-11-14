@@ -46,9 +46,9 @@ export class PaymentsService {
     if (acquired.count === 0) {
       const current = await this.prisma.order.findUniqueOrThrow({ where: { id: order.id } });
       if (current.paymentStatus === OrderPaymentStatus.PROCESSING) {
-        throw conflict(ErrorCode.PAYMENT_IN_PROGRESS, 'Ya hay un pago en curso para este pedido');
+        throw conflict(ErrorCode.PAYMENT_IN_PROGRESS, 'A payment is already in progress for this order');
       }
-      throw conflict(ErrorCode.ORDER_NOT_PAYABLE, 'El pedido no admite nuevos pagos', {
+      throw conflict(ErrorCode.ORDER_NOT_PAYABLE, 'The order does not accept new payments', {
         status: current.status,
         paymentStatus: current.paymentStatus,
       });
@@ -83,12 +83,12 @@ export class PaymentsService {
     await this.mail.send(
       {
         to: user.email,
-        subject: `Instrucciones de pago · ${order.orderNumber}`,
+        subject: `Payment instructions · ${order.orderNumber}`,
         template: 'bank-transfer-instructions',
         text:
-          `Hola ${user.firstName}, para completar tu pedido ${order.orderNumber} realiza una transferencia de ` +
-          `${formatEur(order.totalCents)} a la cuenta ES00 0000 0000 0000 0000 0000 (QA Commerce Lab, cuenta ficticia) ` +
-          `indicando la referencia ${payment.providerReference}. Reservamos tus productos durante ${this.config.orders.bankTransferReservationHours} horas.`,
+          `Hi ${user.firstName}, to complete your order ${order.orderNumber} please make a bank transfer of ` +
+          `${formatEur(order.totalCents)} to the account ES00 0000 0000 0000 0000 0000 (QA Commerce Lab, fictional account) ` +
+          `quoting the reference ${payment.providerReference}. We will hold your products for ${this.config.orders.bankTransferReservationHours} hours.`,
         metadata: { orderId: order.id, reference: payment.providerReference },
       },
       order.testRunId,
@@ -133,8 +133,8 @@ export class PaymentsService {
           data: { resolveAt: new Date(Date.now() + this.config.payments.pendingDelayMs) },
         });
       case 'processing_error': {
-        const failed = await this.fail(payment.id, PaymentStatus.FAILED, 'processing_error', 'Error de procesamiento en la pasarela');
-        throw new AppException(HttpStatus.BAD_GATEWAY, ErrorCode.PAYMENT_PROCESSING_ERROR, 'La pasarela de pago no ha podido procesar el pago. Puedes reintentarlo', {
+        const failed = await this.fail(payment.id, PaymentStatus.FAILED, 'processing_error', 'Gateway processing error');
+        throw new AppException(HttpStatus.BAD_GATEWAY, ErrorCode.PAYMENT_PROCESSING_ERROR, 'The payment gateway could not process the payment. You can try again', {
           orderId: order.id,
           orderNumber: order.orderNumber,
           paymentId: failed.id,
@@ -142,8 +142,8 @@ export class PaymentsService {
       }
       case 'timeout': {
         await sleep(this.config.payments.timeoutDelayMs);
-        const failed = await this.fail(payment.id, PaymentStatus.FAILED, 'gateway_timeout', 'La pasarela no respondió a tiempo');
-        throw new AppException(HttpStatus.GATEWAY_TIMEOUT, ErrorCode.PAYMENT_GATEWAY_TIMEOUT, 'La pasarela de pago no ha respondido a tiempo. Comprueba el estado del pedido antes de reintentar', {
+        const failed = await this.fail(payment.id, PaymentStatus.FAILED, 'gateway_timeout', 'The gateway did not respond in time');
+        throw new AppException(HttpStatus.GATEWAY_TIMEOUT, ErrorCode.PAYMENT_GATEWAY_TIMEOUT, 'The payment gateway did not respond in time. Check the order status before retrying', {
           orderId: order.id,
           orderNumber: order.orderNumber,
           paymentId: failed.id,
@@ -163,12 +163,12 @@ export class PaymentsService {
       // Any other pending attempt (e.g. an abandoned bank transfer) is superseded by this payment.
       await this.prisma.payment.updateMany({
         where: { orderId: payment.orderId, id: { not: paymentId }, status: PaymentStatus.PENDING },
-        data: { status: PaymentStatus.FAILED, failureCode: 'superseded', failureMessage: 'Sustituido por otro pago', resolvedAt: new Date() },
+        data: { status: PaymentStatus.FAILED, failureCode: 'superseded', failureMessage: 'Superseded by another payment', resolvedAt: new Date() },
       });
     }
     if (res.count === 1 && payment.order.status === OrderStatus.PENDING) {
       await this.lifecycle.transition(payment.orderId, OrderStatus.PAID, { type: actor, userId: actorUserId }, {
-        note: payment.method === PaymentMethod.BANK_TRANSFER ? 'Transferencia recibida' : `Pago con tarjeta ${payment.cardBrand} ****${payment.cardLast4}`,
+        note: payment.method === PaymentMethod.BANK_TRANSFER ? 'Bank transfer received' : `Card payment ${payment.cardBrand} ****${payment.cardLast4}`,
       });
     }
     const { order: _order, ...rest } = payment;
@@ -195,14 +195,14 @@ export class PaymentsService {
   /** Resolves a PENDING card payment (used by the background job and the testing API). */
   async resolvePending(paymentId: number, forced?: 'APPROVED' | 'DECLINED'): Promise<Payment> {
     const payment = await this.prisma.payment.findUnique({ where: { id: paymentId } });
-    if (!payment) throw notFound(ErrorCode.PAYMENT_NOT_FOUND, 'Pago no encontrado');
+    if (!payment) throw notFound(ErrorCode.PAYMENT_NOT_FOUND, 'Payment not found');
     if (payment.status !== PaymentStatus.PENDING) {
-      throw conflict(ErrorCode.CONFLICT, 'El pago ya está resuelto', { status: payment.status });
+      throw conflict(ErrorCode.CONFLICT, 'The payment is already resolved', { status: payment.status });
     }
     const final =
       forced ?? (payment.scenario === 'PENDING_THEN_DECLINED' ? 'DECLINED' : 'APPROVED');
     if (final === 'APPROVED') return this.approve(payment.id);
-    return this.fail(payment.id, PaymentStatus.DECLINED, 'card_declined', 'La entidad emisora ha rechazado el pago tras la revisión');
+    return this.fail(payment.id, PaymentStatus.DECLINED, 'card_declined', 'The card issuer declined the payment after review');
   }
 
   async resolveDuePendingPayments(): Promise<number> {
@@ -226,10 +226,10 @@ export class PaymentsService {
   /** Admin confirms a bank transfer for a pending order. */
   async confirmBankTransfer(orderId: number, adminId: number): Promise<void> {
     const order = await this.prisma.order.findUnique({ where: { id: orderId }, include: { payments: true } });
-    if (!order) throw notFound(ErrorCode.ORDER_NOT_FOUND, 'Pedido no encontrado');
+    if (!order) throw notFound(ErrorCode.ORDER_NOT_FOUND, 'Order not found');
     const pending = order.payments.find((p) => p.method === PaymentMethod.BANK_TRANSFER && p.status === PaymentStatus.PENDING);
     if (order.status !== OrderStatus.PENDING || !pending) {
-      throw conflict(ErrorCode.ORDER_NOT_PAYABLE, 'El pedido no tiene una transferencia pendiente de confirmar', {
+      throw conflict(ErrorCode.ORDER_NOT_PAYABLE, 'The order has no pending bank transfer to confirm', {
         status: order.status,
         paymentStatus: order.paymentStatus,
       });

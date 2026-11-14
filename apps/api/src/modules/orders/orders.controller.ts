@@ -35,15 +35,15 @@ const IDEMPOTENCY_HEADER = {
   name: 'Idempotency-Key',
   required: false,
   description:
-    'Clave única (8-100 caracteres [A-Za-z0-9_.:-]) por intento de compra. Repetir la petición con la misma clave devuelve ' +
-    'el resultado original (200 + cabecera Idempotent-Replayed: true) en lugar de crear un duplicado.',
+    'Unique key (8-100 characters [A-Za-z0-9_.:-]) per purchase attempt. Repeating the request with the same key returns ' +
+    'the original result (200 + Idempotent-Replayed: true header) instead of creating a duplicate.',
 };
 
 function checkIdempotencyKey(key: string | undefined): string | undefined {
   if (key === undefined || key === '') return undefined;
   if (!IDEMPOTENCY_KEY_PATTERN.test(key)) {
-    throw badRequest(ErrorCode.VALIDATION_ERROR, 'Idempotency-Key no válida', [
-      { field: 'Idempotency-Key', message: 'Debe tener entre 8 y 100 caracteres [A-Za-z0-9_.:-]' },
+    throw badRequest(ErrorCode.VALIDATION_ERROR, 'Invalid Idempotency-Key', [
+      { field: 'Idempotency-Key', message: 'Must be 8-100 characters [A-Za-z0-9_.:-]' },
     ]);
   }
   return key;
@@ -58,8 +58,8 @@ export class CheckoutController {
   @Post('quote')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: 'Presupuesto del pedido',
-    description: 'Calcula en el servidor subtotal, descuento, envío, IVA y total para el carrito actual y el método de envío elegido.',
+    summary: 'Order quote',
+    description: 'Computes on the server the subtotal, discount, shipping, VAT and total for the current cart and the selected shipping method.',
   })
   @ApiOkResponse({ type: CheckoutQuoteResponseDto })
   @ApiUnprocessableEntityResponse({ description: 'CART_EMPTY | SHIPPING_METHOD_NOT_FOUND | PICKUP_POINT_REQUIRED', type: ErrorResponseDto })
@@ -77,15 +77,15 @@ export class OrdersController {
   @Post()
   @ApiHeader(IDEMPOTENCY_HEADER)
   @ApiOperation({
-    summary: 'Crear pedido (checkout) y procesar el pago',
+    summary: 'Create an order (checkout) and process the payment',
     description:
-      'Convierte el carrito del usuario en un pedido de forma transaccional (bloqueo del carrito, validación de stock, ' +
-      'descuento atómico de inventario, cupón, vaciado del carrito) y ejecuta el primer intento de pago con el simulador. ' +
-      'Un pago rechazado NO es un error HTTP: el pedido queda PENDING con paymentStatus FAILED y puede pagarse de nuevo. ' +
-      'Errores de pasarela (502/504) se devuelven después de crear el pedido (details.orderId).',
+      'Transactionally turns the user cart into an order (cart lock, stock validation, ' +
+      'atomic inventory decrement, coupon, cart emptying) and runs the first payment attempt with the simulator. ' +
+      'A declined payment is NOT an HTTP error: the order stays PENDING with paymentStatus FAILED and can be paid again. ' +
+      'Gateway errors (502/504) are returned after the order has been created (details.orderId).',
   })
   @ApiCreatedResponse({ type: OrderPaymentResultDto })
-  @ApiOkResponse({ description: 'Repetición idempotente (Idempotent-Replayed: true)', type: OrderPaymentResultDto })
+  @ApiOkResponse({ description: 'Idempotent replay (Idempotent-Replayed: true)', type: OrderPaymentResultDto })
   @ApiNotFoundResponse({ description: 'ADDRESS_NOT_FOUND | PICKUP_POINT_NOT_FOUND', type: ErrorResponseDto })
   @ApiConflictResponse({ description: 'INSUFFICIENT_STOCK | PRICE_CHANGED', type: ErrorResponseDto })
   @ApiUnprocessableEntityResponse({
@@ -93,8 +93,8 @@ export class OrdersController {
       'CART_EMPTY | CART_HAS_ISSUES | COUPON_* | CARD_INVALID | CARD_EXPIRED | CARD_NOT_ALLOWED | CARD_DETAILS_REQUIRED | IDEMPOTENCY_KEY_REUSED',
     type: ErrorResponseDto,
   })
-  @ApiBadGatewayResponse({ description: 'PAYMENT_PROCESSING_ERROR (pedido creado, pago fallido)', type: ErrorResponseDto })
-  @ApiGatewayTimeoutResponse({ description: 'PAYMENT_GATEWAY_TIMEOUT (pedido creado, pago fallido)', type: ErrorResponseDto })
+  @ApiBadGatewayResponse({ description: 'PAYMENT_PROCESSING_ERROR (order created, payment failed)', type: ErrorResponseDto })
+  @ApiGatewayTimeoutResponse({ description: 'PAYMENT_GATEWAY_TIMEOUT (order created, payment failed)', type: ErrorResponseDto })
   async create(
     @CurrentUser() user: AuthUser,
     @Body() dto: CreateOrderDto,
@@ -108,17 +108,17 @@ export class OrdersController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'Historial de pedidos del usuario (más recientes primero)' })
+  @ApiOperation({ summary: 'User order history (most recent first)' })
   @ApiOkResponse({ type: OrderListResponseDto })
   list(@CurrentUser() user: AuthUser, @Query() query: OrderListQueryDto): Promise<OrderListResponseDto> {
     return this.orders.list(user.id, query);
   }
 
   @Get(':idOrNumber')
-  @ApiOperation({ summary: 'Detalle de un pedido propio (por id o número de pedido)' })
+  @ApiOperation({ summary: 'Detail of one of your orders (by id or order number)' })
   @ApiParam({ name: 'idOrNumber', example: '1' })
   @ApiOkResponse({ type: OrderDto })
-  @ApiNotFoundResponse({ description: 'ORDER_NOT_FOUND (también para pedidos de otros usuarios)', type: ErrorResponseDto })
+  @ApiNotFoundResponse({ description: 'ORDER_NOT_FOUND (also for orders of other users)', type: ErrorResponseDto })
   get(@CurrentUser() user: AuthUser, @Param('idOrNumber') idOrNumber: string): Promise<OrderDto> {
     return this.orders.getForUser(user.id, idOrNumber);
   }
@@ -126,8 +126,8 @@ export class OrdersController {
   @Post(':idOrNumber/payments')
   @ApiHeader(IDEMPOTENCY_HEADER)
   @ApiOperation({
-    summary: 'Reintentar el pago de un pedido pendiente',
-    description: 'Permitido mientras el pedido esté PENDING, sin pago en curso y con la reserva de stock vigente.',
+    summary: 'Retry the payment of a pending order',
+    description: 'Allowed while the order is PENDING, with no payment in progress and the stock reservation still valid.',
   })
   @ApiCreatedResponse({ type: OrderPaymentResultDto })
   @ApiConflictResponse({ description: 'ORDER_NOT_PAYABLE | PAYMENT_IN_PROGRESS', type: ErrorResponseDto })
@@ -150,8 +150,8 @@ export class OrdersController {
   @Post(':idOrNumber/cancel')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: 'Cancelar pedido',
-    description: 'Solo en estado PENDING o PAID y sin pago en curso. Restaura el stock, reembolsa si estaba pagado y libera el cupón.',
+    summary: 'Cancel an order',
+    description: 'Only in PENDING or PAID status with no payment in progress. Restores stock, refunds if paid and releases the coupon.',
   })
   @ApiOkResponse({ type: OrderDto })
   @ApiConflictResponse({ description: 'ORDER_NOT_CANCELLABLE | PAYMENT_IN_PROGRESS', type: ErrorResponseDto })
@@ -161,7 +161,7 @@ export class OrdersController {
 
   @Post(':idOrNumber/return')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Solicitar devolución', description: 'Solo pedidos DELIVERED dentro del plazo de devolución (RETURN_WINDOW_DAYS).' })
+  @ApiOperation({ summary: 'Request a return', description: 'Only DELIVERED orders within the return window (RETURN_WINDOW_DAYS).' })
   @ApiOkResponse({ type: OrderDto })
   @ApiConflictResponse({ description: 'ORDER_NOT_RETURNABLE', type: ErrorResponseDto })
   @ApiUnprocessableEntityResponse({ description: 'RETURN_WINDOW_EXPIRED', type: ErrorResponseDto })

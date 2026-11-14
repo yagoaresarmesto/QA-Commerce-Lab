@@ -54,7 +54,7 @@ describe('QA Commerce Lab API (integration)', () => {
 
   it('filters, sorts and paginates on the server', async () => {
     const res = await request(app.getHttpServer())
-      .get('/api/products?category=componentes&sort=price_asc&inStock=true&pageSize=10')
+      .get('/api/products?category=components&sort=price_asc&inStock=true&pageSize=10')
       .expect(200);
     const prices = res.body.data.map((p: { priceCents: number }) => p.priceCents);
     expect([...prices].sort((a, b) => a - b)).toEqual(prices);

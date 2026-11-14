@@ -23,11 +23,11 @@ export class CardDetailsDto {
   /** Test card number (see docs/TESTING.md). Real cards are rejected. */
   @ApiProperty({ example: '4242 4242 4242 4242' })
   @IsString()
-  @Matches(/^[\d\s-]{12,23}$/, { message: 'El número de tarjeta no es válido' })
+  @Matches(/^[\d\s-]{12,23}$/, { message: 'The card number is not valid' })
   number: string;
 
   @ApiProperty({ example: 'ANA GARCIA' })
-  @StrictString(2, 80, 'El titular')
+  @StrictString(2, 80, 'Cardholder name')
   holderName: string;
 
   @ApiProperty({ example: 12 })
@@ -43,7 +43,7 @@ export class CardDetailsDto {
   expYear: number;
 
   @ApiProperty({ example: '123' })
-  @Matches(/^\d{3,4}$/, { message: 'El CVC debe tener 3 o 4 dígitos' })
+  @Matches(/^\d{3,4}$/, { message: 'The CVC must have 3 or 4 digits' })
   cvc: string;
 }
 
@@ -55,7 +55,7 @@ export class PaymentInputDto {
   /** Required when paymentMethod = CARD */
   @ApiProperty({ required: false, type: CardDetailsDto })
   @ValidateIf((o: PaymentInputDto) => o.paymentMethod === PaymentMethod.CARD)
-  @IsNotEmpty({ message: 'Los datos de la tarjeta son obligatorios para pagar con tarjeta' })
+  @IsNotEmpty({ message: 'Card details are required to pay by card' })
   @ValidateNested()
   @Type(() => CardDetailsDto)
   card?: CardDetailsDto;
@@ -70,7 +70,7 @@ export class CheckoutQuoteDto {
 
   @ApiProperty({ example: 'STANDARD', enum: ['STANDARD', 'EXPRESS', 'PICKUP'] })
   @IsString()
-  @IsIn(['STANDARD', 'EXPRESS', 'PICKUP'], { message: 'Método de envío no válido' })
+  @IsIn(['STANDARD', 'EXPRESS', 'PICKUP'], { message: 'Invalid shipping method' })
   shippingMethodCode: string;
 
   /** Required for PICKUP */
@@ -82,13 +82,13 @@ export class CheckoutQuoteDto {
 
 export class CreateOrderDto extends PaymentInputDto {
   @ApiProperty({ example: 1 })
-  @IsInt({ message: 'Selecciona una dirección de envío' })
+  @IsInt({ message: 'Select a shipping address' })
   @Min(1)
   addressId: number;
 
   @ApiProperty({ example: 'STANDARD', enum: ['STANDARD', 'EXPRESS', 'PICKUP'] })
   @IsString()
-  @IsIn(['STANDARD', 'EXPRESS', 'PICKUP'], { message: 'Método de envío no válido' })
+  @IsIn(['STANDARD', 'EXPRESS', 'PICKUP'], { message: 'Invalid shipping method' })
   shippingMethodCode: string;
 
   @IsOptional()
@@ -121,8 +121,8 @@ export class CancelOrderDto {
 }
 
 export class ReturnOrderDto {
-  @ApiProperty({ example: 'El producto no cumple mis expectativas' })
-  @StrictString(5, 500, 'El motivo')
+  @ApiProperty({ example: 'The product does not meet my expectations' })
+  @StrictString(5, 500, 'Reason')
   reason: string;
 }
 

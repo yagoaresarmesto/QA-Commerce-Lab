@@ -17,7 +17,7 @@ export class TestApiGuard implements CanActivate {
     const req = context.switchToHttp().getRequest<Request>();
     const key = req.header('x-test-api-key');
     if (!key || !safeEqual(key, this.config.testApi.key)) {
-      throw unauthorized(ErrorCode.TEST_API_KEY_INVALID, 'Falta la cabecera X-Test-Api-Key o no es válida');
+      throw unauthorized(ErrorCode.TEST_API_KEY_INVALID, 'The X-Test-Api-Key header is missing or invalid');
     }
     return true;
   }

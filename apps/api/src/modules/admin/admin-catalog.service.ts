@@ -59,7 +59,7 @@ export class AdminCatalogService {
 
   async get(id: number): Promise<AdminProductDto> {
     const p = await this.prisma.product.findUnique({ where: { id }, include: detailInclude });
-    if (!p) throw notFound(ErrorCode.PRODUCT_NOT_FOUND, 'Producto no encontrado');
+    if (!p) throw notFound(ErrorCode.PRODUCT_NOT_FOUND, 'Product not found');
     return this.toAdminDto(p);
   }
 
@@ -72,17 +72,17 @@ export class AdminCatalogService {
       db.brand.findUnique({ where: { id: brandId } }),
       db.category.findUnique({ where: { id: categoryId }, include: { children: { select: { id: true } } } }),
     ]);
-    if (!brand) throw notFound(ErrorCode.BRAND_NOT_FOUND, 'Marca no encontrada');
-    if (!category) throw notFound(ErrorCode.CATEGORY_NOT_FOUND, 'Categoría no encontrada');
+    if (!brand) throw notFound(ErrorCode.BRAND_NOT_FOUND, 'Brand not found');
+    if (!category) throw notFound(ErrorCode.CATEGORY_NOT_FOUND, 'Category not found');
     if (category.children.length > 0) {
-      throw unprocessable(ErrorCode.CATEGORY_NOT_ASSIGNABLE, 'Los productos deben asignarse a una subcategoría (categoría sin hijas)');
+      throw unprocessable(ErrorCode.CATEGORY_NOT_ASSIGNABLE, 'Products must be assigned to a leaf category (one without subcategories)');
     }
     return { brand, category };
   }
 
   private assertPrices(price: number, compareAt: number | null | undefined): void {
     if (compareAt !== null && compareAt !== undefined && compareAt <= price) {
-      throw unprocessable(ErrorCode.INVALID_PRICE, 'El precio anterior debe ser mayor que el precio actual', {
+      throw unprocessable(ErrorCode.INVALID_PRICE, 'The compare-at price must be greater than the current price', {
         priceCents: price,
         compareAtPriceCents: compareAt,
       });
@@ -93,7 +93,7 @@ export class AdminCatalogService {
     this.assertPrices(dto.priceCents, dto.compareAtPriceCents);
     const { brand, category } = await this.resolveRelations(this.prisma, dto.brandId, dto.categoryId);
     if (await this.prisma.product.findUnique({ where: { sku: dto.sku } })) {
-      throw conflict(ErrorCode.SKU_ALREADY_EXISTS, `Ya existe un producto con el SKU ${dto.sku}`);
+      throw conflict(ErrorCode.SKU_ALREADY_EXISTS, `A product with SKU ${dto.sku} already exists`);
     }
     let slug = slugify(dto.name);
     if (await this.prisma.product.findUnique({ where: { slug } })) slug = `${slug}-${dto.sku.toLowerCase()}`;
@@ -129,7 +129,7 @@ export class AdminCatalogService {
 
   async update(id: number, dto: UpdateProductDto): Promise<AdminProductDto> {
     const current = await this.prisma.product.findUnique({ where: { id }, include: { brand: true, category: true } });
-    if (!current) throw notFound(ErrorCode.PRODUCT_NOT_FOUND, 'Producto no encontrado');
+    if (!current) throw notFound(ErrorCode.PRODUCT_NOT_FOUND, 'Product not found');
     const price = dto.priceCents ?? current.priceCents;
     const compareAt = dto.compareAtPriceCents !== undefined ? dto.compareAtPriceCents : current.compareAtPriceCents;
     this.assertPrices(price, compareAt);
@@ -176,8 +176,8 @@ export class AdminCatalogService {
     });
     if (res.count === 0) {
       const p = await this.prisma.product.findUnique({ where: { id } });
-      if (!p) throw notFound(ErrorCode.PRODUCT_NOT_FOUND, 'Producto no encontrado');
-      throw conflict(ErrorCode.INSUFFICIENT_STOCK, 'El stock no puede quedar en negativo', { availableStock: p.stock, delta });
+      if (!p) throw notFound(ErrorCode.PRODUCT_NOT_FOUND, 'Product not found');
+      throw conflict(ErrorCode.INSUFFICIENT_STOCK, 'Stock cannot go below zero', { availableStock: p.stock, delta });
     }
     return this.get(id);
   }

@@ -73,13 +73,13 @@ export class OrdersService {
       ? { id: Number(idOrNumber), userId }
       : { orderNumber: idOrNumber.toUpperCase(), userId };
     const order = await this.prisma.order.findFirst({ where, include: orderDetailInclude });
-    if (!order) throw notFound(ErrorCode.ORDER_NOT_FOUND, 'Pedido no encontrado');
+    if (!order) throw notFound(ErrorCode.ORDER_NOT_FOUND, 'Order not found');
     return order;
   }
 
   async getById(id: number): Promise<OrderDto> {
     const order = await this.prisma.order.findUnique({ where: { id }, include: orderDetailInclude });
-    if (!order) throw notFound(ErrorCode.ORDER_NOT_FOUND, 'Pedido no encontrado');
+    if (!order) throw notFound(ErrorCode.ORDER_NOT_FOUND, 'Order not found');
     return toOrderDto(order, this.config.orders.returnWindowDays);
   }
 
@@ -87,7 +87,7 @@ export class OrdersService {
 
   async quote(userId: number, dto: CheckoutQuoteDto): Promise<CheckoutQuoteResponseDto> {
     const cart = await this.prisma.$transaction((tx) => this.cart.loadForCheckout(userId, tx));
-    if (!cart || cart.items.length === 0) throw unprocessable(ErrorCode.CART_EMPTY, 'El carrito está vacío');
+    if (!cart || cart.items.length === 0) throw unprocessable(ErrorCode.CART_EMPTY, 'The cart is empty');
     if (dto.addressId) await this.assertAddress(userId, dto.addressId);
     const method = await this.shipping.getMethod(dto.shippingMethodCode);
     await this.shipping.resolvePickupPoint(method, dto.pickupPointId);
@@ -171,7 +171,7 @@ export class OrdersService {
     if (existing.idempotencyHash && existing.idempotencyHash !== hash) {
       throw unprocessable(
         ErrorCode.IDEMPOTENCY_KEY_REUSED,
-        'La Idempotency-Key ya se usó con una petición distinta',
+        'The Idempotency-Key was already used with a different request',
         { orderId: existing.id },
       );
     }
@@ -181,13 +181,13 @@ export class OrdersService {
 
   private validatePaymentInput(dto: PaymentInputDto): ValidatedCard | null {
     if (dto.paymentMethod !== PaymentMethod.CARD) return null;
-    if (!dto.card) throw unprocessable(ErrorCode.CARD_DETAILS_REQUIRED, 'Introduce los datos de la tarjeta');
+    if (!dto.card) throw unprocessable(ErrorCode.CARD_DETAILS_REQUIRED, 'Enter the card details');
     return validateCard(dto.card);
   }
 
   private async assertAddress(userId: number, addressId: number, db: Tx | PrismaService = this.prisma) {
     const address = await db.address.findFirst({ where: { id: addressId, userId } });
-    if (!address) throw notFound(ErrorCode.ADDRESS_NOT_FOUND, 'Dirección de envío no encontrada');
+    if (!address) throw notFound(ErrorCode.ADDRESS_NOT_FOUND, 'Shipping address not found');
     return address;
   }
 
@@ -201,14 +201,14 @@ export class OrdersService {
     // 1. Serialize concurrent checkouts of the same user (double click, several tabs...)
     await this.cart.lockUserCart(userId, tx);
     const cart = await this.cart.loadForCheckout(userId, tx);
-    if (!cart || cart.items.length === 0) throw unprocessable(ErrorCode.CART_EMPTY, 'El carrito está vacío');
+    if (!cart || cart.items.length === 0) throw unprocessable(ErrorCode.CART_EMPTY, 'The cart is empty');
 
     // 2. Every line must be purchasable as it is
     const problems = cart.items
       .map((i) => ({ itemId: i.id, productId: i.productId, sku: i.product.sku, issues: itemIssues(i) }))
       .filter((p) => p.issues.length > 0);
     if (problems.length) {
-      throw unprocessable(ErrorCode.CART_HAS_ISSUES, 'Revisa el carrito: hay productos no disponibles o sin stock suficiente', problems);
+      throw unprocessable(ErrorCode.CART_HAS_ISSUES, 'Review your cart: some products are unavailable or do not have enough stock', problems);
     }
 
     // 3. Address, shipping and coupon
@@ -221,7 +221,7 @@ export class OrdersService {
     // 4. Prices are always computed on the server
     const pricing = computePricing(lines, couponResult?.pricing ?? null, method);
     if (dto.expectedTotalCents !== undefined && dto.expectedTotalCents !== pricing.totalCents) {
-      throw conflict(ErrorCode.PRICE_CHANGED, 'El importe del pedido ha cambiado. Revisa el resumen antes de confirmar', {
+      throw conflict(ErrorCode.PRICE_CHANGED, 'The order total has changed. Review the summary before confirming', {
         expectedTotalCents: dto.expectedTotalCents,
         actualTotalCents: pricing.totalCents,
       });
@@ -235,7 +235,7 @@ export class OrdersService {
       });
       if (res.count === 0) {
         const fresh = await tx.product.findUnique({ where: { id: item.productId }, select: { stock: true } });
-        throw conflict(ErrorCode.INSUFFICIENT_STOCK, `No hay stock suficiente de "${item.product.name}"`, {
+        throw conflict(ErrorCode.INSUFFICIENT_STOCK, `Not enough stock of "${item.product.name}"`, {
           productId: item.productId,
           sku: item.product.sku,
           requested: item.quantity,
@@ -293,7 +293,7 @@ export class OrdersService {
           })),
         },
         history: {
-          create: { fromStatus: null, toStatus: OrderStatus.PENDING, actorType: ActorType.CUSTOMER, actorUserId: userId, note: 'Pedido creado' },
+          create: { fromStatus: null, toStatus: OrderStatus.PENDING, actorType: ActorType.CUSTOMER, actorUserId: userId, note: 'Order created' },
         },
       },
     });
@@ -305,7 +305,7 @@ export class OrdersService {
         where: { id: coupon.id, ...(coupon.usageLimit !== null ? { timesUsed: { lt: coupon.usageLimit } } : {}) },
         data: { timesUsed: { increment: 1 } },
       });
-      if (res.count === 0) throw unprocessable(ErrorCode.COUPON_USAGE_LIMIT_REACHED, 'El cupón ha alcanzado su límite de usos');
+      if (res.count === 0) throw unprocessable(ErrorCode.COUPON_USAGE_LIMIT_REACHED, 'The coupon has reached its usage limit');
       await tx.couponRedemption.create({ data: { couponId: coupon.id, userId, orderId: order.id } });
     }
 
@@ -334,13 +334,13 @@ export class OrdersService {
       const existing = order.payments.find((p) => p.idempotencyKey === idempotencyKey);
       if (existing) {
         if (existing.idempotencyHash && existing.idempotencyHash !== hash) {
-          throw unprocessable(ErrorCode.IDEMPOTENCY_KEY_REUSED, 'La Idempotency-Key ya se usó con una petición distinta');
+          throw unprocessable(ErrorCode.IDEMPOTENCY_KEY_REUSED, 'The Idempotency-Key was already used with a different request');
         }
         return { order: toOrderDto(order, this.config.orders.returnWindowDays), payment: toPaymentDto(existing), replayed: true };
       }
     }
     if (order.status === OrderStatus.PENDING && order.reservationExpiresAt && order.reservationExpiresAt <= new Date()) {
-      throw conflict(ErrorCode.ORDER_NOT_PAYABLE, 'La reserva del pedido ha caducado. El pedido se cancelará automáticamente');
+      throw conflict(ErrorCode.ORDER_NOT_PAYABLE, 'The order reservation has expired. The order will be cancelled automatically');
     }
     const card = this.validatePaymentInput(dto);
     const payment = await this.payments.pay(order, { method: dto.paymentMethod, card: card ?? undefined, idempotencyKey, idempotencyHash: hash });
@@ -350,7 +350,7 @@ export class OrdersService {
   async cancel(userId: number, idOrNumber: string, reason?: string): Promise<OrderDto> {
     const order = await this.loadForUser(userId, idOrNumber);
     await this.lifecycle.transition(order.id, OrderStatus.CANCELLED, { type: ActorType.CUSTOMER, userId }, {
-      reason: reason || 'Cancelado por el cliente',
+      reason: reason || 'Cancelled by the customer',
     });
     return this.getById(order.id);
   }
@@ -378,7 +378,7 @@ export class OrdersService {
     for (const o of due) {
       try {
         await this.lifecycle.transition(o.id, OrderStatus.CANCELLED, { type: ActorType.SYSTEM }, {
-          reason: 'Reserva caducada: el pago no se completó a tiempo',
+          reason: 'Reservation expired: the payment was not completed in time',
         });
         count++;
       } catch {

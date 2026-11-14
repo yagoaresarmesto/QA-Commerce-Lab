@@ -26,22 +26,22 @@ export type IllustrationKind = (typeof ILLUSTRATION_KINDS)[number];
 
 /** Category slug → illustration kind */
 export const CATEGORY_KIND: Record<string, IllustrationKind> = {
-  portatiles: 'laptop',
-  sobremesa: 'desktop',
-  componentes: 'components',
-  'tarjetas-graficas': 'gpu',
-  procesadores: 'cpu',
-  'placas-base': 'motherboard',
-  'memorias-ram': 'ram',
-  'almacenamiento-ssd': 'ssd',
-  monitores: 'monitor',
-  perifericos: 'peripherals',
-  teclados: 'keyboard',
-  ratones: 'mouse',
-  auriculares: 'headphones',
+  laptops: 'laptop',
+  desktops: 'desktop',
+  components: 'components',
+  'graphics-cards': 'gpu',
+  processors: 'cpu',
+  motherboards: 'motherboard',
+  memory: 'ram',
+  'ssd-storage': 'ssd',
+  monitors: 'monitor',
+  peripherals: 'peripherals',
+  keyboards: 'keyboard',
+  mice: 'mouse',
+  headphones: 'headphones',
   smartphones: 'smartphone',
   tablets: 'tablet',
-  accesorios: 'accessory',
+  accessories: 'accessory',
 };
 
 function shade(hex: string, amount: number): string {
