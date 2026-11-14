@@ -26,6 +26,8 @@ async function bootstrap(): Promise<void> {
               scriptSrc: ["'self'"],
               connectSrc: ["'self'"],
               fontSrc: ["'self'", 'data:'],
+              // TLS is terminated by the reverse proxy / platform; never force-upgrade sub-requests.
+              upgradeInsecureRequests: null,
             },
           }
         : false,

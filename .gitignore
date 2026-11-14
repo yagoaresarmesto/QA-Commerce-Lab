@@ -15,3 +15,7 @@ coverage/
 apps/api/public/
 playwright-report/
 test-results/
+
+# Deployment secrets
+deploy/vps/.env
+deploy/vps/*.env

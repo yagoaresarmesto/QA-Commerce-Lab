@@ -1,0 +1,83 @@
+# QA Commerce Lab · remote deployment on a single VPS (recommended architecture)
+#
+#   Internet ──HTTPS──▶ Caddy (automatic Let's Encrypt certificates)
+#                         ├─▶ demo     (APP_ENV=demo,    testing API absent)  → DB qacl_demo
+#                         └─▶ testing  (APP_ENV=testing, testing API + key)   → DB qacl_testing
+#
+# Both environments run the same all-in-one image (storefront + API on one origin) and are
+# isolated at database level (separate databases AND separate database roles).
+# See docs/DEPLOYMENT.md for the full step-by-step guide.
+name: qacl
+
+services:
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      ACME_EMAIL: ${ACME_EMAIL}
+      DEMO_DOMAIN: ${DEMO_DOMAIN}
+      TESTING_DOMAIN: ${TESTING_DOMAIN}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      - demo
+      - testing
+
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      DEMO_DB_PASSWORD: ${DEMO_DB_PASSWORD}
+      TESTING_DB_PASSWORD: ${TESTING_DB_PASSWORD}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+      - ./initdb:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    # Never exposed to the Internet.
+
+  demo:
+    image: ${IMAGE}
+    restart: unless-stopped
+    env_file: demo.env
+    environment:
+      DATABASE_URL: postgresql://qacl_demo:${DEMO_DB_PASSWORD}@db:5432/qacl_demo?schema=public
+      PORT: 3000
+    depends_on:
+      db:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+
+  testing:
+    image: ${IMAGE}
+    restart: unless-stopped
+    env_file: testing.env
+    environment:
+      DATABASE_URL: postgresql://qacl_testing:${TESTING_DB_PASSWORD}@db:5432/qacl_testing?schema=public
+      PORT: 3000
+    depends_on:
+      db:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 768m
+
+volumes:
+  db-data:
+  caddy-data:
+  caddy-config:

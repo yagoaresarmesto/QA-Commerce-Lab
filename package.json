@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "description": "QA Commerce Lab - realistic electronics e-commerce built as a System Under Test for QA automation",
-  "license": "MIT",
+  "license": "UNLICENSED",
   "workspaces": [
     "apps/api",
     "apps/web"

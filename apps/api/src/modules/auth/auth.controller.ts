@@ -34,7 +34,8 @@ import {
 } from './dto/auth.dto';
 
 export const REFRESH_COOKIE = 'qcl_rt';
-const AUTH_THROTTLE = { default: { limit: 20, ttl: 60_000 } };
+// Stricter limit for credential endpoints (only applies when RATE_LIMIT_ENABLED=true, e.g. public demo).
+const AUTH_THROTTLE = { default: { limit: () => Number(process.env.RATE_LIMIT_AUTH_PER_MINUTE ?? 20) || 20, ttl: 60_000 } };
 
 @ApiTags('Auth')
 @Controller('auth')

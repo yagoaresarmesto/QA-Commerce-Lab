@@ -1,0 +1,31 @@
+# Automatic HTTPS (Let's Encrypt) for both environments.
+{
+	email {$ACME_EMAIL}
+}
+
+# Public demo: storefront + API + Swagger on the same origin.
+{$DEMO_DOMAIN} {
+	encode zstd gzip
+	reverse_proxy demo:3000
+	header -Server
+}
+
+# Remote testing environment used by Playwright / Cypress / Postman suites.
+{$TESTING_DOMAIN} {
+	encode zstd gzip
+	reverse_proxy testing:3000 {
+		# Long enough for simulated gateway timeouts and latency faults.
+		transport http {
+			read_timeout 150s
+		}
+	}
+	header -Server
+}
+
+# Optional API sub-domains (same containers). Uncomment and create the DNS records:
+# api.{$DEMO_DOMAIN} {
+# 	reverse_proxy demo:3000
+# }
+# api.{$TESTING_DOMAIN} {
+# 	reverse_proxy testing:3000
+# }

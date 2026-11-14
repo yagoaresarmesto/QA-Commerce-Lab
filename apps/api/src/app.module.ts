@@ -1,6 +1,5 @@
 import { DynamicModule, MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
-import { ScheduleModule } from '@nestjs/schedule';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { LoggerModule } from 'nestjs-pino';
@@ -63,7 +62,6 @@ export class AppModule implements NestModule {
           },
         }),
         ThrottlerModule.forRoot({ throttlers: [{ name: 'default', ttl: 60_000, limit: config.rateLimit.perMinute }] }),
-        ScheduleModule.forRoot(),
         PrismaModule,
         MailModule,
         FaultsModule,

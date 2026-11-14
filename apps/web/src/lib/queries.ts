@@ -73,6 +73,13 @@ export const useReviews = (productId: number | undefined, query: Record<string, 
     placeholderData: keepPreviousData,
   });
 
+export const useInfo = () =>
+  useQuery({
+    queryKey: ['catalog', 'info'],
+    queryFn: () => http.get<{ environment: string; version: string; features: Record<string, boolean> }>('/info'),
+    staleTime: Infinity,
+  });
+
 export const useShippingMethods = () =>
   useQuery({ queryKey: ['catalog', 'shipping-methods'], queryFn: () => http.get<ShippingMethod[]>('/shipping/methods'), staleTime: 10 * 60_000 });
 

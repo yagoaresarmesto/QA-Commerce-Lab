@@ -6,7 +6,7 @@ import { Link, NavLink, useNavigate } from 'react-router';
 import { toast } from 'sonner';
 import { useAuth } from '../../auth/AuthProvider';
 import { cn } from '../../lib/cn';
-import { useCart, useCategories } from '../../lib/queries';
+import { useCart, useCategories, useInfo } from '../../lib/queries';
 import { CategoryIcon } from './CategoryIcon';
 import { SearchBox } from './SearchBox';
 
@@ -183,7 +183,8 @@ function MobileMenu() {
 
 export function Header() {
   const { data: categories } = useCategories();
-  const env = import.meta.env.VITE_APP_ENV;
+  const { data: info } = useInfo();
+  const env = import.meta.env.VITE_APP_ENV || info?.environment;
   return (
     <header className="sticky top-0 z-40 shadow-lg shadow-slate-900/10">
       <div className="bg-slate-950 text-xs text-slate-300">
