@@ -137,7 +137,7 @@ export class CreateTestProductDto extends RunScopedDto {
   @IsString()
   categorySlug?: string;
 
-  /** Brand slug (default: conecta) */
+  /** Brand slug (default: anker) */
   @IsOptional()
   @IsString()
   brandSlug?: string;

@@ -143,7 +143,7 @@ export class FixturesService {
     const runId = resolveRunId(dto.runId);
     const category = await this.prisma.category.findUnique({ where: { slug: dto.categorySlug ?? 'accesorios' } });
     if (!category) throw notFound(ErrorCode.CATEGORY_NOT_FOUND, 'Categoría no encontrada');
-    const brand = await this.prisma.brand.findUnique({ where: { slug: dto.brandSlug ?? 'conecta' } });
+    const brand = await this.prisma.brand.findUnique({ where: { slug: dto.brandSlug ?? 'anker' } });
     if (!brand) throw notFound(ErrorCode.BRAND_NOT_FOUND, 'Marca no encontrada');
     const code = randomCode(6);
     const product = await this.catalog.create(
