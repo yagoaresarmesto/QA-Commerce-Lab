@@ -20,9 +20,14 @@ export const OptionalAuth = () =>
     ApiUnauthorizedResponse({ description: 'Token inválido o caducado', type: ErrorResponseDto }),
   );
 
-/** Requires an authenticated user (default behaviour; adds Swagger docs). */
+/**
+ * Requires an authenticated user. Explicitly overrides a class-level @OptionalAuth()/@Public()
+ * (e.g. POST /cart/merge inside the optional-auth CartController).
+ */
 export const Authenticated = () =>
   applyDecorators(
+    SetMetadata(IS_PUBLIC_KEY, false),
+    SetMetadata(IS_OPTIONAL_AUTH_KEY, false),
     ApiBearerAuth('access-token'),
     ApiUnauthorizedResponse({ description: 'No autenticado / token inválido o caducado', type: ErrorResponseDto }),
   );
