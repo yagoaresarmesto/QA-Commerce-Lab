@@ -4,7 +4,7 @@
 
 No es una demo superficial: frontend, backend, base de datos, API REST documentada con OpenAPI, autenticación con sesiones revocables, roles, catálogo de 168 productos, carrito, cupones, checkout transaccional, pagos simulados, pedidos con máquina de estados, área privada, panel de administración e **infraestructura específica para testing** (datos deterministas, escenarios, aislamiento por ejecución, simulación de fallos y limpieza).
 
-> Todos los productos, marcas, precios, usuarios y pagos son **ficticios**. Nunca introduzcas datos reales.
+> El catálogo usa nombres de marcas y modelos **reales** como referencia, pero precios, stock, reseñas, usuarios, pedidos y pagos son **ficticios**. Las marcas pertenecen a sus respectivos propietarios; este proyecto no tiene relación con ellas ni actividad comercial. Nunca introduzcas datos reales (tarjetas, direcciones, contraseñas).
 
 ![Home](docs/images/home.png)
 

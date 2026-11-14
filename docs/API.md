@@ -266,7 +266,7 @@ Generado a partir de la especificación OpenAPI. 🔒 = acepta o exige `Authoriz
 API=http://localhost:3001/api
 
 # Buscar portátiles en stock de 2 marcas, del más barato al más caro
-curl -s "$API/products?category=portatiles&brand=nebula,arcadia&inStock=true&sort=price_asc&page=1&pageSize=12"
+curl -s "$API/products?category=portatiles&brand=asus,lenovo&inStock=true&sort=price_asc&page=1&pageSize=12"
 
 # Login y uso del token
 TOKEN=$(curl -s -X POST $API/auth/login -H 'Content-Type: application/json' \

@@ -41,7 +41,7 @@ Un usuario **desactivado** no puede iniciar sesión (`403 ACCOUNT_DISABLED`) y s
 - **Disponibilidad**: `IN_STOCK` (>5), `LOW_STOCK` (1-5, "Últimas unidades"), `OUT_OF_STOCK` (0), `DISCONTINUED`.
 - **Descuento**: si hay precio anterior mayor que el actual, `discountPercent = round((1 - precio/anterior) × 100)`.
 - **Novedad**: creado hace menos de 30 días.
-- **Búsqueda**: insensible a mayúsculas y tildes; todas las palabras deben aparecer en nombre, marca, categoría o SKU (`portatil nebula` encuentra "Nébula Air 13").
+- **Búsqueda**: insensible a mayúsculas y tildes; todas las palabras deben aparecer en nombre, marca, categoría o SKU (`portatil asus` encuentra los portátiles ASUS y también el monitor *ASUS ZenScreen MB166C 15,6" portátil*; `macbook` encuentra los dos MacBook).
 - **Filtros combinables**: categoría (las padre incluyen subcategorías), marcas (varias), rango de precio, solo en stock, solo ofertas, valoración mínima, destacados. Rango de precio inválido (mín > máx) → `400`.
 - **Ordenación**: relevancia (destacados y más vendidos), precio ↑/↓, popularidad (ventas), valoración, novedades, mayor descuento, nombre. Siempre con desempate determinista.
 - **Facetas**: marcas con recuento (calculadas sin el propio filtro de marca), categorías, rango de precios, nº en stock y nº en oferta.

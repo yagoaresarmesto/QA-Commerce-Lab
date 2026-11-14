@@ -80,18 +80,19 @@ Pedidos de `orders@qacommerce.test`:
 
 ### Catálogo
 
-- 16 categorías (2 niveles: *Componentes de PC* y *Periféricos* agrupan subcategorías), 20 marcas **ficticias**, **168 productos** (164 activos).
+- 16 categorías (2 niveles: *Componentes de PC* y *Periféricos* agrupan subcategorías), 39 marcas reales, **168 productos** (164 activos) con nombres de modelos reales. Precios, stock, valoraciones, reseñas e imágenes son ficticios (las imágenes son ilustraciones SVG genéricas generadas por la API).
 - IDs por categoría: Portátiles 1-12 · Sobremesa 13-24 · Gráficas 25-36 · Procesadores 37-48 · Placas 49-60 · RAM 61-72 · SSD 73-84 · Monitores 85-96 · Teclados 97-108 · Ratones 109-120 · Auriculares 121-132 · Smartphones 133-144 · Tablets 145-156 · Accesorios 157-168.
-- SKU: `QCL-<CAT>-<NNN>` (ej. `QCL-LAP-001` = id 1 = *Nébula Air 13*).
+- SKU: `QCL-<CAT>-<NNN>` (ej. `QCL-LAP-001` = id 1 = *Apple MacBook Air 13" M3 16 GB 256 GB*, slug `apple-macbook-air-13-m3-16-gb-256-gb`).
+- Usa siempre el **SKU o el id** como identificador en las pruebas: los nombres de producto pueden revisarse en futuras versiones del seed.
 
 Productos con inventario especial (documentado y estable):
 
-| Situación | SKU (id) |
+| Situación | SKU (id) · producto |
 |---|---|
-| Agotados (stock 0) | QCL-GPU-003 (27), QCL-LAP-006 (6), QCL-CPU-010 (46), QCL-MON-007 (91), QCL-PHN-010 (142), QCL-TAB-006 (150), QCL-AUD-008 (128), QCL-KBD-010 (106) |
-| Una sola unidad | QCL-GPU-006 (30), QCL-LAP-004 (4), QCL-SSD-007 (79), QCL-PHN-003 (135) |
-| Stock bajo (2-5) | QCL-GPU-005 (29), QCL-CPU-005 (41), QCL-MON-003 (87), QCL-DSK-003 (15), QCL-TAB-012, QCL-MBD-001, QCL-RAM-008, QCL-AUD-002 |
-| Descatalogados (`isActive=false`) | QCL-DSK-010 (22), QCL-RAM-004 (64), QCL-MOU-001 (109), QCL-PHN-005 (137) |
+| Agotados (stock 0) | QCL-GPU-003 (27) *Gigabyte GeForce RTX 4070 Super Windforce OC 12 GB* · QCL-LAP-006 (6) *Lenovo IdeaPad Slim 5 14AHP9 Ryzen 7* · QCL-CPU-010 (46) *AMD Ryzen 7 9800X3D* · QCL-MON-007 (91) *Samsung Odyssey Neo G8 32"* · QCL-PHN-010 (142) *Samsung Galaxy Z Fold6 512 GB* · QCL-TAB-006 (150) *Samsung Galaxy Tab S10 Ultra 256 GB* · QCL-AUD-008 (128) *SteelSeries Arctis Nova Pro Wireless* · QCL-KBD-010 (106) *Keychron Q1 Pro* |
+| Una sola unidad | QCL-GPU-006 (30) *ASUS ROG Astral GeForce RTX 5090 OC 32 GB* · QCL-LAP-004 (4) *ASUS Zenbook 14 OLED UX3405MA* · QCL-SSD-007 (79) *Crucial T705 2 TB* · QCL-PHN-003 (135) *Apple iPhone 16 Pro Max 512 GB* |
+| Stock bajo (2-5) | QCL-GPU-005 (29) *MSI GeForce RTX 5080 Gaming Trio OC* · QCL-CPU-005 (41) *Intel Core Ultra 9 285K* · QCL-MON-003 (87) *LG UltraGear 27GS95QE* · QCL-DSK-003 (15) *Apple Mac Studio M4 Max* · QCL-TAB-012 (156) · QCL-MBD-001 (49) · QCL-RAM-008 (68) · QCL-AUD-002 (122) |
+| Descatalogados (`isActive=false`) | QCL-DSK-010 (22) *Lenovo IdeaCentre AIO 3 27* · QCL-RAM-004 (64) *Kingston FURY Beast DDR4 8 GB* · QCL-MOU-001 (109) *Logitech M90* · QCL-PHN-005 (137) *Samsung Galaxy A16 128 GB* |
 
 `GET /api/test/info` devuelve esta misma información en JSON.
 
