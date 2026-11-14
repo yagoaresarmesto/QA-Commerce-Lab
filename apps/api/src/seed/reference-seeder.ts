@@ -136,7 +136,7 @@ export function buildSeedProducts(): SeedProduct[] {
         description:
           `${name} de ${brand}. ${short}. ` +
           `Entre sus características destacan ${highlights}. ` +
-          `Producto nuevo con 3 años de garantía oficial, IVA incluido y devolución gratuita durante ${14} días.`,
+          `Producto nuevo con 3 años de garantía, IVA incluido y devolución gratuita durante 14 días.`,
         priceCents,
         compareAtPriceCents: compareAtPriceCents && compareAtPriceCents > priceCents ? compareAtPriceCents : null,
         stock,
@@ -146,7 +146,7 @@ export function buildSeedProducts(): SeedProduct[] {
         ageDays: (index * 7919) % 200,
         specs: specList,
         images: [0, 1, 2].map(
-          (v) => `/api/media/products/${kind}.svg?c=${color}&v=${v}&label=${encodeURIComponent(brand)}`,
+          (v) => `/api/media/products/${kind}.svg?c=${color}&v=${v}&bg=0&label=${encodeURIComponent(brand)}`,
         ),
       });
       index++;
@@ -263,6 +263,9 @@ export class ReferenceSeeder {
         data: p.images.map((url, position) => ({ productId: row.id, url, alt: `${p.name} - imagen ${position + 1}`, position })),
       });
     }
+
+    // Brands no longer present in the reference catalog and without products are removed
+    await this.prisma.brand.deleteMany({ where: { name: { notIn: Object.keys(BRANDS) }, products: { none: {} } } });
 
     // ── Coupons
     for (const [code, description, type, value, minSubtotalCents, maxDiscountCents, categorySlug, startsOffset, expiresOffset, usageLimit, perUserLimit, isActive] of COUPONS) {

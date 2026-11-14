@@ -18,7 +18,7 @@ const detailInclude = {
 
 export function illustrationUrl(categorySlug: string, color: string, variant: number, label: string): string {
   const kind = CATEGORY_KIND[categorySlug] ?? 'components';
-  return `/api/media/products/${kind}.svg?c=${color}&v=${variant}&label=${encodeURIComponent(label)}`;
+  return `/api/media/products/${kind}.svg?c=${color}&v=${variant}&bg=0&label=${encodeURIComponent(label)}`;
 }
 
 @Injectable()
