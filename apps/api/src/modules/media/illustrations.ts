@@ -113,7 +113,7 @@ const drawings: Record<IllustrationKind, (a: string) => { defs?: string; body: s
     body: `<rect x="60" y="250" width="480" height="110" rx="10" fill="#0f5132"/><rect x="80" y="262" width="300" height="86" rx="6" fill="#1f2937"/>
       <rect x="92" y="276" width="180" height="12" rx="6" fill="#${a}"/><rect x="92" y="298" width="120" height="8" rx="4" fill="#94a3b8"/>
       ${chips(395, 272, 2, 56, 66, 12)}<circle cx="520" cy="305" r="12" fill="#e2e8f0"/><circle cx="520" cy="305" r="5" fill="#64748b"/>
-      ${gold(64, 274, 9, 10, 62, 4).replace(/width="10" height="62"/g, 'width="5" height="62"')}`,
+      ${Array.from({ length: 9 }, (_, i) => `<rect x="${64 + i * 8}" y="274" width="5" height="62" fill="#f5c451"/>`).join('')}`,
   }),
   monitor: (a) => ({
     defs: screenGradient('mon', a),
@@ -161,7 +161,7 @@ const drawings: Record<IllustrationKind, (a: string) => { defs?: string; body: s
   peripherals: (a) => drawings.keyboard(a),
 };
 
-export function renderProductIllustration(kind: IllustrationKind, accentRaw: string, variant: number, labelRaw: string): string {
+export function renderProductIllustration(kind: IllustrationKind, accentRaw: string, variant: number, labelRaw: string, transparent = false): string {
   const accent = /^[0-9a-f]{6}$/i.test(accentRaw) ? accentRaw.toLowerCase() : '6366f1';
   const label = labelRaw
     .slice(0, 28)
@@ -178,7 +178,7 @@ export function renderProductIllustration(kind: IllustrationKind, accentRaw: str
     <radialGradient id="glow" cx="0.5" cy="0.45" r="0.5"><stop offset="0" stop-color="#${accent}" stop-opacity="0.22"/><stop offset="1" stop-color="#${accent}" stop-opacity="0"/></radialGradient>
     ${defs}
   </defs>
-  <rect width="600" height="600" fill="url(#bg)"/>
+  ${transparent ? '' : '<rect width="600" height="600" fill="url(#bg)"/>'}
   <circle cx="300" cy="290" r="250" fill="url(#glow)"/>
   <ellipse cx="300" cy="520" rx="210" ry="18" fill="#0f172a" opacity="0.08"/>
   <g transform="${transform}">${body}</g>

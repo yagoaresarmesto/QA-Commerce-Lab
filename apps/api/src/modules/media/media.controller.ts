@@ -18,12 +18,13 @@ export class MediaController {
     @Query('c') color = '',
     @Query('v') variant = '0',
     @Query('label') label = '',
+    @Query('bg') bg = '1',
   ): string {
     const name = file.replace(/\.svg$/, '');
     const kind = (ILLUSTRATION_KINDS as readonly string[]).includes(name)
       ? (name as IllustrationKind)
       : CATEGORY_KIND[name];
     if (!kind) throw notFound(ErrorCode.NOT_FOUND, 'Imagen no encontrada');
-    return renderProductIllustration(kind, color, Number.parseInt(variant, 10) || 0, label);
+    return renderProductIllustration(kind, color, Number.parseInt(variant, 10) || 0, label, bg === '0');
   }
 }
