@@ -182,6 +182,6 @@ export function renderProductIllustration(kind: IllustrationKind, accentRaw: str
   <circle cx="300" cy="290" r="250" fill="url(#glow)"/>
   <ellipse cx="300" cy="520" rx="210" ry="18" fill="#0f172a" opacity="0.08"/>
   <g transform="${transform}">${body}</g>
-  ${label ? `<text x="32" y="568" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="26" font-weight="700" fill="#0f172a" opacity="0.55" letter-spacing="1">${label.toUpperCase()}</text>` : ''}
+  ${label && !transparent ? `<text x="32" y="568" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="26" font-weight="700" fill="#0f172a" opacity="0.55" letter-spacing="1">${label.toUpperCase()}</text>` : ''}
 </svg>`;
 }

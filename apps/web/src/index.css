@@ -1,35 +1,49 @@
+@import '@fontsource-variable/geist';
 @import 'tailwindcss';
 
 @theme {
-  --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-sans: 'Geist Variable', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 
-  --color-brand-50: #eef2ff;
-  --color-brand-100: #e0e7ff;
-  --color-brand-200: #c7d2fe;
-  --color-brand-300: #a5b4fc;
-  --color-brand-400: #818cf8;
-  --color-brand-500: #6366f1;
-  --color-brand-600: #4f46e5;
-  --color-brand-700: #4338ca;
-  --color-brand-800: #3730a3;
-  --color-brand-900: #312e81;
-  --color-brand-950: #1e1b4b;
+  /* Electric violet: brand, links, focus and active states */
+  --color-brand-50: #f4f2ff;
+  --color-brand-100: #ebe7ff;
+  --color-brand-200: #d9d1ff;
+  --color-brand-300: #bcadff;
+  --color-brand-400: #9a80ff;
+  --color-brand-500: #7c5cff;
+  --color-brand-600: #6a3ff5;
+  --color-brand-700: #5b2fe0;
+  --color-brand-800: #4b27b8;
+  --color-brand-900: #3e2393;
+  --color-brand-950: #251458;
 
-  --color-accent-400: #fbbf24;
-  --color-accent-500: #f59e0b;
-  --color-accent-600: #d97706;
+  /* Lime: highlights on dark surfaces (hero CTA, cart counter, "new" badges) */
+  --color-accent-200: #effdb8;
+  --color-accent-300: #dffb7d;
+  --color-accent-400: #c8f542;
+  --color-accent-500: #b2e01e;
+  --color-accent-600: #8fb612;
 
-  --shadow-card: 0 1px 2px rgb(15 23 42 / 0.06), 0 4px 16px -6px rgb(15 23 42 / 0.12);
-  --shadow-pop: 0 18px 40px -12px rgb(15 23 42 / 0.35);
+  --radius-4xl: 2rem;
+
+  --shadow-card: 0 1px 2px rgb(15 23 42 / 0.04);
+  --shadow-soft: 0 8px 30px -12px rgb(15 23 42 / 0.18);
+  --shadow-pop: 0 24px 60px -20px rgb(15 23 42 / 0.35);
 }
 
 @layer base {
   html {
     -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
     scroll-behavior: smooth;
+    text-rendering: optimizeLegibility;
   }
   body {
-    @apply bg-slate-50 text-slate-900;
+    @apply bg-white text-slate-900;
+    font-feature-settings: 'ss01', 'cv11';
+  }
+  ::selection {
+    @apply bg-brand-200 text-brand-950;
   }
   :focus-visible {
     @apply outline-2 outline-offset-2 outline-brand-500;
@@ -49,10 +63,43 @@
 
 @layer components {
   .container-page {
-    @apply mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8;
+    @apply mx-auto w-full max-w-[88rem] px-4 sm:px-6 lg:px-8;
   }
   .card {
-    @apply rounded-2xl border border-slate-200 bg-white shadow-card;
+    @apply rounded-3xl border border-slate-200/80 bg-white shadow-card;
+  }
+  /* Neutral tile behind product illustrations */
+  .tile {
+    @apply bg-gradient-to-b from-slate-100 to-slate-50 ring-1 ring-inset ring-slate-900/5;
+  }
+  .eyebrow {
+    @apply text-xs font-semibold uppercase tracking-[0.14em] text-brand-600;
+  }
+  .heading-xl {
+    @apply text-3xl font-semibold tracking-[-0.03em] text-slate-950 sm:text-4xl;
+  }
+  .heading-lg {
+    @apply text-2xl font-semibold tracking-[-0.02em] text-slate-950 sm:text-3xl;
+  }
+  /* Selectable option (radio/checkbox inside) */
+  .choice {
+    @apply flex cursor-pointer gap-3 rounded-3xl border border-slate-200 bg-white p-5 transition hover:border-slate-400;
+  }
+  .choice:has(input:checked) {
+    @apply border-slate-950 bg-slate-50 ring-1 ring-slate-950;
+  }
+  .panel {
+    @apply rounded-4xl bg-slate-50 p-6 sm:p-7;
+  }
+  .glass {
+    @apply bg-white/75 backdrop-blur-xl backdrop-saturate-150;
+  }
+  .mesh-dark {
+    background:
+      radial-gradient(60% 80% at 85% 20%, rgb(124 92 255 / 0.55) 0%, transparent 60%),
+      radial-gradient(50% 70% at 10% 100%, rgb(200 245 66 / 0.22) 0%, transparent 60%),
+      radial-gradient(40% 50% at 50% 0%, rgb(56 189 248 / 0.2) 0%, transparent 70%),
+      #0b0b14;
   }
   .scrollbar-none {
     scrollbar-width: none;

@@ -40,7 +40,7 @@ export function AdminProductsPage() {
   return (
     <div>
       <AdminTitle title="Productos" action={<ButtonLink to="/admin/productos/nuevo" data-testid="new-product"><Plus className="h-4 w-4" /> Nuevo producto</ButtonLink>} />
-      <div className="card mb-4 grid gap-3 p-4 md:grid-cols-5">
+      <div className="mb-5 grid gap-3 rounded-3xl bg-slate-50 p-4 md:grid-cols-5">
         <form className="md:col-span-2" onSubmit={(e: FormEvent) => { e.preventDefault(); set('q', search.trim() || null); }}>
           <Input label="Buscar" placeholder="Nombre, marca o SKU" value={search} onChange={(e) => setSearch(e.target.value)} data-testid="admin-product-search" />
         </form>
@@ -82,7 +82,7 @@ export function AdminProductsPage() {
                 <td className={td}>{formatPrice(p.priceCents)}{p.compareAtPriceCents && <span className="ml-1 text-xs text-slate-400 line-through">{formatPrice(p.compareAtPriceCents)}</span>}</td>
                 <td className={td}><span className="font-semibold">{p.stock}</span></td>
                 <td className={td}><AvailabilityLabel availability={p.availability} className="text-xs" /> {p.testRunId && <Badge tone="violet">run</Badge>}</td>
-                <td className={td}><Link to={`/admin/productos/${p.id}`} className="font-semibold text-brand-700" data-testid="edit-product">Editar</Link></td>
+                <td className={td}><Link to={`/admin/productos/${p.id}`} className="font-semibold text-slate-950 underline-offset-2 hover:underline" data-testid="edit-product">Editar</Link></td>
               </tr>
             ))}
           </tbody>

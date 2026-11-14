@@ -7,22 +7,22 @@ type Variant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger' | 'accen
 type Size = 'sm' | 'md' | 'lg';
 
 const variants: Record<Variant, string> = {
-  primary: 'bg-brand-600 text-white hover:bg-brand-700 shadow-sm disabled:bg-brand-300',
-  accent: 'bg-accent-500 text-slate-950 hover:bg-accent-400 shadow-sm disabled:bg-amber-200',
-  secondary: 'bg-slate-900 text-white hover:bg-slate-800 disabled:bg-slate-400',
-  outline: 'border border-slate-300 bg-white text-slate-800 hover:bg-slate-50 disabled:text-slate-400',
-  ghost: 'text-slate-700 hover:bg-slate-100 disabled:text-slate-400',
+  primary: 'bg-slate-950 text-white hover:bg-brand-600 disabled:bg-slate-300 disabled:text-slate-500',
+  accent: 'bg-accent-400 text-slate-950 hover:bg-accent-300 disabled:bg-accent-200',
+  secondary: 'bg-brand-600 text-white hover:bg-brand-700 disabled:bg-brand-300',
+  outline: 'border border-slate-200 bg-white text-slate-900 hover:border-slate-300 hover:bg-slate-50 disabled:text-slate-400',
+  ghost: 'text-slate-700 hover:bg-slate-100 hover:text-slate-950 disabled:text-slate-400',
   danger: 'bg-rose-600 text-white hover:bg-rose-700 disabled:bg-rose-300',
 };
 const sizes: Record<Size, string> = {
-  sm: 'h-8 px-3 text-sm gap-1.5',
-  md: 'h-10 px-4 text-sm gap-2',
-  lg: 'h-12 px-6 text-base gap-2',
+  sm: 'h-9 px-4 text-sm gap-1.5',
+  md: 'h-11 px-5 text-sm gap-2',
+  lg: 'h-13 px-7 text-[15px] gap-2',
 };
 
 export const buttonClass = (variant: Variant = 'primary', size: Size = 'md', className?: string) =>
   cn(
-    'inline-flex items-center justify-center rounded-xl font-semibold transition-colors disabled:cursor-not-allowed',
+    'inline-flex items-center justify-center whitespace-nowrap rounded-full font-semibold tracking-tight transition-all duration-200 active:scale-[0.98] disabled:cursor-not-allowed disabled:active:scale-100',
     variants[variant],
     sizes[size],
     className,

@@ -36,6 +36,13 @@ export const useCategory = (slug: string | undefined) =>
 
 export const useHome = () => useQuery({ queryKey: ['catalog', 'home'], queryFn: () => http.get<HomeData>('/home') });
 
+export const useBrands = () =>
+  useQuery({
+    queryKey: ['catalog', 'brands'],
+    queryFn: () => http.get<Array<{ id: number; slug: string; name: string; productCount: number }>>('/brands'),
+    staleTime: 5 * 60_000,
+  });
+
 export const useProducts = (query: Record<string, string | number | boolean | undefined>) =>
   useQuery({
     queryKey: ['catalog', 'products', query],

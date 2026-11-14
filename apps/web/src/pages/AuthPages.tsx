@@ -26,15 +26,33 @@ export const passwordSchema = z
 
 function AuthCard({ title, subtitle, children }: { title: string; subtitle?: ReactNode; children: ReactNode }) {
   return (
-    <div className="container-page flex justify-center py-10 sm:py-16">
-      <div className="w-full max-w-md">
-        <div className="card p-6 sm:p-8">
-          <div className="mb-6 rounded-2xl bg-gradient-to-r from-brand-950 to-brand-800 p-4">
-            <Logo />
+    <div className="container-page py-6 sm:py-10">
+      <div className="grid overflow-hidden rounded-4xl border border-slate-200/80 lg:grid-cols-[1fr_1.1fr]">
+        <aside className="mesh-dark relative hidden flex-col justify-between gap-10 p-10 text-white lg:flex" aria-hidden="true">
+          <Logo light />
+          <div className="space-y-5">
+            <p className="text-4xl font-semibold leading-[1.05] tracking-[-0.04em] xl:text-5xl">
+              La tecnología que buscas, <span className="text-accent-400">al mejor precio.</span>
+            </p>
+            <ul className="space-y-2.5 text-sm text-white/70">
+              {['Envío gratis desde 99 €', 'Devolución gratuita durante 14 días', 'Seguimiento de pedidos en tiempo real'].map((t) => (
+                <li key={t} className="flex items-center gap-2.5">
+                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-accent-400 text-slate-950">
+                    <Check className="h-3 w-3" />
+                  </span>
+                  {t}
+                </li>
+              ))}
+            </ul>
           </div>
-          <h1 className="text-2xl font-extrabold tracking-tight">{title}</h1>
-          {subtitle && <p className="mt-1 text-sm text-slate-600">{subtitle}</p>}
-          <div className="mt-6">{children}</div>
+          <p className="text-xs text-white/40">Entorno de pruebas · los pedidos y pagos son simulados</p>
+        </aside>
+        <div className="flex justify-center px-5 py-10 sm:px-10 sm:py-14">
+          <div className="w-full max-w-md">
+            <h1 className="text-3xl font-semibold tracking-[-0.03em] text-slate-950">{title}</h1>
+            {subtitle && <p className="mt-2 text-sm text-slate-600">{subtitle}</p>}
+            <div className="mt-8">{children}</div>
+          </div>
         </div>
       </div>
     </div>
@@ -48,7 +66,7 @@ function PasswordInput(props: React.ComponentProps<typeof Input>) {
       {...props}
       type={visible ? 'text' : 'password'}
       endAdornment={
-        <button type="button" onClick={() => setVisible((v) => !v)} className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100" aria-label={visible ? 'Ocultar contraseña' : 'Mostrar contraseña'} aria-pressed={visible}>
+        <button type="button" onClick={() => setVisible((v) => !v)} className="rounded-full p-1.5 text-slate-500 hover:bg-slate-100" aria-label={visible ? 'Ocultar contraseña' : 'Mostrar contraseña'} aria-pressed={visible}>
           {visible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
         </button>
       }
@@ -115,7 +133,7 @@ export function LoginPage() {
         <Input label="Email" type="email" autoComplete="email" required {...register('email')} error={formState.errors.email?.message} data-testid="login-email" />
         <PasswordInput label="Contraseña" autoComplete="current-password" required {...register('password')} error={formState.errors.password?.message} data-testid="login-password" />
         <div className="flex justify-end">
-          <Link to="/recuperar-contrasena" className="text-sm font-semibold text-brand-700 hover:text-brand-800">
+          <Link to="/recuperar-contrasena" className="text-sm font-semibold text-slate-950 underline-offset-2 hover:underline">
             ¿Has olvidado tu contraseña?
           </Link>
         </div>
@@ -125,7 +143,7 @@ export function LoginPage() {
       </form>
       <p className="mt-6 text-center text-sm text-slate-600">
         ¿Aún no tienes cuenta?{' '}
-        <Link to={`/registro${redirect ? `?redirect=${encodeURIComponent(redirect)}` : ''}`} className="font-semibold text-brand-700">
+        <Link to={`/registro${redirect ? `?redirect=${encodeURIComponent(redirect)}` : ''}`} className="font-semibold text-slate-950 underline underline-offset-2">
           Crear una cuenta
         </Link>
       </p>
@@ -193,7 +211,7 @@ export function RegisterPage() {
           label={
             <>
               Acepto los{' '}
-              <Link to="/info/terminos" className="font-semibold text-brand-700" target="_blank">
+              <Link to="/info/terminos" className="font-semibold text-slate-950 underline underline-offset-2" target="_blank">
                 términos y condiciones
               </Link>
             </>
@@ -208,7 +226,7 @@ export function RegisterPage() {
       </form>
       <p className="mt-6 text-center text-sm text-slate-600">
         ¿Ya tienes cuenta?{' '}
-        <Link to="/login" className="font-semibold text-brand-700">
+        <Link to="/login" className="font-semibold text-slate-950 underline underline-offset-2">
           Inicia sesión
         </Link>
       </p>
@@ -226,7 +244,9 @@ export function ForgotPasswordPage() {
     <AuthCard title="Recuperar contraseña" subtitle="Te enviaremos un enlace para crear una contraseña nueva.">
       {sent ? (
         <div className="space-y-4 text-center" data-testid="forgot-success">
-          <MailCheck className="mx-auto h-12 w-12 text-emerald-500" />
+          <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-accent-400 text-slate-950">
+            <MailCheck className="h-8 w-8" />
+          </span>
           <p className="text-sm text-slate-700">Si el email está registrado, recibirás un enlace en unos instantes. El enlace caduca en 30 minutos.</p>
           <p className="text-xs text-slate-500">Entorno de pruebas: los emails se guardan en el buzón simulado (API de testing / Mailpit en local).</p>
           <ButtonLink to="/login" variant="outline">
@@ -241,7 +261,7 @@ export function ForgotPasswordPage() {
             Enviar enlace
           </Button>
           <p className="text-center text-sm">
-            <Link to="/login" className="font-semibold text-brand-700">
+            <Link to="/login" className="font-semibold text-slate-950 underline underline-offset-2">
               Volver a iniciar sesión
             </Link>
           </p>

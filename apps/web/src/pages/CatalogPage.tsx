@@ -28,9 +28,9 @@ const SORTS = [
 
 function FilterSection({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <fieldset className="border-b border-slate-200 py-4 last:border-0">
-      <legend className="float-left mb-3 w-full text-sm font-semibold text-slate-900">{title}</legend>
-      <div className="clear-both space-y-2">{children}</div>
+    <fieldset className="border-b border-slate-200/80 py-5 first:pt-0 last:border-0">
+      <legend className="float-left mb-3.5 w-full text-[13px] font-semibold uppercase tracking-[0.08em] text-slate-500">{title}</legend>
+      <div className="clear-both space-y-2.5">{children}</div>
     </fieldset>
   );
 }
@@ -60,7 +60,7 @@ function Filters({ mode, facets, params, update }: { mode: CatalogMode; facets?:
       {facets && facets.categories.length > 1 && (
         <FilterSection title="Categoría">
           {facets.categories.map((c) => (
-            <Link key={c.slug} to={`/categoria/${c.slug}`} className="flex justify-between text-sm text-slate-700 hover:text-brand-700">
+            <Link key={c.slug} to={`/categoria/${c.slug}`} className="flex justify-between rounded-xl text-sm text-slate-700 hover:text-slate-950">
               <span>{c.name}</span>
               <span className="text-slate-400">{c.count}</span>
             </Link>
@@ -75,7 +75,7 @@ function Filters({ mode, facets, params, update }: { mode: CatalogMode; facets?:
             <label key={b.slug} className="flex cursor-pointer items-center gap-2.5 text-sm text-slate-700">
               <input
                 type="checkbox"
-                className="h-4 w-4 accent-brand-600"
+                className="h-[18px] w-[18px] rounded accent-slate-950"
                 checked={checked}
                 onChange={() => {
                   const next = checked ? selectedBrands.filter((s) => s !== b.slug) : [...selectedBrands, b.slug];
@@ -92,9 +92,9 @@ function Filters({ mode, facets, params, update }: { mode: CatalogMode; facets?:
       <FilterSection title="Precio (€)">
         <form onSubmit={applyPrice} className="space-y-2" aria-label="Filtrar por precio">
           <div className="flex items-center gap-2">
-            <input aria-label="Precio mínimo" inputMode="decimal" placeholder={facets ? String(Math.floor(facets.priceRange.minCents / 100)) : 'Mín'} value={min} onChange={(e) => setMin(e.target.value)} className="h-9 w-full rounded-lg border border-slate-300 px-2 text-sm" data-testid="filter-price-min" />
+            <input aria-label="Precio mínimo" inputMode="decimal" placeholder={facets ? String(Math.floor(facets.priceRange.minCents / 100)) : 'Mín'} value={min} onChange={(e) => setMin(e.target.value)} className="h-10 w-full rounded-full border border-slate-200 px-3.5 text-sm focus:border-brand-500 focus:outline-none focus:ring-4 focus:ring-brand-100" data-testid="filter-price-min" />
             <span className="text-slate-400">–</span>
-            <input aria-label="Precio máximo" inputMode="decimal" placeholder={facets ? String(Math.ceil(facets.priceRange.maxCents / 100)) : 'Máx'} value={max} onChange={(e) => setMax(e.target.value)} className="h-9 w-full rounded-lg border border-slate-300 px-2 text-sm" data-testid="filter-price-max" />
+            <input aria-label="Precio máximo" inputMode="decimal" placeholder={facets ? String(Math.ceil(facets.priceRange.maxCents / 100)) : 'Máx'} value={max} onChange={(e) => setMax(e.target.value)} className="h-10 w-full rounded-full border border-slate-200 px-3.5 text-sm focus:border-brand-500 focus:outline-none focus:ring-4 focus:ring-brand-100" data-testid="filter-price-max" />
           </div>
           {priceError && (
             <p className="text-xs text-rose-600" role="alert">
@@ -108,13 +108,13 @@ function Filters({ mode, facets, params, update }: { mode: CatalogMode; facets?:
       </FilterSection>
       <FilterSection title="Disponibilidad">
         <label className="flex cursor-pointer items-center gap-2.5 text-sm text-slate-700">
-          <input type="checkbox" className="h-4 w-4 accent-brand-600" checked={params.get('inStock') === 'true'} onChange={(e) => update({ inStock: e.target.checked ? 'true' : null })} data-testid="filter-in-stock" />
+          <input type="checkbox" className="h-[18px] w-[18px] rounded accent-slate-950" checked={params.get('inStock') === 'true'} onChange={(e) => update({ inStock: e.target.checked ? 'true' : null })} data-testid="filter-in-stock" />
           <span className="flex-1">Solo productos en stock</span>
           {facets && <span className="text-slate-400">{facets.inStockCount}</span>}
         </label>
         {mode !== 'offers' && (
           <label className="flex cursor-pointer items-center gap-2.5 text-sm text-slate-700">
-            <input type="checkbox" className="h-4 w-4 accent-brand-600" checked={params.get('onSale') === 'true'} onChange={(e) => update({ onSale: e.target.checked ? 'true' : null })} data-testid="filter-on-sale" />
+            <input type="checkbox" className="h-[18px] w-[18px] rounded accent-slate-950" checked={params.get('onSale') === 'true'} onChange={(e) => update({ onSale: e.target.checked ? 'true' : null })} data-testid="filter-on-sale" />
             <span className="flex-1">Solo ofertas</span>
             {facets && <span className="text-slate-400">{facets.onSaleCount}</span>}
           </label>
@@ -123,7 +123,7 @@ function Filters({ mode, facets, params, update }: { mode: CatalogMode; facets?:
       <FilterSection title="Valoración">
         {[4, 3, 2].map((r) => (
           <label key={r} className="flex cursor-pointer items-center gap-2.5 text-sm text-slate-700">
-            <input type="radio" name="minRating" className="h-4 w-4 accent-brand-600" checked={params.get('minRating') === String(r)} onChange={() => update({ minRating: String(r) })} data-testid={`filter-rating-${r}`} />
+            <input type="radio" name="minRating" className="h-[18px] w-[18px] rounded accent-slate-950" checked={params.get('minRating') === String(r)} onChange={() => update({ minRating: String(r) })} data-testid={`filter-rating-${r}`} />
             <Rating value={r} /> <span>o más</span>
           </label>
         ))}
@@ -188,13 +188,13 @@ export function CatalogPage({ mode }: { mode: CatalogMode }) {
   return (
     <div className="container-page py-6">
       <Breadcrumbs items={breadcrumbs} />
-      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+      <div className="mb-8 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="text-2xl font-extrabold tracking-tight sm:text-3xl" data-testid="catalog-title">
+          <h1 className="text-4xl font-semibold tracking-[-0.04em] text-slate-950 sm:text-5xl" data-testid="catalog-title">
             {title ?? ' '}
           </h1>
-          {mode === 'category' && category.data?.description && <p className="mt-1 text-slate-600">{category.data.description}</p>}
-          <p className="mt-1 text-sm text-slate-500" aria-live="polite" data-testid="results-count">
+          {mode === 'category' && category.data?.description && <p className="mt-2 text-lg text-slate-500">{category.data.description}</p>}
+          <p className="mt-3 inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600" aria-live="polite" data-testid="results-count">
             {data ? `${data.meta.total} ${data.meta.total === 1 ? 'producto' : 'productos'}` : 'Buscando…'}
           </p>
         </div>
@@ -205,7 +205,7 @@ export function CatalogPage({ mode }: { mode: CatalogMode }) {
           <label htmlFor="sort" className="sr-only">
             Ordenar por
           </label>
-          <select id="sort" value={query.sort} onChange={(e) => update({ sort: e.target.value })} className="h-10 rounded-xl border border-slate-300 bg-white px-3 text-sm" data-testid="sort-select">
+          <select id="sort" value={query.sort} onChange={(e) => update({ sort: e.target.value })} className="h-11 rounded-full border border-slate-200 bg-white pl-4 pr-9 text-sm font-medium hover:border-slate-300 focus:border-brand-500 focus:outline-none focus:ring-4 focus:ring-brand-100" data-testid="sort-select">
             {SORTS.map(([value, label]) => (
               <option key={value} value={value}>
                 {label}
@@ -218,28 +218,28 @@ export function CatalogPage({ mode }: { mode: CatalogMode }) {
       {activeFilters.length > 0 && (
         <div className="mb-4 flex flex-wrap items-center gap-2" data-testid="active-filters">
           {activeFilters.map((k) => (
-            <button key={k} onClick={() => update({ [k]: null })} className="inline-flex items-center gap-1 rounded-full bg-brand-50 px-3 py-1 text-xs font-semibold text-brand-800 hover:bg-brand-100">
+            <button key={k} onClick={() => update({ [k]: null })} className="inline-flex items-center gap-1.5 rounded-full bg-slate-950 px-3.5 py-1.5 text-xs font-medium text-white transition hover:bg-brand-600">
               {k === 'brand' ? `Marcas: ${params.get('brand')}` : k === 'min' ? `Desde ${params.get('min')} €` : k === 'max' ? `Hasta ${params.get('max')} €` : k === 'inStock' ? 'En stock' : k === 'onSale' ? 'Ofertas' : k === 'featured' ? 'Destacados' : `${params.get('minRating')}★ o más`}
               <X className="h-3 w-3" aria-hidden="true" />
               <span className="sr-only">Quitar filtro</span>
             </button>
           ))}
-          <button className="text-xs font-semibold text-slate-600 underline" onClick={() => update(Object.fromEntries(FILTER_KEYS.map((k) => [k, null])))} data-testid="clear-filters">
+          <button className="px-2 text-xs font-semibold text-slate-600 underline-offset-4 hover:text-slate-950 hover:underline" onClick={() => update(Object.fromEntries(FILTER_KEYS.map((k) => [k, null])))} data-testid="clear-filters">
             Limpiar filtros
           </button>
         </div>
       )}
 
-      <div className="grid gap-6 lg:grid-cols-[16rem_1fr]">
-        <aside className="card hidden h-fit px-5 lg:block" aria-label="Filtros">
+      <div className="grid gap-10 lg:grid-cols-[15rem_1fr]">
+        <aside className="hidden h-fit lg:sticky lg:top-40 lg:block" aria-label="Filtros">
           <Filters mode={mode} facets={data?.facets} params={params} update={update} />
         </aside>
         <Dialog.Root open={filtersOpen} onOpenChange={setFiltersOpen}>
           <Dialog.Portal>
-            <Dialog.Overlay className="fixed inset-0 z-50 bg-slate-950/50" />
-            <Dialog.Content className="fixed inset-y-0 right-0 z-50 w-80 max-w-[90vw] overflow-y-auto bg-white px-5 py-4 shadow-pop">
+            <Dialog.Overlay className="fixed inset-0 z-50 bg-slate-950/40 backdrop-blur-sm" />
+            <Dialog.Content className="fixed inset-y-2 right-2 z-50 w-80 max-w-[90vw] overflow-y-auto rounded-4xl bg-white px-6 py-5 shadow-pop">
               <div className="flex items-center justify-between">
-                <Dialog.Title className="text-lg font-bold">Filtros</Dialog.Title>
+                <Dialog.Title className="mb-4 text-lg font-semibold tracking-tight">Filtros</Dialog.Title>
                 <Dialog.Description className="sr-only">Filtra los productos del catálogo</Dialog.Description>
                 <Dialog.Close className="rounded-lg p-1.5 hover:bg-slate-100" aria-label="Cerrar filtros">
                   <X className="h-5 w-5" />

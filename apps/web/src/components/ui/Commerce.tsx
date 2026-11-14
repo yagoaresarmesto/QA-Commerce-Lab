@@ -5,14 +5,14 @@ import { formatPrice } from '../../lib/format';
 import type { Availability } from '../../lib/types';
 
 export function Price({ cents, compareAt, size = 'md', className }: { cents: number; compareAt?: number | null; size?: 'sm' | 'md' | 'lg'; className?: string }) {
-  const sizes = { sm: 'text-base', md: 'text-lg', lg: 'text-3xl' };
+  const sizes = { sm: 'text-base', md: 'text-lg', lg: 'text-4xl' };
   return (
     <div className={cn('flex flex-wrap items-baseline gap-x-2', className)}>
-      <span className={cn('font-extrabold tracking-tight text-slate-900', sizes[size])} data-testid="price">
+      <span className={cn('font-semibold tracking-[-0.02em] text-slate-950 tabular-nums', sizes[size])} data-testid="price">
         {formatPrice(cents)}
       </span>
       {compareAt && compareAt > cents && (
-        <span className="text-sm text-slate-500 line-through" data-testid="compare-at-price">
+        <span className="text-sm text-slate-400 line-through tabular-nums" data-testid="compare-at-price">
           <span className="sr-only">Precio anterior: </span>
           {formatPrice(compareAt)}
         </span>
@@ -43,13 +43,25 @@ const availabilityInfo: Record<Availability, { label: string; className: string 
   DISCONTINUED: { label: 'Descatalogado', className: 'text-slate-500' },
 };
 
-export function AvailabilityLabel({ availability, stock, className }: { availability: Availability; stock?: number; className?: string }) {
+export function AvailabilityLabel({
+  availability,
+  stock,
+  className,
+  compact = false,
+}: {
+  availability: Availability;
+  stock?: number;
+  className?: string;
+  /** Short label for dense layouts (product cards) */
+  compact?: boolean;
+}) {
   const info = availabilityInfo[availability];
+  const lowStock = availability === 'LOW_STOCK' && stock !== undefined;
   return (
-    <span className={cn('inline-flex items-center gap-1.5 text-sm font-medium', info.className, className)} data-testid="availability" data-availability={availability}>
-      <span className="h-2 w-2 rounded-full bg-current" aria-hidden="true" />
-      {info.label}
-      {availability === 'LOW_STOCK' && stock !== undefined && <span className="font-normal">· quedan {stock}</span>}
+    <span className={cn('inline-flex items-center gap-1.5 whitespace-nowrap text-sm font-medium', info.className, className)} data-testid="availability" data-availability={availability}>
+      <span className="h-1.5 w-1.5 rounded-full bg-current" aria-hidden="true" />
+      {compact && lowStock ? `Quedan ${stock}` : info.label}
+      {!compact && lowStock && <span className="font-normal">· quedan {stock}</span>}
     </span>
   );
 }
@@ -72,10 +84,10 @@ export function QuantityStepper({
   testId?: string;
 }) {
   return (
-    <div className="inline-flex items-center rounded-xl border border-slate-300 bg-white" role="group" aria-label={label} data-testid={testId}>
+    <div className="inline-flex items-center rounded-full border border-slate-200 bg-white" role="group" aria-label={label} data-testid={testId}>
       <button
         type="button"
-        className="flex h-10 w-10 items-center justify-center rounded-l-xl text-slate-700 hover:bg-slate-100 disabled:cursor-not-allowed disabled:text-slate-300"
+        className="flex h-11 w-11 items-center justify-center rounded-full text-slate-700 hover:bg-slate-100 disabled:cursor-not-allowed disabled:text-slate-300"
         onClick={() => onChange(value - 1)}
         disabled={disabled || value <= min}
         aria-label="Disminuir cantidad"
@@ -88,7 +100,7 @@ export function QuantityStepper({
       </output>
       <button
         type="button"
-        className="flex h-10 w-10 items-center justify-center rounded-r-xl text-slate-700 hover:bg-slate-100 disabled:cursor-not-allowed disabled:text-slate-300"
+        className="flex h-11 w-11 items-center justify-center rounded-full text-slate-700 hover:bg-slate-100 disabled:cursor-not-allowed disabled:text-slate-300"
         onClick={() => onChange(value + 1)}
         disabled={disabled || value >= max}
         aria-label="Aumentar cantidad"
@@ -107,10 +119,10 @@ export function Pagination({ page, totalPages, onPage }: { page: number; totalPa
     if (p === 1 || p === totalPages || Math.abs(p - page) <= 1) pages.push(p);
     else if (pages[pages.length - 1] !== '…') pages.push('…');
   }
-  const btn = 'flex h-10 min-w-10 items-center justify-center rounded-xl px-3 text-sm font-semibold';
+  const btn = 'flex h-10 min-w-10 items-center justify-center rounded-full px-3 text-sm font-semibold transition';
   return (
     <nav className="flex flex-wrap items-center justify-center gap-1.5" aria-label="Paginación" data-testid="pagination">
-      <button className={cn(btn, 'text-slate-700 hover:bg-white disabled:text-slate-300')} onClick={() => onPage(page - 1)} disabled={page <= 1} aria-label="Página anterior">
+      <button className={cn(btn, 'text-slate-700 hover:bg-slate-100 disabled:text-slate-300')} onClick={() => onPage(page - 1)} disabled={page <= 1} aria-label="Página anterior">
         <ChevronLeft className="h-4 w-4" />
       </button>
       {pages.map((p, i) =>
@@ -121,7 +133,7 @@ export function Pagination({ page, totalPages, onPage }: { page: number; totalPa
         ) : (
           <button
             key={p}
-            className={cn(btn, p === page ? 'bg-brand-600 text-white' : 'text-slate-700 hover:bg-white')}
+            className={cn(btn, p === page ? 'bg-slate-950 text-white' : 'text-slate-700 hover:bg-slate-100')}
             onClick={() => onPage(p)}
             aria-current={p === page ? 'page' : undefined}
             aria-label={`Página ${p}`}
@@ -130,7 +142,7 @@ export function Pagination({ page, totalPages, onPage }: { page: number; totalPa
           </button>
         ),
       )}
-      <button className={cn(btn, 'text-slate-700 hover:bg-white disabled:text-slate-300')} onClick={() => onPage(page + 1)} disabled={page >= totalPages} aria-label="Página siguiente">
+      <button className={cn(btn, 'text-slate-700 hover:bg-slate-100 disabled:text-slate-300')} onClick={() => onPage(page + 1)} disabled={page >= totalPages} aria-label="Página siguiente">
         <ChevronRight className="h-4 w-4" />
       </button>
     </nav>
@@ -139,10 +151,10 @@ export function Pagination({ page, totalPages, onPage }: { page: number; totalPa
 
 export function Breadcrumbs({ items }: { items: Array<{ label: string; to?: string }> }) {
   return (
-    <nav aria-label="Ruta de navegación" className="mb-4 text-sm text-slate-500" data-testid="breadcrumbs">
+    <nav aria-label="Ruta de navegación" className="mb-5 text-[13px] text-slate-500" data-testid="breadcrumbs">
       <ol className="flex flex-wrap items-center gap-1.5">
         <li>
-          <Link to="/" className="hover:text-brand-700">
+          <Link to="/" className="hover:text-slate-950">
             Inicio
           </Link>
         </li>
@@ -150,11 +162,11 @@ export function Breadcrumbs({ items }: { items: Array<{ label: string; to?: stri
           <li key={`${item.label}-${i}`} className="flex items-center gap-1.5">
             <ChevronRight className="h-3.5 w-3.5" aria-hidden="true" />
             {item.to && i < items.length - 1 ? (
-              <Link to={item.to} className="hover:text-brand-700">
+              <Link to={item.to} className="hover:text-slate-950">
                 {item.label}
               </Link>
             ) : (
-              <span aria-current="page" className="font-medium text-slate-700">
+              <span aria-current="page" className="font-medium text-slate-900">
                 {item.label}
               </span>
             )}

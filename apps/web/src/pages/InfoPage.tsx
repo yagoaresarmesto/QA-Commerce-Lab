@@ -31,7 +31,7 @@ const PAGES: Record<string, { title: string; body: Array<[string, string]> }> = 
   },
   garantia: {
     title: 'Garantía',
-    body: [['Garantía de 3 años', 'Todos los productos incluyen 3 años de garantía (ficticia). Las marcas y los productos del catálogo son inventados.']],
+    body: [['Garantía de 3 años', 'Todos los productos incluyen 3 años de garantía (ficticia). Los nombres de productos y marcas pertenecen a sus respectivos propietarios y se usan solo con fines ilustrativos: la tienda no tiene relación con ellos y las imágenes son ilustraciones genéricas.']],
   },
   contacto: {
     title: 'Contacto',
@@ -44,7 +44,7 @@ const PAGES: Record<string, { title: string; body: Array<[string, string]> }> = 
     title: 'Sobre QA Commerce Lab',
     body: [
       ['¿Qué es?', 'Una tienda de electrónica completa y realista creada como System Under Test para practicar automatización de pruebas web y API.'],
-      ['Datos ficticios', 'Productos, marcas, precios, usuarios, pagos y envíos son simulados. Puedes registrarte y comprar tantas veces como quieras.'],
+      ['Datos ficticios', 'Los productos toman nombres de modelos reales como referencia, pero precios, stock, usuarios, pagos y envíos son simulados. Puedes registrarte y comprar tantas veces como quieras.'],
       ['Para QA Engineers', 'Incluye API REST documentada con OpenAPI, datos deterministas, escenarios preparados y simulación controlada de errores en los entornos de testing.'],
     ],
   },
@@ -67,18 +67,18 @@ export function InfoPage() {
   useDocumentTitle(page?.title);
   if (!page) return <NotFoundPage />;
   return (
-    <div className="container-page max-w-3xl py-8">
+    <div className="container-page max-w-3xl py-10 sm:py-14">
       <Breadcrumbs items={[{ label: 'Información' }, { label: page.title }]} />
-      <article className="card space-y-6 p-6 sm:p-8" data-testid="info-page">
-        <h1 className="text-3xl font-extrabold tracking-tight">{page.title}</h1>
+      <article className="space-y-8" data-testid="info-page">
+        <h1 className="text-4xl font-semibold tracking-[-0.035em] sm:text-5xl">{page.title}</h1>
         {page.body.map(([h, p]) => (
           <section key={h}>
-            <h2 className="mb-1 text-lg font-bold">{h}</h2>
+            <h2 className="mb-2 text-xl font-semibold tracking-tight">{h}</h2>
             <p className="leading-relaxed text-slate-700">{p}</p>
           </section>
         ))}
-        <p className="border-t border-slate-100 pt-4 text-sm text-slate-500">
-          Más información: <Link to="/info/envios" className="text-brand-700">envíos</Link> · <Link to="/info/devoluciones" className="text-brand-700">devoluciones</Link> · <Link to="/info/pagos" className="text-brand-700">pagos</Link>
+        <p className="rounded-3xl bg-slate-50 p-5 text-sm text-slate-500">
+          Más información: <Link to="/info/envios" className="font-medium text-slate-950 underline underline-offset-2">envíos</Link> · <Link to="/info/devoluciones" className="font-medium text-slate-950 underline underline-offset-2">devoluciones</Link> · <Link to="/info/pagos" className="font-medium text-slate-950 underline underline-offset-2">pagos</Link>
         </p>
       </article>
     </div>

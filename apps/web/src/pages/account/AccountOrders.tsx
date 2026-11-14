@@ -26,10 +26,10 @@ export function OrdersPage() {
   return (
     <div>
       <div className="mb-5 flex flex-wrap items-center justify-between gap-4">
-        <h1 className="text-2xl font-extrabold tracking-tight">Mis pedidos</h1>
+        <h1 className="heading-xl">Mis pedidos</h1>
         <label className="flex items-center gap-2 text-sm">
           <span className="text-slate-600">Estado</span>
-          <select value={status ?? ''} onChange={(e) => setParams(e.target.value ? { estado: e.target.value } : {})} className="h-10 rounded-xl border border-slate-300 px-3" data-testid="orders-status-filter">
+          <select value={status ?? ''} onChange={(e) => setParams(e.target.value ? { estado: e.target.value } : {})} className="h-10 rounded-full border border-slate-200 pl-4 pr-8" data-testid="orders-status-filter">
             <option value="">Todos</option>
             {(Object.keys(ORDER_STATUS_LABEL) as OrderStatus[]).map((s) => (
               <option key={s} value={s}>{ORDER_STATUS_LABEL[s]}</option>
@@ -44,20 +44,20 @@ export function OrdersPage() {
       )}
       <ul className="space-y-3" data-testid="order-list">
         {data?.data.map((o) => (
-          <li key={o.id} className="card p-4 sm:p-5" data-testid="order-row" data-order-id={o.id} data-order-number={o.orderNumber}>
+          <li key={o.id} className="rounded-3xl border border-slate-200/80 p-5 transition hover:border-slate-300 sm:p-6" data-testid="order-row" data-order-id={o.id} data-order-number={o.orderNumber}>
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <Link to={`/cuenta/pedidos/${o.id}`} className="font-mono font-bold text-brand-700 hover:text-brand-800" data-testid="order-link">{o.orderNumber}</Link>
+                <Link to={`/cuenta/pedidos/${o.id}`} className="font-mono font-semibold text-slate-950 underline-offset-2 hover:underline" data-testid="order-link">{o.orderNumber}</Link>
                 <p className="text-xs text-slate-500">{formatDateTime(o.createdAt)} · {o.itemsCount} {o.itemsCount === 1 ? 'artículo' : 'artículos'}</p>
               </div>
               <div className="flex items-center gap-2">
                 <OrderStatusBadge status={o.status} />
                 <PaymentStatusBadge status={o.paymentStatus} />
               </div>
-              <span className="text-lg font-extrabold">{formatPrice(o.totalCents)}</span>
+              <span className="text-xl font-semibold tracking-tight">{formatPrice(o.totalCents)}</span>
             </div>
             <div className="mt-3 flex gap-2">
-              {o.previewImages.map((src, i) => <ProductImage key={i} src={src} alt="" className="h-12 w-12 rounded-lg bg-slate-50" />)}
+              {o.previewImages.map((src, i) => <ProductImage key={i} src={src} alt="" className="tile h-12 w-12 rounded-xl p-1" />)}
             </div>
           </li>
         ))}
@@ -127,13 +127,13 @@ export function OrderDetailPage() {
   useDocumentTitle(order ? `Pedido ${order.orderNumber}` : 'Pedido');
   if (error instanceof ApiError && error.status === 404) return <NotFoundPage />;
   if (error) return <ErrorState message={errorMessage(error)} onRetry={() => refetch()} />;
-  if (isLoading || !order) return <Skeleton className="h-96" />;
+  if (isLoading || !order) return <Skeleton className="h-96 rounded-4xl" />;
   return (
     <div className="space-y-5" data-testid="order-detail" data-order-status={order.status}>
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <Link to="/cuenta/pedidos" className="text-sm text-slate-500 hover:text-brand-700">← Mis pedidos</Link>
-          <h1 className="mt-1 text-2xl font-extrabold tracking-tight">Pedido <span className="font-mono" data-testid="order-number">{order.orderNumber}</span></h1>
+          <Link to="/cuenta/pedidos" className="text-sm text-slate-500 hover:text-slate-950">← Mis pedidos</Link>
+          <h1 className="mt-2 text-3xl font-semibold tracking-[-0.03em]">Pedido <span className="font-mono" data-testid="order-number">{order.orderNumber}</span></h1>
           <p className="text-sm text-slate-500">Realizado el {formatDateTime(order.createdAt)}</p>
         </div>
         <div className="flex gap-2">
@@ -151,16 +151,16 @@ export function OrderDetailPage() {
       <OrderActions order={order} />
       <div className="grid gap-5 lg:grid-cols-[1fr_20rem]">
         <div className="space-y-5">
-          <section className="card p-5"><h2 className="mb-2 font-bold">Productos</h2><OrderItems order={order} /></section>
-          <section className="card p-5"><h2 className="mb-3 font-bold">Entrega</h2><OrderInfo order={order} /></section>
-          <section className="card p-5"><h2 className="mb-3 font-bold">Pagos</h2><OrderPayments order={order} /></section>
+          <section className="card p-6"><h2 className="mb-2 text-lg font-semibold tracking-tight">Productos</h2><OrderItems order={order} /></section>
+          <section className="card p-6"><h2 className="mb-3 text-lg font-semibold tracking-tight">Entrega</h2><OrderInfo order={order} /></section>
+          <section className="card p-6"><h2 className="mb-3 text-lg font-semibold tracking-tight">Pagos</h2><OrderPayments order={order} /></section>
           {order.actions.canPay && (
-            <section className="card p-5" aria-label="Pagar pedido"><h2 className="mb-3 font-bold">Completar el pago</h2><RetryPayment order={order} /></section>
+            <section className="card p-6" aria-label="Pagar pedido"><h2 className="mb-3 text-lg font-semibold tracking-tight">Completar el pago</h2><RetryPayment order={order} /></section>
           )}
         </div>
         <div className="space-y-5">
-          <section className="card p-5"><h2 className="mb-3 font-bold">Importe</h2><OrderTotals order={order} /></section>
-          <section className="card p-5"><h2 className="mb-3 font-bold">Seguimiento</h2><OrderTimeline order={order} /></section>
+          <section className="card p-6"><h2 className="mb-3 text-lg font-semibold tracking-tight">Importe</h2><OrderTotals order={order} /></section>
+          <section className="card p-6"><h2 className="mb-3 text-lg font-semibold tracking-tight">Seguimiento</h2><OrderTimeline order={order} /></section>
         </div>
       </div>
     </div>

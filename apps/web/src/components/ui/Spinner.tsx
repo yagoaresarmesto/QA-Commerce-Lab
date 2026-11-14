@@ -11,7 +11,7 @@ export function Spinner({ className, label }: { className?: string; label?: stri
 
 export function PageLoader({ label = 'Cargando…' }: { label?: string }) {
   return (
-    <div className="flex min-h-[40vh] items-center justify-center text-brand-600" data-testid="page-loader">
+    <div className="flex min-h-[40vh] items-center justify-center text-slate-950" data-testid="page-loader">
       <Spinner className="h-8 w-8" label={label} />
     </div>
   );

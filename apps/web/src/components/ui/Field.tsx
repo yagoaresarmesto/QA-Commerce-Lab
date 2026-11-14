@@ -3,9 +3,9 @@ import { cn } from '../../lib/cn';
 
 const controlClass = (invalid?: boolean) =>
   cn(
-    'block w-full rounded-xl border bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm transition placeholder:text-slate-400',
-    'focus:outline-none focus:ring-2 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-500',
-    invalid ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-200' : 'border-slate-300 focus:border-brand-500 focus:ring-brand-100',
+    'block w-full rounded-2xl border bg-white px-4 py-3 text-sm text-slate-900 transition placeholder:text-slate-400',
+    'focus:outline-none focus:ring-4 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-500',
+    invalid ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-100' : 'border-slate-200 hover:border-slate-300 focus:border-brand-500 focus:ring-brand-100',
   );
 
 interface FieldWrapperProps {
@@ -23,7 +23,7 @@ export function FieldWrapper({ id, label, error, hint, required, children, class
     <div className={cn('space-y-1.5', className)}>
       {/* The required marker stays outside <label> so the accessible name is exactly the label text. */}
       <div className="flex items-baseline gap-0.5">
-        <label htmlFor={id} className="block text-sm font-medium text-slate-700">
+        <label htmlFor={id} className="block text-[13px] font-medium text-slate-700">
           {label}
         </label>
         {required && (
@@ -133,7 +133,7 @@ export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(function Che
           type="checkbox"
           aria-invalid={error ? true : undefined}
           aria-describedby={error ? `${checkboxId}-error` : undefined}
-          className="mt-0.5 h-4 w-4 shrink-0 rounded border-slate-300 text-brand-600 accent-brand-600 focus:ring-brand-500"
+          className="mt-0.5 h-[18px] w-[18px] shrink-0 rounded-md border-slate-300 accent-slate-950"
           {...rest}
         />
         <label htmlFor={checkboxId} className="text-sm text-slate-700">

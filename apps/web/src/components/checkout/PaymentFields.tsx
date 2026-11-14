@@ -1,6 +1,5 @@
 import { CreditCard, FlaskConical, Landmark } from 'lucide-react';
 import { useState } from 'react';
-import { cn } from '../../lib/cn';
 import type { PaymentMethod } from '../../lib/types';
 import { Input } from '../ui/Field';
 
@@ -58,9 +57,9 @@ export function PaymentFields({
 }) {
   const [showCards, setShowCards] = useState(false);
   const option = (value: PaymentMethod, title: string, text: string, Icon: typeof CreditCard) => (
-    <label className={cn('card flex cursor-pointer items-start gap-3 p-4 transition', method === value ? 'border-brand-500 ring-2 ring-brand-100' : 'hover:border-slate-300')}>
-      <input type="radio" name="paymentMethod" value={value} checked={method === value} onChange={() => onMethod(value)} className="mt-1 h-4 w-4 accent-brand-600" data-testid={`payment-method-${value}`} />
-      <Icon className="mt-0.5 h-5 w-5 text-brand-600" aria-hidden="true" />
+    <label className="choice items-start">
+      <input type="radio" name="paymentMethod" value={value} checked={method === value} onChange={() => onMethod(value)} className="mt-1 h-4 w-4 accent-slate-950" data-testid={`payment-method-${value}`} />
+      <Icon className="mt-0.5 h-5 w-5 text-slate-950" aria-hidden="true" />
       <span>
         <span className="block font-semibold">{title}</span>
         <span className="block text-sm text-slate-500">{text}</span>
@@ -77,7 +76,7 @@ export function PaymentFields({
       </fieldset>
       {method === 'CARD' && (
         <div className="space-y-4" data-testid="card-form">
-          <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+          <div className="rounded-3xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
             <p className="flex items-center gap-2 font-semibold">
               <FlaskConical className="h-4 w-4" /> Entorno de pruebas: nunca introduzcas una tarjeta real
             </p>
@@ -134,7 +133,7 @@ export function PaymentFields({
         </div>
       )}
       {method === 'BANK_TRANSFER' && (
-        <p className="rounded-xl bg-slate-100 p-3 text-sm text-slate-700" data-testid="transfer-info">
+        <p className="rounded-3xl bg-slate-50 p-5 text-sm text-slate-700" data-testid="transfer-info">
           Al confirmar recibirás la referencia y los datos de la cuenta (ficticia). El pedido se cancelará automáticamente si no recibimos la transferencia en 72 horas.
         </p>
       )}

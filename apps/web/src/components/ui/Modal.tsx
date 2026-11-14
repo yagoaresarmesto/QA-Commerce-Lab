@@ -23,10 +23,10 @@ export function Modal({ open, onOpenChange, title, description, children, footer
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-50 bg-slate-950/50 backdrop-blur-sm" />
+        <Dialog.Overlay className="fixed inset-0 z-50 bg-slate-950/40 backdrop-blur-md" />
         <Dialog.Content
           className={cn(
-            'fixed left-1/2 top-1/2 z-50 max-h-[90vh] w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-2xl bg-white p-6 shadow-pop focus:outline-none',
+            'fixed left-1/2 top-1/2 z-50 max-h-[90vh] w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-4xl bg-white p-7 shadow-pop focus:outline-none',
             widths[size],
           )}
           data-testid={testId}
@@ -34,7 +34,7 @@ export function Modal({ open, onOpenChange, title, description, children, footer
         >
           <div className="mb-5 flex items-start justify-between gap-4">
             <div>
-              <Dialog.Title className="text-lg font-bold text-slate-900">{title}</Dialog.Title>
+              <Dialog.Title className="text-xl font-semibold tracking-tight text-slate-950">{title}</Dialog.Title>
               {description ? (
                 <Dialog.Description className="mt-1 text-sm text-slate-600">{description}</Dialog.Description>
               ) : (
@@ -42,7 +42,7 @@ export function Modal({ open, onOpenChange, title, description, children, footer
               )}
             </div>
             <Dialog.Close asChild>
-              <button className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100" aria-label="Cerrar">
+              <button className="rounded-full p-2 text-slate-500 hover:bg-slate-100" aria-label="Cerrar">
                 <X className="h-5 w-5" />
               </button>
             </Dialog.Close>

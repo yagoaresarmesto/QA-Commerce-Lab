@@ -13,23 +13,29 @@ const NAV = [
 export function AdminLayout() {
   return (
     <div className="container-page py-6">
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-slate-900 px-5 py-4 text-white">
-        <div>
-          <p className="text-xs uppercase tracking-widest text-accent-400">Backoffice</p>
-          <p className="text-lg font-bold">Panel de administración</p>
-        </div>
-        <NavLink to="/" className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-white/10">
-          <Store className="h-4 w-4" /> Ver tienda
-        </NavLink>
-      </div>
-      <div className="grid gap-6 lg:grid-cols-[13rem_1fr]">
-        <nav aria-label="Administración" className="card flex h-fit gap-1 overflow-x-auto p-2 lg:flex-col">
-          {NAV.map(([to, label, Icon]) => (
-            <NavLink key={to} to={to} end={to === '/admin'} className={({ isActive }) => cn('flex items-center gap-2.5 whitespace-nowrap rounded-xl px-3 py-2 text-sm font-medium', isActive ? 'bg-slate-900 text-white' : 'text-slate-700 hover:bg-slate-100')} data-testid={`admin-nav-${label.toLowerCase()}`}>
-              <Icon className="h-4 w-4" /> {label}
-            </NavLink>
-          ))}
-        </nav>
+      <div className="grid gap-6 lg:grid-cols-[15rem_1fr] xl:gap-10">
+        <aside className="mesh-dark flex h-fit flex-col gap-5 rounded-4xl p-4 text-white lg:sticky lg:top-40 lg:min-h-[32rem] lg:p-5">
+          <div className="px-2 pt-1">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-accent-400">Backoffice</p>
+            <p className="mt-0.5 text-lg font-semibold tracking-tight">Panel de administración</p>
+          </div>
+          <nav aria-label="Administración" className="flex gap-1 overflow-x-auto lg:flex-col">
+            {NAV.map(([to, label, Icon]) => (
+              <NavLink
+                key={to}
+                to={to}
+                end={to === '/admin'}
+                className={({ isActive }) => cn('flex items-center gap-2.5 whitespace-nowrap rounded-full px-4 py-2.5 text-sm font-medium transition', isActive ? 'bg-white text-slate-950' : 'text-white/70 hover:bg-white/10 hover:text-white')}
+                data-testid={`admin-nav-${label.toLowerCase()}`}
+              >
+                <Icon className="h-4 w-4" /> {label}
+              </NavLink>
+            ))}
+          </nav>
+          <NavLink to="/" className="mt-auto hidden items-center gap-2 rounded-full border border-white/15 px-4 py-2.5 text-sm text-white/80 transition hover:bg-white/10 lg:flex">
+            <Store className="h-4 w-4" /> Ver tienda
+          </NavLink>
+        </aside>
         <div className="min-w-0">
           <Outlet />
         </div>
@@ -40,8 +46,8 @@ export function AdminLayout() {
 
 export function AdminTitle({ title, action }: { title: string; action?: React.ReactNode }) {
   return (
-    <div className="mb-5 flex flex-wrap items-center justify-between gap-4">
-      <h1 className="text-2xl font-extrabold tracking-tight">{title}</h1>
+    <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
+      <h1 className="heading-xl">{title}</h1>
       {action}
     </div>
   );
@@ -49,7 +55,7 @@ export function AdminTitle({ title, action }: { title: string; action?: React.Re
 
 export function Table({ children, testId }: { children: React.ReactNode; testId?: string }) {
   return (
-    <div className="card overflow-x-auto">
+    <div className="overflow-x-auto rounded-3xl border border-slate-200/80 bg-white">
       <table className="w-full min-w-[40rem] text-left text-sm" data-testid={testId}>
         {children}
       </table>
@@ -57,5 +63,5 @@ export function Table({ children, testId }: { children: React.ReactNode; testId?
   );
 }
 
-export const th = 'px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500 bg-slate-50';
-export const td = 'px-4 py-3 align-middle';
+export const th = 'px-4 py-3.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500 bg-slate-50';
+export const td = 'px-4 py-3.5 align-middle';

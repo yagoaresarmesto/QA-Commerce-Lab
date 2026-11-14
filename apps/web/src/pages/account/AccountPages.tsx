@@ -37,15 +37,21 @@ export function AccountLayout() {
   const { user } = useAuth();
   return (
     <div className="container-page py-8">
-      <div className="grid gap-6 lg:grid-cols-[15rem_1fr]">
-        <aside className="card h-fit p-3" aria-label="Mi cuenta">
-          <div className="mb-2 px-3 py-2">
-            <p className="text-xs text-slate-500">Hola,</p>
-            <p className="font-bold" data-testid="account-greeting">{user?.firstName} {user?.lastName}</p>
+      <div className="grid gap-8 lg:grid-cols-[17rem_1fr]">
+        <aside className="h-fit rounded-4xl bg-slate-50 p-3 lg:sticky lg:top-40" aria-label="Mi cuenta">
+          <div className="mb-2 flex items-center gap-3 px-3 py-3">
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-slate-950 text-sm font-semibold text-white" aria-hidden="true">
+              {user?.firstName?.[0]}
+              {user?.lastName?.[0]}
+            </span>
+            <span className="min-w-0">
+              <span className="block text-xs text-slate-500">Hola,</span>
+              <span className="block truncate font-semibold tracking-tight" data-testid="account-greeting">{user?.firstName} {user?.lastName}</span>
+            </span>
           </div>
           <nav className="flex gap-1 overflow-x-auto lg:flex-col">
             {NAV.map(([to, label, Icon]) => (
-              <NavLink key={to} to={to} end={to === '/cuenta'} className={({ isActive }) => cn('flex items-center gap-2.5 whitespace-nowrap rounded-xl px-3 py-2 text-sm font-medium', isActive ? 'bg-brand-50 text-brand-800' : 'text-slate-700 hover:bg-slate-100')}>
+              <NavLink key={to} to={to} end={to === '/cuenta'} className={({ isActive }) => cn('flex items-center gap-2.5 whitespace-nowrap rounded-full px-4 py-2.5 text-sm font-medium transition', isActive ? 'bg-slate-950 text-white' : 'text-slate-700 hover:bg-white')}>
                 <Icon className="h-4 w-4" /> {label}
               </NavLink>
             ))}
@@ -62,8 +68,8 @@ export function AccountLayout() {
 function PageTitle({ title, action }: { title: string; action?: React.ReactNode }) {
   useDocumentTitle(title);
   return (
-    <div className="mb-5 flex items-center justify-between gap-4">
-      <h1 className="text-2xl font-extrabold tracking-tight">{title}</h1>
+    <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
+      <h1 className="heading-xl">{title}</h1>
       {action}
     </div>
   );
@@ -85,26 +91,26 @@ export function AccountDashboardPage() {
       <p className="text-slate-600">Cliente desde {formatDate(user?.createdAt)} · {user?.email}</p>
       <div className="grid gap-4 sm:grid-cols-3">
         {tiles.map(([label, value, to, Icon]) => (
-          <Link key={label} to={to} className="card flex items-center gap-4 p-5 hover:border-brand-200" data-testid={`account-tile-${label.toLowerCase()}`}>
-            <span className="rounded-xl bg-brand-50 p-3 text-brand-600"><Icon className="h-5 w-5" /></span>
+          <Link key={label} to={to} className="group flex items-center gap-4 rounded-3xl bg-slate-50 p-5 transition hover:bg-slate-100" data-testid={`account-tile-${label.toLowerCase()}`}>
+            <span className="rounded-2xl bg-white p-3 text-slate-950 shadow-card ring-1 ring-slate-900/5 transition group-hover:bg-accent-400"><Icon className="h-5 w-5" /></span>
             <span>
-              <span className="block text-2xl font-extrabold">{value ?? '–'}</span>
+              <span className="block text-3xl font-semibold tracking-tight">{value ?? '–'}</span>
               <span className="text-sm text-slate-500">{label}</span>
             </span>
           </Link>
         ))}
       </div>
-      <section className="card p-5">
+      <section className="card p-6">
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="font-bold">Últimos pedidos</h2>
-          <Link to="/cuenta/pedidos" className="text-sm font-semibold text-brand-700">Ver todos</Link>
+          <h2 className="text-lg font-semibold tracking-tight">Últimos pedidos</h2>
+          <Link to="/cuenta/pedidos" className="text-sm font-semibold text-slate-950 underline-offset-2 hover:underline">Ver todos</Link>
         </div>
         {orders.isLoading && <Skeleton className="h-24" />}
         {orders.data?.data.length === 0 && <p className="text-sm text-slate-500">Todavía no has realizado ningún pedido.</p>}
-        <ul className="divide-y divide-slate-100">
+        <ul className="divide-y divide-slate-200/80">
           {orders.data?.data.map((o) => (
             <li key={o.id} className="flex items-center justify-between gap-3 py-3 text-sm">
-              <Link to={`/cuenta/pedidos/${o.id}`} className="font-mono font-semibold text-brand-700">{o.orderNumber}</Link>
+              <Link to={`/cuenta/pedidos/${o.id}`} className="font-mono font-semibold text-slate-950 underline-offset-2 hover:underline">{o.orderNumber}</Link>
               <span className="hidden text-slate-500 sm:inline">{formatDate(o.createdAt)}</span>
               <OrderStatusBadge status={o.status} />
               <span className="font-semibold">{formatPrice(o.totalCents)}</span>
@@ -186,7 +192,7 @@ export function AddressesPage() {
       {data?.length === 0 && <EmptyState icon={<MapPin className="h-8 w-8" />} title="No tienes direcciones guardadas" description="Añade una dirección para agilizar tus compras." testId="addresses-empty" />}
       <ul className="grid gap-4 md:grid-cols-2" data-testid="address-list">
         {data?.map((a) => (
-          <li key={a.id} className={cn('card p-5', a.isDefault && 'border-brand-300')} data-testid="address-card" data-address-id={a.id}>
+          <li key={a.id} className={cn('card p-6', a.isDefault && 'border-slate-950 ring-1 ring-slate-950')} data-testid="address-card" data-address-id={a.id}>
             <div className="mb-2 flex items-center justify-between">
               <p className="font-semibold">{a.label ?? 'Dirección'}</p>
               {a.isDefault && <Badge tone="brand" testId="default-address-badge">Predeterminada</Badge>}
@@ -246,7 +252,7 @@ export function SecurityPage() {
     <div className="space-y-6">
       <PageTitle title="Contraseña y sesiones" />
       <form onSubmit={handleSubmit((v) => change.mutate(v))} noValidate className="card max-w-xl space-y-4 p-6" data-testid="change-password-form">
-        <h2 className="font-bold">Cambiar contraseña</h2>
+        <h2 className="text-lg font-semibold tracking-tight">Cambiar contraseña</h2>
         <Input label="Contraseña actual" type="password" required autoComplete="current-password" {...register('currentPassword')} error={formState.errors.currentPassword?.message} />
         <Input label="Nueva contraseña" type="password" required autoComplete="new-password" {...register('newPassword')} error={formState.errors.newPassword?.message} />
         <PasswordRules value={watch('newPassword') ?? ''} />
@@ -255,7 +261,7 @@ export function SecurityPage() {
       </form>
       <section className="card p-6" aria-labelledby="sessions-title">
         <div className="mb-4 flex items-center justify-between gap-4">
-          <h2 id="sessions-title" className="font-bold">Sesiones activas</h2>
+          <h2 id="sessions-title" className="text-lg font-semibold tracking-tight">Sesiones activas</h2>
           <Button size="sm" variant="outline" onClick={() => revokeOthers.mutate()} loading={revokeOthers.isPending} data-testid="revoke-other-sessions">Cerrar las demás sesiones</Button>
         </div>
         {sessions.isLoading && <Skeleton className="h-20" />}
@@ -313,7 +319,7 @@ export function MyReviewsPage() {
           <li key={r.id} className="card flex gap-4 p-5" data-testid="my-review">
             <ProductImage src={r.productImageUrl} alt="" className="h-16 w-16 shrink-0 rounded-lg bg-slate-50" />
             <div className="min-w-0 flex-1">
-              <Link to={`/producto/${r.productSlug}`} className="text-sm font-semibold text-brand-700">{r.productName}</Link>
+              <Link to={`/producto/${r.productSlug}`} className="text-sm font-semibold text-slate-950 underline-offset-2 hover:underline">{r.productName}</Link>
               <div className="mt-1 flex items-center gap-2"><Rating value={r.rating} /><span className="font-semibold">{r.title}</span></div>
               <p className="mt-1 text-sm text-slate-600">{r.comment}</p>
               <p className="mt-2 text-xs text-slate-500">{formatDate(r.createdAt)}</p>

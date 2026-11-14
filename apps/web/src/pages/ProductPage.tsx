@@ -76,7 +76,7 @@ function ReviewFormCard({ productId, existing, onDone }: { productId: number; ex
     },
   });
   return (
-    <form onSubmit={handleSubmit((v) => save.mutate(v))} className="card space-y-4 p-5" noValidate aria-label="Escribir reseña" data-testid="review-form">
+    <form onSubmit={handleSubmit((v) => save.mutate(v))} className="space-y-4 rounded-4xl border border-slate-200/80 p-6" noValidate aria-label="Escribir reseña" data-testid="review-form">
       <StarInput value={watch('rating')} onChange={(v) => setValue('rating', v, { shouldValidate: true })} error={formState.errors.rating?.message} />
       <Input label="Título" required {...register('title')} error={formState.errors.title?.message} maxLength={120} />
       <Textarea label="Comentario" required {...register('comment')} error={formState.errors.comment?.message} maxLength={2000} />
@@ -115,13 +115,16 @@ function Reviews({ product }: { product: ProductDetail }) {
 
   return (
     <section aria-labelledby="reviews-title" className="space-y-6" id="resenas" data-testid="reviews">
-      <h2 id="reviews-title" className="text-xl font-bold">
-        Opiniones de clientes
-      </h2>
+      <div className="space-y-1.5">
+        <p className="eyebrow">Valoraciones</p>
+        <h2 id="reviews-title" className="heading-lg">
+          Opiniones de clientes
+        </h2>
+      </div>
       <div className="grid gap-6 md:grid-cols-[18rem_1fr]">
-        <div className="card h-fit space-y-3 p-5" data-testid="rating-summary">
+        <div className="h-fit space-y-4 rounded-4xl bg-slate-50 p-6" data-testid="rating-summary">
           <div className="flex items-end gap-2">
-            <span className="text-4xl font-extrabold">{summary ? summary.average.toFixed(1) : '–'}</span>
+            <span className="text-5xl font-semibold tracking-tight">{summary ? summary.average.toFixed(1) : '–'}</span>
             <span className="pb-1 text-sm text-slate-500">de 5</span>
           </div>
           <Rating value={summary?.average ?? 0} count={summary?.count} />
@@ -133,8 +136,8 @@ function Reviews({ product }: { product: ProductDetail }) {
                 <li key={s} className="flex items-center gap-2 text-xs text-slate-600">
                   <span className="w-3">{s}</span>
                   <Star className="h-3 w-3 fill-amber-400 text-amber-400" aria-hidden="true" />
-                  <span className="h-2 flex-1 overflow-hidden rounded-full bg-slate-100">
-                    <span className="block h-full rounded-full bg-amber-400" style={{ width: `${pct}%` }} />
+                  <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-slate-200">
+                    <span className="block h-full rounded-full bg-slate-950" style={{ width: `${pct}%` }} />
                   </span>
                   <span className="w-6 text-right">{n}</span>
                 </li>
@@ -177,7 +180,7 @@ function Reviews({ product }: { product: ProductDetail }) {
                   setSort(e.target.value);
                   setPage(1);
                 }}
-                className="h-9 rounded-lg border border-slate-300 px-2 text-sm"
+                className="h-10 rounded-full border border-slate-200 pl-3.5 pr-8 text-sm"
                 data-testid="reviews-sort"
               >
                 <option value="newest">Más recientes</option>
@@ -188,10 +191,10 @@ function Reviews({ product }: { product: ProductDetail }) {
             </label>
           </div>
           {reviews.isLoading && <Skeleton className="h-32" />}
-          {reviews.data?.data.length === 0 && <p className="card p-6 text-sm text-slate-500">Todavía no hay reseñas. ¡Sé el primero en opinar!</p>}
+          {reviews.data?.data.length === 0 && <p className="rounded-3xl bg-slate-50 p-6 text-sm text-slate-500">Todavía no hay reseñas. ¡Sé el primero en opinar!</p>}
           <ul className="space-y-3">
             {reviews.data?.data.map((r) => (
-              <li key={r.id} className="card p-5" data-testid="review-item" data-review-id={r.id}>
+              <li key={r.id} className="rounded-3xl border border-slate-200/80 p-6" data-testid="review-item" data-review-id={r.id}>
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div className="flex items-center gap-3">
                     <Rating value={r.rating} />
@@ -273,19 +276,20 @@ export function ProductPage() {
   const purchasable = product.availability === 'IN_STOCK' || product.availability === 'LOW_STOCK';
   const maxQty = Math.max(1, Math.min(product.stock, product.maxQuantityPerOrder));
   const image = product.images[activeImage] ?? product.images[0];
+  const keySpecs = product.specs.slice(0, 4);
+  const saving = product.compareAtPriceCents && product.compareAtPriceCents > product.priceCents ? product.compareAtPriceCents - product.priceCents : 0;
 
   return (
     <div className="container-page py-6">
       <Breadcrumbs items={[...product.categoryPath.map((c) => ({ label: c.name, to: `/categoria/${c.slug}` })), { label: product.name }]} />
-      <div className="grid gap-8 lg:grid-cols-2" data-testid="product-detail" data-product-id={product.id} data-sku={product.sku}>
-        <div className="space-y-3">
-          <div className="card relative overflow-hidden bg-gradient-to-b from-slate-50 to-white p-6">
-            {product.discountPercent > 0 && (
-              <Badge tone="red" className="absolute left-4 top-4 text-sm">
-                -{product.discountPercent}%
-              </Badge>
-            )}
-            <ProductImage src={image.url} alt={image.alt} className="mx-auto aspect-square w-full max-w-lg" />
+      <div className="grid gap-10 lg:grid-cols-[1.15fr_1fr] xl:gap-16" data-testid="product-detail" data-product-id={product.id} data-sku={product.sku}>
+        <div className="space-y-4 lg:sticky lg:top-40 lg:self-start">
+          <div className="tile relative overflow-hidden rounded-4xl p-8 sm:p-14">
+            <div className="absolute left-5 top-5 z-10 flex gap-2">
+              {product.discountPercent > 0 && <Badge tone="dark" className="px-3 py-1.5 text-xs">-{product.discountPercent}%</Badge>}
+              {product.isNew && <Badge tone="lime" className="px-3 py-1.5 text-xs">Novedad</Badge>}
+            </div>
+            <ProductImage src={image.url} alt={image.alt} className="mx-auto aspect-square w-full max-w-xl" />
           </div>
           {product.images.length > 1 && (
             <div className="flex gap-3" role="tablist" aria-label="Imágenes del producto">
@@ -296,7 +300,7 @@ export function ProductPage() {
                   aria-selected={i === activeImage}
                   aria-label={`Ver imagen ${i + 1}`}
                   onClick={() => setActiveImage(i)}
-                  className={cn('card h-20 w-20 overflow-hidden p-1.5', i === activeImage && 'ring-2 ring-brand-500')}
+                  className={cn('tile h-20 w-20 overflow-hidden rounded-2xl p-2 transition sm:h-24 sm:w-24', i === activeImage ? 'ring-2 ring-slate-950' : 'opacity-70 hover:opacity-100')}
                   data-testid="product-thumbnail"
                 >
                   <ProductImage src={img.url} alt="" className="h-full w-full" />
@@ -306,31 +310,47 @@ export function ProductPage() {
           )}
         </div>
 
-        <div className="space-y-5">
-          <div className="space-y-2">
-            <Link to={`/buscar?brand=${product.brand.slug}`} className="text-sm font-semibold uppercase tracking-wide text-brand-700 hover:text-brand-800">
-              {product.brand.name}
-            </Link>
-            <h1 className="text-2xl font-extrabold tracking-tight sm:text-3xl" data-testid="product-name">
-              {product.name}
-            </h1>
-            <div className="flex flex-wrap items-center gap-3 text-sm text-slate-500">
-              <a href="#resenas" className="hover:text-brand-700">
+        <div className="space-y-7">
+          <div className="space-y-4">
+            <div className="flex flex-wrap items-center gap-3">
+              <Link to={`/buscar?brand=${product.brand.slug}`} className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700 transition hover:bg-slate-950 hover:text-white">
+                {product.brand.name}
+              </Link>
+              <a href="#resenas" className="text-sm text-slate-500 hover:text-slate-950">
                 <Rating value={product.ratingAvg} count={product.ratingCount} showValue />
               </a>
-              <span>SKU: <span data-testid="product-sku">{product.sku}</span></span>
             </div>
-            <p className="text-slate-700">{product.shortDescription}</p>
+            <h1 className="text-3xl font-semibold leading-[1.1] tracking-[-0.035em] text-slate-950 sm:text-[2.6rem]" data-testid="product-name">
+              {product.name}
+            </h1>
+            <p className="text-lg text-slate-600">{product.shortDescription}</p>
+            <p className="text-xs text-slate-400">
+              SKU: <span data-testid="product-sku">{product.sku}</span>
+            </p>
           </div>
 
-          <div className="card space-y-4 p-5">
-            <div>
-              <Price cents={product.priceCents} compareAt={product.compareAtPriceCents} size="lg" />
-              <p className="text-xs text-slate-500">
-                IVA incluido{product.compareAtPriceCents && product.compareAtPriceCents > product.priceCents ? ` · Ahorras ${formatPrice(product.compareAtPriceCents - product.priceCents)}` : ''}
-              </p>
+          {keySpecs.length > 0 && (
+            <dl className="grid grid-cols-2 gap-2.5" data-testid="key-specs">
+              {keySpecs.map((s) => (
+                <div key={s.name} className="rounded-2xl border border-slate-200/80 px-4 py-3">
+                  <dt className="text-[11px] font-medium uppercase tracking-[0.08em] text-slate-500">{s.name}</dt>
+                  <dd className="mt-0.5 line-clamp-2 text-sm font-medium text-slate-950">{s.value}</dd>
+                </div>
+              ))}
+            </dl>
+          )}
+
+          <div className="space-y-5 rounded-4xl bg-slate-50 p-6 sm:p-7">
+            <div className="flex flex-wrap items-end justify-between gap-3">
+              <div>
+                <Price cents={product.priceCents} compareAt={product.compareAtPriceCents} size="lg" />
+                <p className="mt-1 text-xs text-slate-500">
+                  IVA incluido
+                  {saving > 0 && <span className="ml-2 rounded-full bg-accent-300 px-2 py-0.5 font-semibold text-slate-950">Ahorras {formatPrice(saving)}</span>}
+                </p>
+              </div>
+              <AvailabilityLabel availability={product.availability} stock={product.stock} />
             </div>
-            <AvailabilityLabel availability={product.availability} stock={product.stock} />
             {product.availability === 'DISCONTINUED' && (
               <Alert tone="warning" title="Producto descatalogado">
                 Este producto ya no está a la venta.
@@ -369,39 +389,55 @@ export function ProductPage() {
               </Button>
               <FavoriteButton productId={product.id} />
             </div>
-            {purchasable && (
-              <p className="text-xs text-slate-500">Máximo {product.maxQuantityPerOrder} unidades por pedido.</p>
-            )}
-            <ul className="grid gap-2 border-t border-slate-100 pt-4 text-xs text-slate-600 sm:grid-cols-3">
-              <li className="flex items-center gap-2"><Truck className="h-4 w-4 text-brand-600" /> Envío gratis desde 99 €</li>
-              <li className="flex items-center gap-2"><RotateCcw className="h-4 w-4 text-brand-600" /> 14 días de devolución</li>
-              <li className="flex items-center gap-2"><ShieldCheck className="h-4 w-4 text-brand-600" /> 3 años de garantía</li>
-            </ul>
+            {purchasable && <p className="text-xs text-slate-500">Máximo {product.maxQuantityPerOrder} unidades por pedido.</p>}
           </div>
+
+          <ul className="grid gap-3 text-sm text-slate-600 sm:grid-cols-3">
+            {[
+              [Truck, 'Envío gratis', 'Desde 99 €'],
+              [RotateCcw, 'Devolución', '14 días'],
+              [ShieldCheck, 'Garantía', '3 años'],
+            ].map(([Icon, title, text]) => {
+              const I = Icon as typeof Truck;
+              return (
+                <li key={title as string} className="flex items-center gap-3">
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-slate-100 text-slate-950">
+                    <I className="h-[18px] w-[18px]" />
+                  </span>
+                  <span>
+                    <span className="block font-medium text-slate-950">{title as string}</span>
+                    <span className="text-xs">{text as string}</span>
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
         </div>
       </div>
 
-      <div className="mt-10 grid gap-8 lg:grid-cols-2">
-        <section aria-labelledby="description-title" className="card p-6">
-          <h2 id="description-title" className="mb-3 text-xl font-bold">
+      <div className="mt-20 grid gap-12 lg:grid-cols-[1fr_1.2fr]">
+        <section aria-labelledby="description-title" className="space-y-4">
+          <p className="eyebrow">Sobre el producto</p>
+          <h2 id="description-title" className="heading-lg">
             Descripción
           </h2>
-          <p className="leading-relaxed text-slate-700" data-testid="product-description">
+          <p className="text-[17px] leading-relaxed text-slate-600" data-testid="product-description">
             {product.description}
           </p>
         </section>
-        <section aria-labelledby="specs-title" className="card p-6">
-          <h2 id="specs-title" className="mb-3 text-xl font-bold">
+        <section aria-labelledby="specs-title" className="space-y-4">
+          <p className="eyebrow">Ficha técnica</p>
+          <h2 id="specs-title" className="heading-lg">
             Especificaciones
           </h2>
-          <table className="w-full text-sm" data-testid="product-specs">
+          <table className="w-full overflow-hidden rounded-3xl text-sm" data-testid="product-specs">
             <tbody>
-              {product.specs.map((s) => (
-                <tr key={s.name} className="border-b border-slate-100 last:border-0">
-                  <th scope="row" className="w-2/5 py-2.5 pr-4 text-left font-medium text-slate-500">
+              {product.specs.map((s, i) => (
+                <tr key={s.name} className={i % 2 === 0 ? 'bg-slate-50' : 'bg-white'}>
+                  <th scope="row" className="w-2/5 px-5 py-3.5 text-left font-medium text-slate-500">
                     {s.name}
                   </th>
-                  <td className="py-2.5 text-slate-800">{s.value}</td>
+                  <td className="px-5 py-3.5 font-medium text-slate-950">{s.value}</td>
                 </tr>
               ))}
             </tbody>
@@ -409,16 +445,16 @@ export function ProductPage() {
         </section>
       </div>
 
-      <div className="mt-10">
+      <div className="mt-20">
         <Reviews product={product} />
       </div>
 
       {related.data && related.data.length > 0 && (
-        <div className="mt-12">
-          <ProductRail title="También te puede interesar" products={related.data} testId="related-products" />
+        <div className="mt-20">
+          <ProductRail eyebrow="Misma categoría" title="También te puede interesar" products={related.data} testId="related-products" />
         </div>
       )}
-      <div className="mt-8 text-center">
+      <div className="mt-10 text-center">
         <ButtonLink to={`/categoria/${product.category.slug}`} variant="outline">
           Ver más en {product.category.name}
         </ButtonLink>

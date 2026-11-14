@@ -34,7 +34,7 @@ export function AdminOrdersPage() {
   return (
     <div>
       <AdminTitle title="Pedidos" />
-      <div className="card mb-4 grid gap-3 p-4 md:grid-cols-6">
+      <div className="mb-5 grid gap-3 rounded-3xl bg-slate-50 p-4 md:grid-cols-6">
         <form className="md:col-span-2" onSubmit={(e: FormEvent) => { e.preventDefault(); set('q', search.trim() || null); }}>
           <Input label="Buscar" placeholder="Nº de pedido o email" value={search} onChange={(e) => setSearch(e.target.value)} data-testid="admin-order-search" />
         </form>
@@ -56,7 +56,7 @@ export function AdminOrdersPage() {
           <tbody className="divide-y divide-slate-100">
             {data?.data.map((o) => (
               <tr key={o.id} data-testid="admin-order-row" data-order-id={o.id}>
-                <td className={td}><Link to={`/admin/pedidos/${o.id}`} className="font-mono font-semibold text-brand-700">{o.orderNumber}</Link></td>
+                <td className={td}><Link to={`/admin/pedidos/${o.id}`} className="whitespace-nowrap font-mono font-semibold text-slate-950 underline-offset-2 hover:underline">{o.orderNumber}</Link></td>
                 <td className={td}>{formatDateTime(o.createdAt)}</td>
                 <td className={td}>{o.customer.email}</td>
                 <td className={td}><OrderStatusBadge status={o.status} /></td>
@@ -115,10 +115,10 @@ export function AdminOrderDetailPage() {
       <div className="flex flex-wrap items-center gap-2">
         <OrderStatusBadge status={order.status} /> <PaymentStatusBadge status={order.paymentStatus} />
         {order.testRunId && <Badge tone="violet">run: {order.testRunId}</Badge>}
-        <span className="text-sm text-slate-500">Creado {formatDateTime(order.createdAt)} · Cliente <Link to={`/admin/usuarios?q=${encodeURIComponent(order.customer.email)}`} className="font-semibold text-brand-700">{order.customer.email}</Link></span>
+        <span className="text-sm text-slate-500">Creado {formatDateTime(order.createdAt)} · Cliente <Link to={`/admin/usuarios?q=${encodeURIComponent(order.customer.email)}`} className="font-semibold text-slate-950 underline-offset-2 hover:underline">{order.customer.email}</Link></span>
       </div>
       <section className="card space-y-4 p-5" aria-label="Gestión del pedido">
-        <h2 className="font-bold">Gestionar pedido</h2>
+        <h2 className="text-lg font-semibold tracking-tight">Gestionar pedido</h2>
         {order.canConfirmPayment && (
           <Alert tone="warning" title="Transferencia pendiente">
             <Button size="sm" className="mt-2" onClick={() => setConfirmPay(true)} data-testid="confirm-payment">Marcar transferencia como recibida</Button>
@@ -140,14 +140,14 @@ export function AdminOrderDetailPage() {
       </section>
       <div className="grid gap-5 lg:grid-cols-[1fr_20rem]">
         <div className="space-y-5">
-          <section className="card p-5"><h2 className="mb-2 font-bold">Productos</h2><OrderItems order={order} /></section>
-          <section className="card p-5"><h2 className="mb-3 font-bold">Entrega</h2><OrderInfo order={order} /></section>
-          <section className="card p-5"><h2 className="mb-3 font-bold">Pagos</h2><OrderPayments order={order} /></section>
-          {order.customerNote && <section className="card p-5"><h2 className="mb-2 font-bold">Nota del cliente</h2><p className="text-sm text-slate-600">{order.customerNote}</p></section>}
+          <section className="card p-6"><h2 className="mb-2 text-lg font-semibold tracking-tight">Productos</h2><OrderItems order={order} /></section>
+          <section className="card p-6"><h2 className="mb-3 text-lg font-semibold tracking-tight">Entrega</h2><OrderInfo order={order} /></section>
+          <section className="card p-6"><h2 className="mb-3 text-lg font-semibold tracking-tight">Pagos</h2><OrderPayments order={order} /></section>
+          {order.customerNote && <section className="card p-6"><h2 className="mb-2 text-lg font-semibold tracking-tight">Nota del cliente</h2><p className="text-sm text-slate-600">{order.customerNote}</p></section>}
         </div>
         <div className="space-y-5">
-          <section className="card p-5"><h2 className="mb-3 font-bold">Importe</h2><OrderTotals order={order} /></section>
-          <section className="card p-5"><h2 className="mb-3 font-bold">Historial</h2><OrderTimeline order={order} /></section>
+          <section className="card p-6"><h2 className="mb-3 text-lg font-semibold tracking-tight">Importe</h2><OrderTotals order={order} /></section>
+          <section className="card p-6"><h2 className="mb-3 text-lg font-semibold tracking-tight">Historial</h2><OrderTimeline order={order} /></section>
         </div>
       </div>
       <ConfirmDialog open={confirmPay} onOpenChange={setConfirmPay} title="Confirmar transferencia" description={`Se marcará el pedido como pagado (${formatPrice(order.totalCents)}).`} confirmLabel="Confirmar pago" tone="primary" loading={confirmPayment.isPending} onConfirm={() => confirmPayment.mutate()} />
@@ -184,7 +184,7 @@ export function AdminUsersPage() {
   return (
     <div>
       <AdminTitle title="Usuarios" />
-      <div className="card mb-4 grid gap-3 p-4 md:grid-cols-4">
+      <div className="mb-5 grid gap-3 rounded-3xl bg-slate-50 p-4 md:grid-cols-4">
         <form className="md:col-span-2" onSubmit={(e: FormEvent) => { e.preventDefault(); set('q', search.trim() || null); }}>
           <Input label="Buscar" placeholder="Email o nombre" value={search} onChange={(e) => setSearch(e.target.value)} data-testid="admin-user-search" />
         </form>

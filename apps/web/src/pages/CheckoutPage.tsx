@@ -20,7 +20,7 @@ const STEPS = ['Dirección', 'Envío', 'Pago', 'Revisión'] as const;
 
 function Stepper({ step, onStep }: { step: number; onStep: (s: number) => void }) {
   return (
-    <ol className="mb-8 flex items-center gap-2" aria-label="Pasos del checkout" data-testid="checkout-steps">
+    <ol className="mb-10 flex items-center gap-2 rounded-full bg-slate-50 p-1.5" aria-label="Pasos del checkout" data-testid="checkout-steps">
       {STEPS.map((label, i) => {
         const done = i < step;
         return (
@@ -30,15 +30,15 @@ function Stepper({ step, onStep }: { step: number; onStep: (s: number) => void }
               disabled={i > step}
               onClick={() => onStep(i)}
               aria-current={i === step ? 'step' : undefined}
-              className={cn('flex items-center gap-2 text-sm font-semibold', i === step ? 'text-brand-700' : done ? 'text-slate-700' : 'text-slate-400')}
+              className={cn('flex items-center gap-2 rounded-full py-1 pl-1 pr-3 text-sm font-medium transition', i === step ? 'bg-white text-slate-950 shadow-card' : done ? 'text-slate-700 hover:bg-white/60' : 'text-slate-400')}
               data-testid={`checkout-step-${i + 1}`}
             >
-              <span className={cn('flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 text-xs', i === step ? 'border-brand-600 bg-brand-600 text-white' : done ? 'border-emerald-500 bg-emerald-500 text-white' : 'border-slate-300')}>
+              <span className={cn('flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-semibold', i === step ? 'bg-slate-950 text-white' : done ? 'bg-accent-400 text-slate-950' : 'bg-slate-200 text-slate-500')}>
                 {done ? <Check className="h-4 w-4" /> : i + 1}
               </span>
               <span className="hidden sm:inline">{label}</span>
             </button>
-            {i < STEPS.length - 1 && <span className={cn('h-0.5 flex-1 rounded', done ? 'bg-emerald-500' : 'bg-slate-200')} aria-hidden="true" />}
+            {i < STEPS.length - 1 && <span className={cn('h-px flex-1', done ? 'bg-slate-950' : 'bg-slate-200')} aria-hidden="true" />}
           </li>
         );
       })}
@@ -130,8 +130,8 @@ export function CheckoutPage() {
 
   if (cart.isLoading || addresses.isLoading || methods.isLoading) {
     return (
-      <div className="container-page py-8">
-        <Skeleton className="h-96" />
+      <div className="container-page py-10">
+        <Skeleton className="h-96 rounded-4xl" />
       </div>
     );
   }
@@ -168,12 +168,15 @@ export function CheckoutPage() {
   const q = quote.data;
 
   return (
-    <div className="container-page max-w-5xl py-8">
-      <h1 className="mb-6 text-2xl font-extrabold tracking-tight sm:text-3xl">Finalizar compra</h1>
+    <div className="container-page max-w-6xl py-8 sm:py-10">
+      <div className="mb-8 space-y-1.5">
+        <p className="eyebrow">Pago seguro simulado</p>
+        <h1 className="heading-xl">Finalizar compra</h1>
+      </div>
       <Stepper step={step} onStep={(s) => s <= step && setStep(s)} />
-      <div className="grid gap-6 lg:grid-cols-[1fr_20rem]">
-        <section className="card p-5 sm:p-6" aria-labelledby="step-title">
-          <h2 id="step-title" className="mb-5 text-lg font-bold">
+      <div className="grid gap-8 lg:grid-cols-[1fr_22rem] xl:gap-12">
+        <section aria-labelledby="step-title">
+          <h2 id="step-title" className="mb-6 text-2xl font-semibold tracking-tight">
             {step + 1}. {STEPS[step] === 'Dirección' ? 'Dirección de envío' : STEPS[step] === 'Envío' ? 'Método de envío' : STEPS[step] === 'Pago' ? 'Método de pago' : 'Revisa y confirma tu pedido'}
           </h2>
 
@@ -183,11 +186,11 @@ export function CheckoutPage() {
                 <fieldset className="grid gap-3 sm:grid-cols-2" data-testid="address-options">
                   <legend className="sr-only">Selecciona una dirección</legend>
                   {addresses.data.map((a) => (
-                    <label key={a.id} className={cn('card flex cursor-pointer gap-3 p-4', addressId === a.id ? 'border-brand-500 ring-2 ring-brand-100' : 'hover:border-slate-300')} data-testid="address-option">
-                      <input type="radio" name="address" className="mt-1 h-4 w-4 accent-brand-600" checked={addressId === a.id} onChange={() => setAddressId(a.id)} />
+                    <label key={a.id} className="choice" data-testid="address-option">
+                      <input type="radio" name="address" className="mt-1 h-4 w-4 accent-slate-950" checked={addressId === a.id} onChange={() => setAddressId(a.id)} />
                       <span className="text-sm">
                         <span className="block font-semibold">
-                          {a.label ?? 'Dirección'} {a.isDefault && <span className="ml-1 text-xs font-medium text-brand-700">(predeterminada)</span>}
+                          {a.label ?? 'Dirección'} {a.isDefault && <span className="ml-1 rounded-full bg-accent-300 px-2 py-0.5 text-[11px] font-semibold text-slate-950">predeterminada</span>}
                         </span>
                         <span className="block text-slate-600">{a.fullName}</span>
                         <span className="block text-slate-600">
@@ -226,8 +229,8 @@ export function CheckoutPage() {
                   const subtotalAfterDiscount = cart.data!.totals.subtotalCents - cart.data!.totals.discountCents;
                   const free = m.freeOverCents !== null && subtotalAfterDiscount >= m.freeOverCents;
                   return (
-                    <label key={m.code} className={cn('card flex cursor-pointer items-center gap-3 p-4', shippingCode === m.code ? 'border-brand-500 ring-2 ring-brand-100' : 'hover:border-slate-300')}>
-                      <input type="radio" name="shipping" className="h-4 w-4 accent-brand-600" checked={shippingCode === m.code} onChange={() => setShippingCode(m.code)} data-testid={`shipping-${m.code}`} />
+                    <label key={m.code} className="choice items-center">
+                      <input type="radio" name="shipping" className="h-4 w-4 accent-slate-950" checked={shippingCode === m.code} onChange={() => setShippingCode(m.code)} data-testid={`shipping-${m.code}`} />
                       <span className="flex-1">
                         <span className="block font-semibold">{m.name}</span>
                         <span className="block text-sm text-slate-500">
@@ -235,7 +238,7 @@ export function CheckoutPage() {
                         </span>
                         {m.freeOverCents !== null && <span className="block text-xs text-slate-500">Gratis desde {formatPrice(m.freeOverCents)}</span>}
                       </span>
-                      <span className="font-bold">{free || m.priceCents === 0 ? 'Gratis' : formatPrice(m.priceCents)}</span>
+                      <span className="font-semibold">{free || m.priceCents === 0 ? 'Gratis' : formatPrice(m.priceCents)}</span>
                     </label>
                   );
                 })}
@@ -245,7 +248,7 @@ export function CheckoutPage() {
                   <label htmlFor="pickup-point" className="text-sm font-medium text-slate-700">
                     Punto de recogida <span className="text-rose-600">*</span>
                   </label>
-                  <select id="pickup-point" value={pickupPointId ?? ''} onChange={(e) => setPickupPointId(e.target.value ? Number(e.target.value) : undefined)} className="h-11 w-full rounded-xl border border-slate-300 px-3 text-sm" data-testid="pickup-point-select">
+                  <select id="pickup-point" value={pickupPointId ?? ''} onChange={(e) => setPickupPointId(e.target.value ? Number(e.target.value) : undefined)} className="h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm focus:border-slate-950 focus:outline-none focus:ring-4 focus:ring-brand-100" data-testid="pickup-point-select">
                     <option value="">Selecciona un punto…</option>
                     {pickupPoints.data?.map((p) => (
                       <option key={p.id} value={p.id}>
@@ -262,10 +265,12 @@ export function CheckoutPage() {
 
           {step === 3 && (
             <div className="space-y-5" data-testid="checkout-review">
-              <ul className="divide-y divide-slate-100 rounded-xl border border-slate-200">
+              <ul className="divide-y divide-slate-200/80 rounded-3xl border border-slate-200/80">
                 {cart.data.items.map((i) => (
-                  <li key={i.id} className="flex items-center gap-3 p-3 text-sm" data-testid="review-item">
-                    <ProductImage src={i.product.imageUrl} alt="" className="h-12 w-12 rounded-lg bg-slate-50" />
+                  <li key={i.id} className="flex items-center gap-4 p-4 text-sm" data-testid="review-item">
+                    <span className="tile shrink-0 rounded-2xl p-1.5">
+                      <ProductImage src={i.product.imageUrl} alt="" className="h-12 w-12" />
+                    </span>
                     <span className="flex-1">
                       {i.quantity} × {i.product.name}
                     </span>
@@ -274,7 +279,7 @@ export function CheckoutPage() {
                 ))}
               </ul>
               <div className="grid gap-4 text-sm sm:grid-cols-2">
-                <div className="rounded-xl bg-slate-50 p-4">
+                <div className="rounded-3xl bg-slate-50 p-5">
                   <p className="mb-1 flex items-center gap-1.5 font-semibold"><MapPin className="h-4 w-4" /> Envío</p>
                   {address && (
                     <p className="text-slate-600">
@@ -283,7 +288,7 @@ export function CheckoutPage() {
                   )}
                   <p className="text-slate-600">{selectedMethod?.name}{selectedMethod?.requiresPickupPoint && pickupPoints.data ? ` · ${pickupPoints.data.find((p) => p.id === pickupPointId)?.name ?? ''}` : ''}</p>
                 </div>
-                <div className="rounded-xl bg-slate-50 p-4">
+                <div className="rounded-3xl bg-slate-50 p-5">
                   <p className="mb-1 font-semibold">Pago</p>
                   <p className="text-slate-600">{paymentMethod === 'CARD' ? `Tarjeta terminada en ${card.number.replace(/\D/g, '').slice(-4)}` : 'Transferencia bancaria'}</p>
                 </div>
@@ -297,7 +302,7 @@ export function CheckoutPage() {
             </div>
           )}
 
-          <div className="mt-6 flex justify-between gap-3 border-t border-slate-100 pt-5">
+          <div className="mt-8 flex justify-between gap-3 border-t border-slate-200/80 pt-6">
             {step > 0 ? (
               <Button variant="ghost" onClick={() => setStep((s) => s - 1)} disabled={placeOrder.isPending}>
                 ← Volver
@@ -308,7 +313,7 @@ export function CheckoutPage() {
               </ButtonLink>
             )}
             {step < 3 ? (
-              <Button onClick={next} data-testid="checkout-next">
+              <Button size="lg" onClick={next} data-testid="checkout-next">
                 Continuar
               </Button>
             ) : (
@@ -319,18 +324,30 @@ export function CheckoutPage() {
           </div>
         </section>
 
-        <aside className="card h-fit space-y-3 p-5 text-sm lg:sticky lg:top-40" data-testid="checkout-summary">
-          <h2 className="text-base font-bold">Resumen del pedido</h2>
+        <aside className="panel h-fit space-y-4 text-sm lg:sticky lg:top-40" data-testid="checkout-summary">
+          <h2 className="text-xl font-semibold tracking-tight">Resumen del pedido</h2>
+          <ul className="space-y-3 border-b border-slate-200 pb-4" aria-label="Productos">
+            {cart.data.items.map((i) => (
+              <li key={i.id} className="flex items-center gap-3">
+                <span className="relative shrink-0 rounded-2xl bg-white p-1 ring-1 ring-slate-900/5">
+                  <ProductImage src={i.product.imageUrl} alt="" className="h-10 w-10" />
+                  <span className="absolute -right-1.5 -top-1.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-slate-950 px-1 text-[10px] font-semibold text-white">{i.quantity}</span>
+                </span>
+                <span className="line-clamp-2 flex-1 text-xs text-slate-700">{i.product.name}</span>
+                <span className="text-xs font-medium">{formatPrice(i.lineTotalCents)}</span>
+              </li>
+            ))}
+          </ul>
           {step >= 1 && quote.isLoading && <Skeleton className="h-24" />}
           {quote.isError && <Alert tone="error">{errorMessage(quote.error)}</Alert>}
           {(() => {
             const t = q ?? { subtotalCents: cart.data.totals.subtotalCents, discountCents: cart.data.totals.discountCents, shippingCents: undefined, totalCents: cart.data.totals.totalCents, taxCents: cart.data.totals.taxCents };
             return (
-              <dl className="space-y-2">
+              <dl className="space-y-2.5">
                 <div className="flex justify-between"><dt className="text-slate-600">Subtotal</dt><dd data-testid="checkout-subtotal">{formatPrice(t.subtotalCents)}</dd></div>
                 {t.discountCents > 0 && <div className="flex justify-between text-emerald-700"><dt>Descuento</dt><dd data-testid="checkout-discount">−{formatPrice(t.discountCents)}</dd></div>}
                 <div className="flex justify-between"><dt className="text-slate-600">Envío</dt><dd data-testid="checkout-shipping">{t.shippingCents === undefined ? 'Se calcula en el paso 2' : t.shippingCents === 0 ? 'Gratis' : formatPrice(t.shippingCents)}</dd></div>
-                <div className="flex justify-between border-t border-slate-200 pt-2 text-base font-extrabold"><dt>Total</dt><dd data-testid="checkout-total">{formatPrice(t.totalCents)}</dd></div>
+                <div className="flex items-baseline justify-between border-t border-slate-200 pt-3 text-base font-semibold"><dt>Total</dt><dd className="text-2xl tracking-tight" data-testid="checkout-total">{formatPrice(t.totalCents)}</dd></div>
                 <p className="text-xs text-slate-500">IVA incluido ({formatPrice(t.taxCents)})</p>
               </dl>
             );
