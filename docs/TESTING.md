@@ -1,240 +1,262 @@
-# Guía para QA Automation
+# QA Automation guide
 
-Esta guía explica todo lo necesario para automatizar QA Commerce Lab (UI y API) **sin leer el código fuente**: entornos, datos de referencia, API de testing, escenarios, aislamiento, simulación de fallos y buenas prácticas de selectores.
+This guide explains everything you need to automate QA Commerce Lab (UI and API) **without reading the source code**: environments, reference data, testing API, scenarios, isolation, fault simulation and selector best practices.
 
-> La API de testing **solo existe** en los entornos `local` y `testing`. En la demo pública (`APP_ENV=demo`) el módulo ni siquiera se registra: cualquier ruta `/api/test/*` devuelve `404`.
+> The testing API **only exists** in the `local` and `testing` environments. In the public demo (`APP_ENV=demo`) the module is not even registered: any `/api/test/*` route returns `404`.
 
-## Índice
+## Table of contents
 
-1. [Entornos y URLs](#1-entornos-y-urls)
-2. [Datos de referencia (seed determinista)](#2-datos-de-referencia-seed-determinista)
-3. [API de testing](#3-api-de-testing)
-4. [Escenarios preparados](#4-escenarios-preparados)
-5. [Aislamiento y ejecución en paralelo](#5-aislamiento-y-ejecución-en-paralelo)
-6. [Reset, restauración y limpieza](#6-reset-restauración-y-limpieza)
-7. [Simulación controlada de fallos](#7-simulación-controlada-de-fallos)
-8. [Pagos simulados](#8-pagos-simulados)
-9. [Emails, sesiones y tokens](#9-emails-sesiones-y-tokens)
-10. [Selectores y accesibilidad](#10-selectores-y-accesibilidad)
-11. [Login programático y estado de sesión](#11-login-programático-y-estado-de-sesión)
-12. [Ejecutar pruebas desde GitHub Actions](#12-ejecutar-pruebas-desde-github-actions)
-13. [Qué NO hace la plataforma (a propósito)](#13-qué-no-hace-la-plataforma-a-propósito)
+1. [Environments and URLs](#1-environments-and-urls)
+2. [Reference data (deterministic seed)](#2-reference-data-deterministic-seed)
+3. [Testing API](#3-testing-api)
+4. [Ready-made scenarios](#4-ready-made-scenarios)
+5. [Isolation and parallel runs](#5-isolation-and-parallel-runs)
+6. [Reset, restore and cleanup](#6-reset-restore-and-cleanup)
+7. [Controlled fault simulation](#7-controlled-fault-simulation)
+8. [Simulated payments](#8-simulated-payments)
+9. [E-mails, sessions and tokens](#9-e-mails-sessions-and-tokens)
+10. [Selectors and accessibility](#10-selectors-and-accessibility)
+11. [Programmatic login and session state](#11-programmatic-login-and-session-state)
+12. [Running tests from GitHub Actions](#12-running-tests-from-github-actions)
+13. [What the platform does NOT do (on purpose)](#13-what-the-platform-does-not-do-on-purpose)
 
 ---
 
-## 1. Entornos y URLs
+## 1. Environments and URLs
 
-| Entorno | Para qué | Storefront | API / Swagger | API de testing | Reset global |
+| Environment | Purpose | Storefront | API / Swagger | Testing API | Global reset |
 |---|---|---|---|---|---|
-| `local` (Docker) | Desarrollo y depuración | http://localhost:3000 | http://localhost:3001/api · `/api/docs` | Sí (`X-Test-Api-Key: local-test-api-key`) | Sí |
-| `local` (npm run dev) | Desarrollo del SUT | http://localhost:3000 | http://localhost:3001/api | Sí | Sí |
-| `testing` (remoto) | Suites de automatización | `https://<TESTING_DOMAIN>` | `https://<TESTING_DOMAIN>/api` | Sí (clave secreta) | No por defecto (`ALLOW_GLOBAL_RESET=false`) |
-| `demo` (remoto) | Enseñar el proyecto | `https://<DEMO_DOMAIN>` | `https://<DEMO_DOMAIN>/api` | **No** (404) | Automático nocturno opcional |
+| `local` (Docker) | Development and debugging | http://localhost:3000 | http://localhost:3001/api · `/api/docs` | Yes (`X-Test-Api-Key: local-test-api-key`) | Yes |
+| `local` (npm run dev) | SUT development | http://localhost:3000 | http://localhost:3001/api | Yes | Yes |
+| `testing` (remote) | Automation suites | `https://<TESTING_DOMAIN>` | `https://<TESTING_DOMAIN>/api` | Yes (secret key) | Not by default (`ALLOW_GLOBAL_RESET=false`) |
+| `demo` (remote) | Showcasing the project | `https://<DEMO_DOMAIN>` | `https://<DEMO_DOMAIN>/api` | **No** (404) | Optional nightly reset |
 
-En remoto, storefront y API comparten origen (la imagen *all-in-one* sirve ambos). Variables típicas para tu repositorio de automatización:
+Remotely, the storefront and the API share the same origin (the *all-in-one* image serves both). Typical variables for your automation repository:
 
 ```bash
 BASE_URL=https://testing.example.com
 API_BASE_URL=https://testing.example.com/api
-TEST_API_KEY=<secreto>
+TEST_API_KEY=<secret>
 ```
 
-`GET /api/info` indica en qué entorno estás y qué capacidades están activas (`testingApi`, `globalReset`, `faultInjection`, `rateLimiting`...). Es útil como *guard* al arrancar una suite:
+`GET /api/info` tells you which environment you are on and which capabilities are enabled (`testingApi`, `globalReset`, `faultInjection`, `rateLimiting`...). It is useful as a *guard* when a suite starts:
 
 ```bash
 curl -s $API_BASE_URL/info
 ```
 
-## 2. Datos de referencia (seed determinista)
+### Storefront routes
 
-El seed genera **siempre el mismo dataset**. Tras un reset global (`POST /api/test/reset` o `npm run db:reset`) los IDs también son idénticos. Las fechas son **relativas** al momento del seed (ej. un cupón caducado siempre caducó "ayer").
-
-### Usuarios
-
-| Email | Contraseña | Rol | Estado / datos |
-|---|---|---|---|
-| `admin@qacommerce.test` | `Admin123!` | ADMIN | Administrador de la tienda |
-| `customer@qacommerce.test` | `Customer123!` | CUSTOMER | Usuario estándar: 1 dirección, sin pedidos |
-| `noorders@qacommerce.test` | `Customer123!` | CUSTOMER | Sin pedidos, sin direcciones, sin favoritos |
-| `orders@qacommerce.test` | `Customer123!` | CUSTOMER | 9 pedidos, uno por estado (`QCL-SEED-0001` … `0009`), ya usó `BIENVENIDA10` |
-| `favorites@qacommerce.test` | `Customer123!` | CUSTOMER | 6 favoritos (incluye uno agotado y uno descatalogado) |
-| `addresses@qacommerce.test` | `Customer123!` | CUSTOMER | 4 direcciones (la predeterminada es "Trabajo") |
-| `disabled@qacommerce.test` | `Customer123!` | CUSTOMER | **Desactivado**: login → `403 ACCOUNT_DISABLED` |
-| `reviewer01…12@qacommerce.test` | `Customer123!` | CUSTOMER | Autores de las ~500 reseñas de ejemplo |
-
-Pedidos de `orders@qacommerce.test`:
-
-| Nº | Estado | Notas |
-|---|---|---|
-| QCL-SEED-0001 | DELIVERED | Entregado hace ~43 días → **fuera** del plazo de devolución; usó `BIENVENIDA10` |
-| QCL-SEED-0002 | DELIVERED | Entregado hace ~4 días → **dentro** del plazo de devolución |
-| QCL-SEED-0003 | SHIPPED | Envío exprés, con número de seguimiento |
-| QCL-SEED-0004 | PREPARING | |
-| QCL-SEED-0005 | PAID | Cancelable por el cliente |
-| QCL-SEED-0006 | PENDING | Transferencia pendiente (el admin puede confirmar el pago) |
-| QCL-SEED-0007 | CANCELLED | Reembolsado |
-| QCL-SEED-0008 | RETURN_REQUESTED | |
-| QCL-SEED-0009 | RETURNED | Reembolsado |
-
-> ⚠️ Los usuarios de referencia son **compartidos**. Úsalos para pruebas de solo lectura o en entornos dedicados. Para pruebas que modifican estado, crea tus propios datos (secciones 3-5).
-
-### Catálogo
-
-- 16 categorías (2 niveles: *Componentes de PC* y *Periféricos* agrupan subcategorías), 39 marcas reales, **168 productos** (164 activos) con nombres de modelos reales. Precios, stock, valoraciones, reseñas e imágenes son ficticios (las imágenes son ilustraciones SVG genéricas generadas por la API).
-- IDs por categoría: Portátiles 1-12 · Sobremesa 13-24 · Gráficas 25-36 · Procesadores 37-48 · Placas 49-60 · RAM 61-72 · SSD 73-84 · Monitores 85-96 · Teclados 97-108 · Ratones 109-120 · Auriculares 121-132 · Smartphones 133-144 · Tablets 145-156 · Accesorios 157-168.
-- SKU: `QCL-<CAT>-<NNN>` (ej. `QCL-LAP-001` = id 1 = *Apple MacBook Air 13" M3 16 GB 256 GB*, slug `apple-macbook-air-13-m3-16-gb-256-gb`).
-- Usa siempre el **SKU o el id** como identificador en las pruebas: los nombres de producto pueden revisarse en futuras versiones del seed.
-
-Productos con inventario especial (documentado y estable):
-
-| Situación | SKU (id) · producto |
+| Page | Route |
 |---|---|
-| Agotados (stock 0) | QCL-GPU-003 (27) *Gigabyte GeForce RTX 4070 Super Windforce OC 12 GB* · QCL-LAP-006 (6) *Lenovo IdeaPad Slim 5 14AHP9 Ryzen 7* · QCL-CPU-010 (46) *AMD Ryzen 7 9800X3D* · QCL-MON-007 (91) *Samsung Odyssey Neo G8 32"* · QCL-PHN-010 (142) *Samsung Galaxy Z Fold6 512 GB* · QCL-TAB-006 (150) *Samsung Galaxy Tab S10 Ultra 256 GB* · QCL-AUD-008 (128) *SteelSeries Arctis Nova Pro Wireless* · QCL-KBD-010 (106) *Keychron Q1 Pro* |
-| Una sola unidad | QCL-GPU-006 (30) *ASUS ROG Astral GeForce RTX 5090 OC 32 GB* · QCL-LAP-004 (4) *ASUS Zenbook 14 OLED UX3405MA* · QCL-SSD-007 (79) *Crucial T705 2 TB* · QCL-PHN-003 (135) *Apple iPhone 16 Pro Max 512 GB* |
-| Stock bajo (2-5) | QCL-GPU-005 (29) *MSI GeForce RTX 5080 Gaming Trio OC* · QCL-CPU-005 (41) *Intel Core Ultra 9 285K* · QCL-MON-003 (87) *LG UltraGear 27GS95QE* · QCL-DSK-003 (15) *Apple Mac Studio M4 Max* · QCL-TAB-012 (156) · QCL-MBD-001 (49) · QCL-RAM-008 (68) · QCL-AUD-002 (122) |
-| Descatalogados (`isActive=false`) | QCL-DSK-010 (22) *Lenovo IdeaCentre AIO 3 27* · QCL-RAM-004 (64) *Kingston FURY Beast DDR4 8 GB* · QCL-MOU-001 (109) *Logitech M90* · QCL-PHN-005 (137) *Samsung Galaxy A16 128 GB* |
+| Home | `/` |
+| Category | `/category/{slug}` (e.g. `/category/laptops`, `/category/graphics-cards`) |
+| Search / all products | `/search?q=...` (also `/products`) |
+| Deals | `/deals` |
+| Product | `/product/{slug}` |
+| Cart · Checkout · Result | `/cart` · `/checkout` · `/checkout/result/{orderId}` |
+| Sign in · Register | `/login` · `/register` |
+| Password recovery | `/forgot-password` · `/reset-password?token=...` |
+| Customer area | `/account`, `/account/orders`, `/account/orders/{id}`, `/account/profile`, `/account/addresses`, `/account/security`, `/account/favorites`, `/account/reviews` |
+| Admin panel | `/admin`, `/admin/products`, `/admin/products/new`, `/admin/products/{id}`, `/admin/orders`, `/admin/orders/{id}`, `/admin/users`, `/admin/coupons` |
+| Information pages | `/info/shipping`, `/info/returns`, `/info/payments`, `/info/warranty`, `/info/contact`, `/info/about`, `/info/terms`, `/info/privacy` |
+| Errors | `/403`, any unknown route → 404 page |
 
-`GET /api/test/info` devuelve esta misma información en JSON.
+Catalog query parameters: `q`, `brand` (comma-separated slugs), `min`, `max` (euros), `inStock=true`, `onSale=true`, `minRating`, `featured=true`, `sort`, `page`. Order list filter: `/account/orders?status=SHIPPED`.
 
-### Cupones
+## 2. Reference data (deterministic seed)
 
-| Código | Regla | Resultado esperado |
-|---|---|---|
-| `BIENVENIDA10` | 10%, pedido mínimo 50 €, 1 uso por cliente | Válido |
-| `ENVIOGRATIS` | Envío gratis, 5 usos por cliente | Válido |
-| `DESCUENTO20` | 20 € de descuento, mínimo 150 € | `COUPON_MIN_SUBTOTAL_NOT_REACHED` por debajo del mínimo |
-| `COMPONENTES15` | 15% solo en *Componentes de PC* (máx. 100 €) | `COUPON_NOT_APPLICABLE` sin componentes en el carrito |
-| `AURICULARES5` | 5 € en auriculares, mínimo 30 € | Restringido a categoría |
-| `CADUCADO` | Caducó ayer | `COUPON_EXPIRED` |
-| `PROXIMAMENTE` | Empieza dentro de 30 días | `COUPON_NOT_STARTED` |
-| `AGOTADO` | Límite global alcanzado (100/100) | `COUPON_USAGE_LIMIT_REACHED` |
-| `INACTIVO` | Desactivado | `COUPON_INACTIVE` |
-| `NOEXISTE` (cualquiera) | — | `COUPON_INVALID` |
+The seed **always produces the same dataset**. After a global reset (`POST /api/test/reset` or `npm run db:reset`) the IDs are identical too. Dates are **relative** to the seed time (e.g. an expired coupon always expired "yesterday").
 
-Los cupones requieren sesión (`COUPON_REQUIRES_LOGIN` para invitados).
+### Users
 
-### Envíos
-
-| Código | Precio | Gratis desde | Plazo |
+| E-mail | Password | Role | Status / data |
 |---|---|---|---|
-| `STANDARD` | 4,99 € | 99 € (tras descuento) | 2-4 días |
-| `EXPRESS` | 12,99 € | nunca | 24 h |
-| `PICKUP` | 1,99 € | 49 € | 3-5 días, requiere `pickupPointId` |
+| `admin@qacommerce.test` | `Admin123!` | ADMIN | Store administrator |
+| `customer@qacommerce.test` | `Customer123!` | CUSTOMER | Standard user: 1 address, no orders |
+| `noorders@qacommerce.test` | `Customer123!` | CUSTOMER | No orders, no addresses, no favorites |
+| `orders@qacommerce.test` | `Customer123!` | CUSTOMER | 9 orders, one per status (`QCL-SEED-0001` … `0009`), has already used `WELCOME10` |
+| `favorites@qacommerce.test` | `Customer123!` | CUSTOMER | 6 favorites (including an out-of-stock and a discontinued product) |
+| `addresses@qacommerce.test` | `Customer123!` | CUSTOMER | 4 addresses (the default one is "Work") |
+| `disabled@qacommerce.test` | `Customer123!` | CUSTOMER | **Disabled**: login → `403 ACCOUNT_DISABLED` |
+| `reviewer01…12@qacommerce.test` | `Customer123!` | CUSTOMER | Authors of the ~500 sample reviews |
 
-## 3. API de testing
+Orders of `orders@qacommerce.test`:
 
-Base: `${API_BASE_URL}/test` · Cabecera obligatoria: `X-Test-Api-Key: <clave>` · Documentada en Swagger bajo la etiqueta **Testing**.
-
-| Método | Ruta | Uso |
+| No. | Status | Notes |
 |---|---|---|
-| GET | `/test/info` | Capacidades, usuarios de referencia, tarjetas de prueba, inventario especial y escenarios |
-| POST | `/test/reset` | **Reset global** (borra todo y recarga el seed). Body `{ "confirm": "RESET" }`. Solo si `ALLOW_GLOBAL_RESET=true` |
-| POST | `/test/seed` | Restaura los **datos de referencia** a su estado inicial sin borrar datos de ejecuciones |
-| GET | `/test/runs/{runId}` | Resumen de lo creado por una ejecución |
-| DELETE | `/test/runs/{runId}` | Limpia una ejecución (ver sección 6) |
-| POST | `/test/users` | Crea un usuario (con dirección y tokens opcionales; rol/estado configurables) |
-| POST | `/test/auth/token` | Emite tokens para un usuario sin contraseña (TTL configurable) |
-| POST | `/test/sessions/expire` | Caduca (`expire`) o revoca (`revoke`) todas las sesiones de un usuario |
-| POST | `/test/password-reset-token` | Genera y **devuelve** un token de recuperación de contraseña |
-| POST | `/test/products` | Crea un producto (precio, stock, oferta, estado...) |
-| PATCH | `/test/products/{id}` | Fija stock, precio, precio anterior o estado de **cualquier** producto |
-| POST | `/test/carts` | Prepara el carrito de un usuario (`force: true` permite incidencias) |
-| POST | `/test/orders` | Crea un pedido directamente en un estado (`PENDING`…`RETURNED`) |
-| POST | `/test/orders/{id}/expire-reservation` | Caduca la reserva de un pedido pendiente y ejecuta el job |
-| POST | `/test/coupons` | Crea cupones (válidos, caducados, futuros, agotados...) |
-| POST | `/test/payments/{id}/resolve` | Resuelve ya un pago pendiente (`APPROVED`/`DECLINED`) |
-| POST | `/test/jobs/{name}/run` | Ejecuta un job: `resolve-pending-payments`, `expire-reservations` |
-| GET/POST | `/test/scenarios`, `/test/scenarios/{name}` | Lista / prepara escenarios (sección 4) |
-| GET | `/test/emails`, `/test/emails/latest` | Buzón simulado (filtros `to`, `runId`, `template`) |
-| DELETE | `/test/emails` | Vacía el buzón (por `to` o `runId`) |
-| GET/POST/DELETE | `/test/faults`, `/test/faults/{id}` | Reglas de simulación de fallos (sección 7) |
-| GET | `/test/audit` | Registro de operaciones de la API de testing |
+| QCL-SEED-0001 | DELIVERED | Delivered ~43 days ago → **outside** the return window; used `WELCOME10` |
+| QCL-SEED-0002 | DELIVERED | Delivered ~4 days ago → **inside** the return window |
+| QCL-SEED-0003 | SHIPPED | Express shipping, with a tracking number |
+| QCL-SEED-0004 | PREPARING | |
+| QCL-SEED-0005 | PAID | Can be cancelled by the customer |
+| QCL-SEED-0006 | PENDING | Pending bank transfer (the admin can confirm the payment) |
+| QCL-SEED-0007 | CANCELLED | Refunded |
+| QCL-SEED-0008 | RETURN_REQUESTED | |
+| QCL-SEED-0009 | RETURNED | Refunded |
 
-Ejemplos:
+> ⚠️ Reference users are **shared**. Use them for read-only tests or in dedicated environments. For tests that change state, create your own data (sections 3-5).
+
+### Catalog
+
+- 16 categories (2 levels: *PC Components* and *Peripherals* group subcategories), 39 real brands, **168 products** (164 active) with real model names. Prices, stock, ratings, reviews and images are fictional (the images are generic SVG illustrations generated by the API).
+- Category slugs: `laptops`, `desktops`, `components` (→ `graphics-cards`, `processors`, `motherboards`, `memory`, `ssd-storage`), `monitors`, `peripherals` (→ `keyboards`, `mice`, `headphones`), `smartphones`, `tablets`, `accessories`.
+- IDs per category: Laptops 1-12 · Desktops 13-24 · Graphics cards 25-36 · Processors 37-48 · Motherboards 49-60 · Memory 61-72 · SSD 73-84 · Monitors 85-96 · Keyboards 97-108 · Mice 109-120 · Headphones 121-132 · Smartphones 133-144 · Tablets 145-156 · Accessories 157-168.
+- SKU: `QCL-<CAT>-<NNN>` (e.g. `QCL-LAP-001` = id 1 = *Apple MacBook Air 13" M3 16 GB 256 GB*, slug `apple-macbook-air-13-m3-16-gb-256-gb`).
+- Always use the **SKU or the id** as the identifier in your tests: product names may be revised in future versions of the seed.
+
+Products with special inventory (documented and stable):
+
+| Situation | SKU (id) · product |
+|---|---|
+| Out of stock (stock 0) | QCL-GPU-003 (27) *Gigabyte GeForce RTX 4070 Super Windforce OC 12 GB* · QCL-LAP-006 (6) *Lenovo IdeaPad Slim 5 14AHP9 Ryzen 7* · QCL-CPU-010 (46) *AMD Ryzen 7 9800X3D* · QCL-MON-007 (91) *Samsung Odyssey Neo G8 32"* · QCL-PHN-010 (142) *Samsung Galaxy Z Fold6 512 GB* · QCL-TAB-006 (150) *Samsung Galaxy Tab S10 Ultra 256 GB* · QCL-AUD-008 (128) *SteelSeries Arctis Nova Pro Wireless* · QCL-KBD-010 (106) *Keychron Q1 Pro* |
+| A single unit | QCL-GPU-006 (30) *ASUS ROG Astral GeForce RTX 5090 OC 32 GB* · QCL-LAP-004 (4) *ASUS Zenbook 14 OLED UX3405MA* · QCL-SSD-007 (79) *Crucial T705 2 TB* · QCL-PHN-003 (135) *Apple iPhone 16 Pro Max 512 GB* |
+| Low stock (2-5) | QCL-GPU-005 (29) *MSI GeForce RTX 5080 Gaming Trio OC* · QCL-CPU-005 (41) *Intel Core Ultra 9 285K* · QCL-MON-003 (87) *LG UltraGear 27GS95QE* · QCL-DSK-003 (15) *Apple Mac Studio M4 Max* · QCL-TAB-012 (156) · QCL-MBD-001 (49) · QCL-RAM-008 (68) · QCL-AUD-002 (122) |
+| Discontinued (`isActive=false`) | QCL-DSK-010 (22) *Lenovo IdeaCentre AIO 3 27* · QCL-RAM-004 (64) *Kingston FURY Beast DDR4 8 GB* · QCL-MOU-001 (109) *Logitech M90* · QCL-PHN-005 (137) *Samsung Galaxy A16 128 GB* |
+
+`GET /api/test/info` returns the same information as JSON.
+
+### Coupons
+
+| Code | Rule | Expected result |
+|---|---|---|
+| `WELCOME10` | 10%, minimum order €50, 1 use per customer | Valid |
+| `FREESHIP` | Free shipping, 5 uses per customer | Valid |
+| `SAVE20` | €20 off, minimum €150 | `COUPON_MIN_SUBTOTAL_NOT_REACHED` below the minimum |
+| `COMPONENTS15` | 15% on *PC Components* only (max. €100) | `COUPON_NOT_APPLICABLE` without components in the cart |
+| `HEADPHONES5` | €5 off headphones, minimum €30 | Restricted to a category |
+| `EXPIRED` | Expired yesterday | `COUPON_EXPIRED` |
+| `COMINGSOON` | Starts in 30 days | `COUPON_NOT_STARTED` |
+| `USEDUP` | Global limit reached (100/100) | `COUPON_USAGE_LIMIT_REACHED` |
+| `INACTIVE` | Deactivated | `COUPON_INACTIVE` |
+| `DOESNOTEXIST` (anything) | — | `COUPON_INVALID` |
+
+Coupons require a signed-in user (`COUPON_REQUIRES_LOGIN` for guests).
+
+### Shipping
+
+| Code | Price | Free over | Delivery time |
+|---|---|---|---|
+| `STANDARD` | €4.99 | €99 (after discount) | 2-4 days |
+| `EXPRESS` | €12.99 | never | 24 h |
+| `PICKUP` | €1.99 | €49 | 3-5 days, requires `pickupPointId` |
+
+## 3. Testing API
+
+Base: `${API_BASE_URL}/test` · Required header: `X-Test-Api-Key: <key>` · Documented in Swagger under the **Testing** tag.
+
+| Method | Route | Use |
+|---|---|---|
+| GET | `/test/info` | Capabilities, reference users, test cards, special inventory and scenarios |
+| POST | `/test/reset` | **Global reset** (deletes everything and reloads the seed). Body `{ "confirm": "RESET" }`. Only if `ALLOW_GLOBAL_RESET=true` |
+| POST | `/test/seed` | Restores the **reference data** to its initial state without deleting run data |
+| GET | `/test/runs/{runId}` | Summary of what a run created |
+| DELETE | `/test/runs/{runId}` | Cleans up a run (see section 6) |
+| POST | `/test/users` | Creates a user (with optional address and tokens; configurable role/status) |
+| POST | `/test/auth/token` | Issues tokens for a user without a password (configurable TTL) |
+| POST | `/test/sessions/expire` | Expires (`expire`) or revokes (`revoke`) every session of a user |
+| POST | `/test/password-reset-token` | Generates and **returns** a password reset token |
+| POST | `/test/products` | Creates a product (price, stock, sale, status...) |
+| PATCH | `/test/products/{id}` | Sets the stock, price, compare-at price or status of **any** product |
+| POST | `/test/carts` | Prepares a user cart (`force: true` allows carts with issues) |
+| POST | `/test/orders` | Creates an order directly in a status (`PENDING`…`RETURNED`) |
+| POST | `/test/orders/{id}/expire-reservation` | Expires the reservation of a pending order and runs the job |
+| POST | `/test/coupons` | Creates coupons (valid, expired, upcoming, exhausted...) |
+| POST | `/test/payments/{id}/resolve` | Resolves a pending payment immediately (`APPROVED`/`DECLINED`) |
+| POST | `/test/jobs/{name}/run` | Runs a job: `resolve-pending-payments`, `expire-reservations` |
+| GET/POST | `/test/scenarios`, `/test/scenarios/{name}` | Lists / prepares scenarios (section 4) |
+| GET | `/test/emails`, `/test/emails/latest` | Simulated mailbox (filters `to`, `runId`, `template`) |
+| DELETE | `/test/emails` | Empties the mailbox (by `to` or `runId`) |
+| GET/POST/DELETE | `/test/faults`, `/test/faults/{id}` | Fault simulation rules (section 7) |
+| GET | `/test/audit` | Testing API operation log |
+
+Test products default to the `accessories` category and the `anker` brand (override with `categorySlug` / `brandSlug`).
+
+Examples:
 
 ```bash
 KEY="X-Test-Api-Key: local-test-api-key"
 API=http://localhost:3001/api
 
-# Usuario propio con dirección y tokens (access token de 5 s para probar la renovación)
+# Your own user with an address and tokens (5 s access token to test the refresh)
 curl -s -X POST $API/test/users -H "$KEY" -H 'Content-Type: application/json' \
   -d '{"runId":"run-42","accessTtlSeconds":5}'
 
-# Producto con una única unidad
+# Product with a single unit
 curl -s -X POST $API/test/products -H "$KEY" -H 'Content-Type: application/json' \
-  -d '{"runId":"run-42","stock":1,"priceCents":19999,"name":"Última unidad"}'
+  -d '{"runId":"run-42","stock":1,"priceCents":19999,"name":"Last unit"}'
 
-# Pedido enviado hace 20 días (entregado y fuera de plazo de devolución si status=DELIVERED)
+# Order delivered 20 days ago
 curl -s -X POST $API/test/orders -H "$KEY" -H 'Content-Type: application/json' \
   -d '{"runId":"run-42","email":"<email>","items":[{"sku":"QCL-ACC-001","quantity":1}],"status":"DELIVERED","daysAgo":20}'
 ```
 
-Todas las respuestas de creación devuelven el `runId` usado (si no lo envías se genera uno `auto-xxxx`).
+Every creation response returns the `runId` used (if you do not send one, an `auto-xxxx` id is generated).
 
-## 4. Escenarios preparados
+## 4. Ready-made scenarios
 
-`POST /api/test/scenarios/{name}` con body `{ "runId": "..." }` crea **datos nuevos y aislados** en cada llamada (puedes invocar el mismo escenario desde varios workers a la vez). La respuesta incluye credenciales, tokens, IDs y lo necesario para continuar.
+`POST /api/test/scenarios/{name}` with the body `{ "runId": "..." }` creates **new, isolated data** on every call (you can call the same scenario from several workers at once). The response includes credentials, tokens, IDs and everything you need to continue.
 
-| Escenario | Descripción |
+| Scenario | Description |
 |---|---|
-| `user-with-cart` | Usuario con dirección y un carrito con 3 productos en stock |
-| `checkout-ready` | Usuario con dirección y carrito listo para pagar; incluye las tarjetas de prueba |
-| `payment-declined` | Usuario con carrito listo y la tarjeta de prueba que provoca un pago rechazado |
-| `order-with-failed-payment` | Pedido PENDING con un intento de pago rechazado (reintento de pago) |
-| `out-of-stock-product` | Producto activo sin stock |
-| `last-unit-product` | Producto con una única unidad disponible |
-| `discontinued-product` | Producto desactivado (descatalogado) |
-| `concurrent-last-unit` | Producto con 1 unidad en el carrito de dos usuarios distintos (concurrencia en el checkout) |
-| `cart-with-issues` | Carrito con un producto agotado, uno descatalogado, una cantidad superior al stock y un cambio de precio |
-| `pending-order` · `paid-order` · `preparing-order` · `shipped-order` · `delivered-order` · `cancelled-order` · `return-requested-order` · `returned-order` | Usuario con un pedido en ese estado |
-| `bank-transfer-pending-order` | Pedido PENDING por transferencia (el admin puede confirmar el pago) |
-| `delivered-order-return-expired` | Pedido entregado hace 30 días (fuera del plazo de devolución) |
-| `user-with-order-history` | Usuario con 5 pedidos en distintos estados |
-| `expired-coupon` | Cupón caducado y usuario con carrito para intentar aplicarlo |
-| `coupon-already-used` | Usuario que ya utilizó un cupón de un solo uso y tiene un carrito nuevo |
-| `disabled-user` | Usuario desactivado (login → 403 `ACCOUNT_DISABLED`) |
-| `admin-user` | Administrador propio de la ejecución (no compartido) |
-| `password-reset` | Usuario con un token de recuperación válido (y el enlace) |
-| `expired-session` | Usuario cuyos tokens pertenecen a una sesión caducada (401 `SESSION_EXPIRED`) |
-| `short-lived-token` | Usuario con un access token que caduca en 5 segundos |
+| `user-with-cart` | User with an address and a cart with 3 in-stock products |
+| `checkout-ready` | User with an address and a cart ready to pay; includes the test cards |
+| `payment-declined` | User with a ready cart and the test card that triggers a declined payment |
+| `order-with-failed-payment` | PENDING order with a declined payment attempt (payment retry) |
+| `out-of-stock-product` | Active product without stock |
+| `last-unit-product` | Product with a single unit available |
+| `discontinued-product` | Deactivated (discontinued) product |
+| `concurrent-last-unit` | Product with 1 unit in the carts of two different users (checkout concurrency) |
+| `cart-with-issues` | Cart with an out-of-stock product, a discontinued one, a quantity above stock and a price change |
+| `pending-order` · `paid-order` · `preparing-order` · `shipped-order` · `delivered-order` · `cancelled-order` · `return-requested-order` · `returned-order` | User with an order in that status |
+| `bank-transfer-pending-order` | PENDING order paid by bank transfer (the admin can confirm the payment) |
+| `delivered-order-return-expired` | Order delivered 30 days ago (outside the return window) |
+| `user-with-order-history` | User with 5 orders in different statuses |
+| `expired-coupon` | Expired coupon and a user with a cart to try to apply it |
+| `coupon-already-used` | User who already used a single-use coupon and has a new cart |
+| `disabled-user` | Disabled user (login → 403 `ACCOUNT_DISABLED`) |
+| `admin-user` | Administrator owned by the run (not shared) |
+| `password-reset` | User with a valid password reset token (and the link) |
+| `expired-session` | User whose tokens belong to an expired session (401 `SESSION_EXPIRED`) |
+| `short-lived-token` | User with an access token that expires in 5 seconds |
 
 ```bash
 curl -s -X POST $API/test/scenarios/checkout-ready -H "$KEY" -H 'Content-Type: application/json' -d '{"runId":"run-42"}'
 ```
 
-## 5. Aislamiento y ejecución en paralelo
+## 5. Isolation and parallel runs
 
-La estrategia se basa en un **identificador de ejecución** (`runId`, 3-64 caracteres `[A-Za-z0-9._-]`, ej. `gh-1234-worker-3`).
+The strategy is based on a **run identifier** (`runId`, 3-64 characters `[A-Za-z0-9._-]`, e.g. `gh-1234-worker-3`).
 
-1. **Etiquetado**: todo lo que creas con la API de testing queda etiquetado con el `runId`. Además, si envías la cabecera `X-Test-Run-Id: <runId>` (solo se respeta en `local`/`testing`), también se etiquetan los usuarios que se registran por la UI/API, sus pedidos y los productos/cupones que crea un admin.
-2. **Visibilidad del catálogo**: los productos creados por una ejecución **solo aparecen en listados, búsqueda, home y sugerencias** para peticiones que envían su mismo `X-Test-Run-Id`. Así otras suites siguen viendo exactamente el catálogo de referencia (los conteos y órdenes no cambian). El acceso directo por id/slug, el carrito y el checkout funcionan siempre.
-3. **Fallos simulados** acotados por `runId` o por usuario (sección 7).
-4. **Limpieza por ejecución**: `DELETE /api/test/runs/{runId}`.
+1. **Tagging**: everything you create with the testing API is tagged with the `runId`. In addition, if you send the `X-Test-Run-Id: <runId>` header (only honoured in `local`/`testing`), users who register through the UI/API, their orders and the products/coupons an admin creates are tagged too.
+2. **Catalog visibility**: products created by a run **only appear in listings, search, the home page and suggestions** for requests that send the same `X-Test-Run-Id`. That way other suites keep seeing exactly the reference catalog (counts and ordering do not change). Direct access by id/slug, the cart and the checkout always work.
+3. **Simulated faults** scoped by `runId` or by user (section 7).
+4. **Per-run cleanup**: `DELETE /api/test/runs/{runId}`.
 
-Cómo enviar la cabecera desde la UI:
+How to send the header from the UI:
 
 - Playwright: `browser.newContext({ extraHTTPHeaders: { 'X-Test-Run-Id': runId } })`.
-- Cualquier herramienta: el storefront lee `localStorage['qcl.testRunId']` y añade la cabecera a todas sus llamadas a la API (gancho pensado para automatización; inocuo fuera de testing).
-- Cypress: `cy.intercept('/api/**', (req) => { req.headers['x-test-run-id'] = runId })` o `localStorage` en `onBeforeLoad`.
+- Any tool: the storefront reads `localStorage['qcl.testRunId']` and adds the header to all its API calls (a hook meant for automation; harmless outside testing).
+- Cypress: `cy.intercept('/api/**', (req) => { req.headers['x-test-run-id'] = runId })` or `localStorage` in `onBeforeLoad`.
 
-Recomendaciones para paralelizar:
+Recommendations for parallel runs:
 
-- Cada worker/test crea **sus propios** usuarios, productos y cupones (o usa escenarios) con un `runId` por ejecución o por worker.
-- Trata los datos de referencia como **solo lectura** cuando ejecutes en paralelo.
-- Si incluyes el `runId` en el email de los usuarios que registras por la UI (`ana+<runId>@example.com`), la limpieza también los encuentra aunque no envíes la cabecera.
-- No uses el reset global en entornos compartidos.
+- Each worker/test creates **its own** users, products and coupons (or uses scenarios) with a `runId` per run or per worker.
+- Treat the reference data as **read-only** when running in parallel.
+- If you include the `runId` in the e-mail of the users you register through the UI (`ana+<runId>@example.com`), the cleanup finds them even if you do not send the header.
+- Do not use the global reset in shared environments.
 
-**Limitaciones conocidas**: el aislamiento es lógico (misma base de datos), no físico. Los datos de referencia (stock de productos de referencia, cupones globales) son compartidos: una suite que compra un producto de referencia reduce su stock para las demás hasta que se limpia su ejecución o se restaura el seed. Las reglas de fallos viven en memoria del proceso: el entorno de testing debe ejecutar **una sola réplica** de la API.
+**Known limitations**: isolation is logical (same database), not physical. Reference data (stock of reference products, global coupons) is shared: a suite that buys a reference product reduces its stock for the others until its run is cleaned up or the seed is restored. Fault rules live in the process memory: the testing environment must run **a single replica** of the API.
 
-## 6. Reset, restauración y limpieza
+## 6. Reset, restore and cleanup
 
-| Operación | Alcance | Seguro con suites concurrentes |
+| Operation | Scope | Safe with concurrent suites |
 |---|---|---|
-| `DELETE /api/test/runs/{runId}` | Usuarios, pedidos, productos, cupones, emails y faults de la ejecución. **Revierte** los efectos sobre datos compartidos: stock y ventas de productos de referencia, usos de cupones, valoraciones | ✅ Sí |
-| `POST /api/test/seed` | Restaura los datos de referencia (productos, cupones, usuarios de referencia y sus pedidos/direcciones/favoritos) sin tocar las ejecuciones | ⚠️ Afecta a quien use datos de referencia |
-| `POST /api/test/reset` | `TRUNCATE` de todo + seed. IDs deterministas | ❌ No (solo entornos dedicados; `ALLOW_GLOBAL_RESET`) |
+| `DELETE /api/test/runs/{runId}` | Users, orders, products, coupons, e-mails and faults of the run. **Reverts** the effects on shared data: stock and sales of reference products, coupon usages, ratings | ✅ Yes |
+| `POST /api/test/seed` | Restores the reference data (products, coupons, reference users and their orders/addresses/favorites) without touching runs | ⚠️ Affects anyone using reference data |
+| `POST /api/test/reset` | `TRUNCATE` of everything + seed. Deterministic IDs | ❌ No (dedicated environments only; `ALLOW_GLOBAL_RESET`) |
 
-Patrón típico (global setup / teardown):
+Typical pattern (global setup / teardown):
 
 ```bash
 # setup
@@ -243,11 +265,11 @@ curl -s $API/info | grep -q '"testingApi":true'
 curl -s -X DELETE $API/test/runs/$RUN_ID -H "$KEY"
 ```
 
-Desde la línea de comandos (local): `npm run db:reset` (reset completo) o `npm run db:seed` (restaurar referencia). En Docker: `docker compose exec api node dist/prisma/seed.js --reset`.
+From the command line (local): `npm run db:reset` (full reset) or `npm run db:seed` (restore reference data). In Docker: `docker compose exec api node dist/prisma/seed.js --reset`.
 
-## 7. Simulación controlada de fallos
+## 7. Controlled fault simulation
 
-`POST /api/test/faults` registra una regla **acotada** y **temporal**. Nunca hay errores aleatorios en el funcionamiento normal.
+`POST /api/test/faults` registers a **scoped** and **temporary** rule. There are never random errors during normal operation.
 
 ```json
 {
@@ -261,99 +283,103 @@ Desde la línea de comandos (local): `npm run db:reset` (reset completo) o `npm 
 }
 ```
 
-| Campo | Significado |
+| Field | Meaning |
 |---|---|
-| `runId` / `userId` / `global` | Ámbito: peticiones con esa cabecera `X-Test-Run-Id`, peticiones autenticadas como ese usuario o todas (solo con `ALLOW_GLOBAL_FAULTS=true`) |
-| `method`, `path` | Ruta exacta o patrón: `*` = un segmento, `**` = cualquier cosa (ej. `/api/orders/*/payments`, `/api/products/**`) |
-| `action` | `error` (responde `status`, por defecto 500), `delay` (añade `delayMs` y continúa), `timeout` (espera `delayMs`, por defecto 30 s, y responde 504) |
-| `code`, `message` | Personalizan el cuerpo de error (por defecto `FAULT_INJECTED`) |
-| `times` | Nº de peticiones afectadas (1 = fallo transitorio que se recupera al reintentar) |
-| `ttlSeconds` | Caducidad de la regla (por defecto 600, máximo 3600) |
+| `runId` / `userId` / `global` | Scope: requests with that `X-Test-Run-Id` header, requests authenticated as that user, or all requests (only with `ALLOW_GLOBAL_FAULTS=true`) |
+| `method`, `path` | Exact path or pattern: `*` = one segment, `**` = anything (e.g. `/api/orders/*/payments`, `/api/products/**`) |
+| `action` | `error` (responds with `status`, 500 by default), `delay` (adds `delayMs` and continues), `timeout` (waits `delayMs`, 30 s by default, and responds 504) |
+| `code`, `message` | Customise the error body (`FAULT_INJECTED` by default) |
+| `times` | Number of affected requests (1 = transient failure that recovers on retry) |
+| `ttlSeconds` | Rule expiry (600 by default, 3600 maximum) |
 
-Las respuestas afectadas llevan la cabecera `X-Fault-Injected: <id>`. Las rutas `/api/test/*` y `/api/health*` nunca se ven afectadas. Ejemplos de uso: 500/503 en el listado de productos (estados de error de la UI), latencia de 3 s en `/api/cart` (skeletons y spinners), timeout en `/api/checkout/quote`, error 409 personalizado...
+Affected responses carry the `X-Fault-Injected: <id>` header. The `/api/test/*` and `/api/health*` routes are never affected. Examples: 500/503 on the product listing (UI error states), 3 s latency on `/api/cart` (skeletons and spinners), a timeout on `/api/checkout/quote`, a custom 409 error...
 
-Otros mecanismos deterministas: tarjetas de prueba (sección 8), sesiones caducadas (sección 9), `expire-reservation`, inventario con `PATCH /test/products/{id}`.
+Other deterministic mechanisms: test cards (section 8), expired sessions (section 9), `expire-reservation`, inventory with `PATCH /test/products/{id}`.
 
-## 8. Pagos simulados
+## 8. Simulated payments
 
-Solo se aceptan estas tarjetas (cualquier titular, fecha futura `MM/AA` y CVC de 3 dígitos). Una tarjeta real con Luhn válido devuelve `422 CARD_NOT_ALLOWED`.
+Only these cards are accepted (any cardholder name, a future `MM/YY` date and a 3-digit CVC). A real card with a valid Luhn checksum returns `422 CARD_NOT_ALLOWED`.
 
-| Número | Resultado |
+| Number | Result |
 |---|---|
-| 4242 4242 4242 4242 | Aprobado |
-| 5555 5555 5555 4444 | Aprobado (Mastercard) |
-| 4000 0000 0000 0002 | Rechazado (`card_declined`) |
-| 4000 0000 0000 9995 | Fondos insuficientes (`insufficient_funds`) |
-| 4000 0000 0000 0069 | Tarjeta caducada según el emisor (`expired_card`) |
-| 4000 0000 0000 0077 | Pendiente → **aprobado** tras `PAYMENT_PENDING_DELAY_MS` (15 s por defecto) |
-| 4000 0000 0000 0085 | Pendiente → **rechazado** tras `PAYMENT_PENDING_DELAY_MS` |
-| 4000 0000 0000 0119 | Error de procesamiento: **HTTP 502** `PAYMENT_PROCESSING_ERROR` (el pedido se crea) |
-| 4000 0000 0000 0408 | Timeout de la pasarela: espera `PAYMENT_TIMEOUT_DELAY_MS` (8 s) y responde **HTTP 504** `PAYMENT_GATEWAY_TIMEOUT` |
+| 4242 4242 4242 4242 | Approved |
+| 5555 5555 5555 4444 | Approved (Mastercard) |
+| 4000 0000 0000 0002 | Declined (`card_declined`) |
+| 4000 0000 0000 9995 | Insufficient funds (`insufficient_funds`) |
+| 4000 0000 0000 0069 | Card expired according to the issuer (`expired_card`) |
+| 4000 0000 0000 0077 | Pending → **approved** after `PAYMENT_PENDING_DELAY_MS` (15 s by default) |
+| 4000 0000 0000 0085 | Pending → **declined** after `PAYMENT_PENDING_DELAY_MS` |
+| 4000 0000 0000 0119 | Processing error: **HTTP 502** `PAYMENT_PROCESSING_ERROR` (the order is created) |
+| 4000 0000 0000 0408 | Gateway timeout: waits `PAYMENT_TIMEOUT_DELAY_MS` (8 s) and responds **HTTP 504** `PAYMENT_GATEWAY_TIMEOUT` |
 
-Comportamiento clave para pruebas avanzadas:
+Key behaviour for advanced tests:
 
-- Un pago **rechazado no es un error HTTP**: `POST /api/orders` → `201` con `order.paymentStatus = FAILED`; el pedido queda `PENDING`, reservado `ORDER_RESERVATION_MINUTES` (30) y se puede reintentar (`POST /api/orders/{id}/payments`).
-- En 502/504 el pedido **ya existe** (`details.orderId`). Repetir la petición con la misma `Idempotency-Key` devuelve el pedido original (`200`, cabecera `Idempotent-Replayed: true`) en lugar de duplicarlo.
-- Los pagos pendientes se resuelven con un job cada `JOBS_INTERVAL_MS`; puedes forzarlo con `POST /api/test/payments/{id}/resolve` o `POST /api/test/jobs/resolve-pending-payments/run`.
-- Si la reserva caduca sin pago, el pedido se cancela automáticamente y el stock se libera (`POST /api/test/orders/{id}/expire-reservation` lo fuerza).
-- La transferencia bancaria deja el pedido `PENDING`/`AWAITING_PAYMENT` 72 h hasta que un admin la confirma.
+- A **declined payment is not an HTTP error**: `POST /api/orders` → `201` with `order.paymentStatus = FAILED`; the order stays `PENDING`, reserved for `ORDER_RESERVATION_MINUTES` (30) and can be retried (`POST /api/orders/{id}/payments`).
+- On 502/504 the order **already exists** (`details.orderId`). Repeating the request with the same `Idempotency-Key` returns the original order (`200`, `Idempotent-Replayed: true` header) instead of duplicating it.
+- Pending payments are resolved by a job every `JOBS_INTERVAL_MS`; you can force it with `POST /api/test/payments/{id}/resolve` or `POST /api/test/jobs/resolve-pending-payments/run`.
+- If the reservation expires without payment, the order is cancelled automatically and the stock released (`POST /api/test/orders/{id}/expire-reservation` forces it).
+- A bank transfer leaves the order `PENDING`/`AWAITING_PAYMENT` for 72 h until an admin confirms it.
 
-## 9. Emails, sesiones y tokens
+## 9. E-mails, sessions and tokens
 
-**Buzón simulado**: todos los emails (bienvenida, recuperación de contraseña, confirmaciones y cambios de estado de pedidos) se guardan en base de datos.
+**Simulated mailbox**: every e-mail (welcome, password recovery, confirmations and order status changes) is stored in the database.
 
 ```bash
 curl -s "$API/test/emails/latest?to=ana@example.com&template=password-reset" -H "$KEY"
-# metadata.token y metadata.link contienen el token de recuperación
+# metadata.token and metadata.link contain the reset token
 ```
 
-Plantillas: `welcome`, `password-reset`, `password-changed`, `order-paid`, `bank-transfer-instructions`, `order-shipped`, `order-delivered`, `order-cancelled`, `return-requested`, `order-returned`. En local puedes verlos en Mailpit (`docker compose --profile mail up` con `SMTP_HOST=mailpit`, UI en http://localhost:8025).
+Templates: `welcome`, `password-reset`, `password-changed`, `order-paid`, `bank-transfer-instructions`, `order-shipped`, `order-delivered`, `order-cancelled`, `return-requested`, `order-returned`. Locally you can view them in Mailpit (`docker compose --profile mail up` with `SMTP_HOST=mailpit`, UI at http://localhost:8025). The reset link points to `/reset-password?token=...`.
 
-**Sesiones y tokens**:
+**Sessions and tokens**:
 
-- Access token JWT (HS256) de `ACCESS_TOKEN_TTL_SECONDS` (900 s). Refresh token de sesión de `REFRESH_TOKEN_TTL_DAYS` (7 días), en el cuerpo y en la cookie httpOnly `qcl_rt` (path `/api/auth`).
-- Cada petición autenticada valida la sesión en BD: logout, cambio/restablecimiento de contraseña y desactivación del usuario invalidan los tokens **inmediatamente**.
-- Códigos 401 diferenciados: `UNAUTHENTICATED`, `TOKEN_INVALID`, `TOKEN_EXPIRED`, `SESSION_REVOKED`, `SESSION_EXPIRED`, `REFRESH_TOKEN_INVALID`.
-- Para pruebas de caducidad: `POST /test/users {"accessTtlSeconds": 5}`, `POST /test/auth/token {"accessTtlSeconds": 3}`, `POST /test/sessions/expire {"email": "...", "mode": "expire"}` o el escenario `expired-session`.
-- No hay bloqueo de cuentas, CAPTCHA, verificación de email ni rate limiting en `local`/`testing`.
+- JWT access token (HS256) valid for `ACCESS_TOKEN_TTL_SECONDS` (900 s). Session refresh token valid for `REFRESH_TOKEN_TTL_DAYS` (7 days), in the body and in the httpOnly cookie `qcl_rt` (path `/api/auth`).
+- Every authenticated request validates the session in the database: sign-out, password change/reset and user deactivation invalidate the tokens **immediately**.
+- Distinct 401 codes: `UNAUTHENTICATED`, `TOKEN_INVALID`, `TOKEN_EXPIRED`, `SESSION_REVOKED`, `SESSION_EXPIRED`, `REFRESH_TOKEN_INVALID`.
+- For expiry tests: `POST /test/users {"accessTtlSeconds": 5}`, `POST /test/auth/token {"accessTtlSeconds": 3}`, `POST /test/sessions/expire {"email": "...", "mode": "expire"}` or the `expired-session` scenario.
+- There is no account lockout, CAPTCHA, e-mail verification or rate limiting in `local`/`testing`.
 
-## 10. Selectores y accesibilidad
+## 10. Selectors and accessibility
 
-Prioriza, por este orden:
+Prefer, in this order:
 
-1. **Roles y nombres accesibles** (`getByRole('button', { name: 'Iniciar sesión' })`): HTML semántico, `aria-label` en botones de icono, `aria-current`, `aria-pressed`, `aria-invalid`, `role="alert"` en errores.
-2. **Labels** (`getByLabel('Email', { exact: true })`): todos los campos tienen `<label for>`; el asterisco de obligatorio está **fuera** del label para que el nombre accesible sea exacto.
-3. **`data-testid` estables** en componentes clave (nunca aleatorios).
+1. **Roles and accessible names** (`getByRole('button', { name: 'Sign in' })`): semantic HTML, `aria-label` on icon buttons, `aria-current`, `aria-pressed`, `aria-invalid`, `role="alert"` on errors.
+2. **Labels** (`getByLabel('Email', { exact: true })`): every field has a `<label for>`; the required asterisk is **outside** the label so the accessible name is exact.
+3. **Stable `data-testid` attributes** on key components (never random).
 
-`data-testid` disponibles (selección):
+Available `data-testid` values (selection):
 
-| Zona | data-testid |
+| Area | data-testid |
 |---|---|
-| Cabecera | `logo`, `search-input`, `search-submit`, `search-suggestions`, `search-suggestion`, `cart-link`, `cart-count`, `login-link`, `account-menu-trigger`, `account-menu`, `logout-button`, `admin-link`, `categories-menu-trigger`, `mobile-menu-trigger` |
-| Catálogo | `catalog-title`, `results-count`, `sort-select`, `filters`, `filter-brand-<slug>`, `filter-price-min/max/apply`, `filter-in-stock`, `filter-on-sale`, `filter-rating-<n>`, `active-filters`, `clear-filters`, `product-grid`, `pagination`, `no-results` |
-| Tarjeta de producto | `product-card` (+ `data-product-id`, `data-sku`), `product-card-link`, `add-to-cart`, `favorite-toggle`, `discount-badge`, `price`, `compare-at-price`, `availability` (+ `data-availability`) |
-| Ficha | `product-detail`, `product-name`, `product-sku`, `product-quantity(-increase/-decrease/-value)`, `product-add-to-cart`, `product-specs`, `reviews`, `review-form`, `review-item`, `write-review` |
-| Carrito | `cart-items`, `cart-item` (+ `data-sku`), `cart-item-quantity`, `cart-item-remove`, `cart-item-issue` (+ `data-issue`), `price-changed`, `coupon-input`, `apply-coupon`, `coupon-error`, `applied-coupon`, `summary-subtotal/discount/shipping/total`, `checkout-button`, `cart-empty` |
+| Header | `logo`, `search-input`, `search-submit`, `search-suggestions`, `search-suggestion`, `cart-link`, `cart-count`, `login-link`, `account-menu-trigger`, `account-menu`, `logout-button`, `admin-link`, `categories-menu-trigger`, `mobile-menu-trigger` |
+| Home | `hero-carousel`, `hero-slide`, `hero-cta`, `promo-banner`, `deal-of-the-week`, `popular-categories`, `category-tile`, `brand-strip`, `home-deals`, `home-featured`, `home-new`, `home-bestsellers`, `home-toprated`, `trust-bar` |
+| Catalog | `catalog-title`, `results-count`, `sort-select`, `filters`, `filter-brand-<slug>`, `filter-price-min/max/apply`, `filter-in-stock`, `filter-on-sale`, `filter-rating-<n>`, `active-filters`, `clear-filters`, `product-grid`, `pagination`, `no-results` |
+| Product card | `product-card` (+ `data-product-id`, `data-sku`), `product-card-link`, `add-to-cart`, `favorite-toggle`, `discount-badge`, `price`, `compare-at-price`, `availability` (+ `data-availability`) |
+| Product page | `product-detail`, `product-name`, `product-sku`, `key-specs`, `product-quantity(-increase/-decrease/-value)`, `product-add-to-cart`, `product-thumbnail`, `product-description`, `product-specs`, `reviews`, `rating-summary`, `review-form`, `review-item`, `write-review`, `related-products` |
+| Cart | `cart-items`, `cart-item` (+ `data-sku`), `cart-item-quantity`, `cart-item-remove`, `cart-item-issue` (+ `data-issue`), `price-changed`, `coupon-input`, `apply-coupon`, `coupon-error`, `applied-coupon`, `summary-subtotal/discount/shipping/total`, `checkout-button`, `cart-empty` |
 | Checkout | `checkout-step-<n>`, `address-option`, `shipping-<CODE>`, `pickup-point-select`, `payment-method-<METHOD>`, `card-number/holder/expiry/cvc`, `checkout-next`, `place-order`, `checkout-total`, `checkout-error` |
-| Resultado / pedidos | `order-result` (+ `data-order-status`, `data-payment-status`), `order-result-title`, `order-number`, `retry-payment`, `order-row`, `order-detail`, `order-status`, `payment-status`, `cancel-order`, `request-return`, `confirm-dialog-confirm` |
-| Admin | `admin-nav-*`, `kpis`, `admin-products-table`, `admin-product-row`, `product-form`, `product-save`, `stock-delta`, `stock-adjust`, `admin-order-row`, `admin-status-select`, `admin-status-submit`, `confirm-payment`, `admin-user-row`, `toggle-user-status`, `admin-coupon-row`, `coupon-form` |
+| Result / orders | `order-result` (+ `data-order-status`, `data-payment-status`), `order-result-title`, `order-number`, `retry-payment`, `order-row`, `order-detail`, `order-status`, `payment-status`, `cancel-order`, `request-return`, `confirm-dialog-confirm` |
+| Customer area | `account-greeting`, `account-tile-orders`, `account-tile-favorites`, `account-tile-addresses`, `profile-form`, `address-card`, `new-address`, `change-password-form`, `session-item` |
+| Admin | `admin-nav-dashboard/products/orders/users/coupons`, `kpis`, `kpi-sales`, `kpi-orders`, `kpi-to-ship`, `kpi-returns`, `kpi-users`, `kpi-products`, `kpi-out-of-stock`, `kpi-low-stock`, `admin-products-table`, `admin-product-row`, `product-form`, `product-save`, `stock-delta`, `stock-adjust`, `admin-order-row`, `admin-status-select`, `admin-status-submit`, `confirm-payment`, `admin-user-row`, `toggle-user-status`, `admin-coupon-row`, `coupon-form` |
 
-Comportamientos asíncronos reales que conviene esperar correctamente: sugerencias de búsqueda (debounce 250 ms), toasts (4 s), skeletons de carga, polling del resultado del pago (cada 3 s mientras `PROCESSING`), renovación silenciosa del token.
+Real asynchronous behaviour worth waiting for correctly: search suggestions (250 ms debounce), toasts (4 s), loading skeletons, payment result polling (every 3 s while `PROCESSING`), silent token refresh.
 
-## 11. Login programático y estado de sesión
+Money is displayed in English format with euros (`€1,198.99`) and dates as `14 Nov 2026`. The UI language is English; addresses, phone numbers and postal codes follow Spanish rules because the store only ships to Spain.
 
-La SPA guarda el access token **solo en memoria** y restaura la sesión al cargar mediante la cookie httpOnly `qcl_rt` (`POST /api/auth/refresh`) si `localStorage['qcl.hasSession'] === '1'`. Para saltarte el formulario de login:
+## 11. Programmatic login and session state
 
-- **Playwright**: haz `page.request.post('/api/auth/login', { data })` (comparte cookies con el contexto), escribe `localStorage.setItem('qcl.hasSession','1')` y navega; o guarda `storageState` tras un login y reutilízalo.
-- **Cypress**: `cy.request('POST', '/api/auth/login', body)` establece la cookie; añade `qcl.hasSession` en `localStorage` antes de visitar.
-- **Selenium/WebdriverIO**: obtén el refresh token por API y crea la cookie `qcl_rt` (path `/api/auth`) en el dominio de la tienda.
-- **API (Postman, REST Assured...)**: usa `Authorization: Bearer <accessToken>`; renueva con `POST /api/auth/refresh` y `{ "refreshToken": "..." }`.
+The SPA keeps the access token **in memory only** and restores the session on load through the httpOnly cookie `qcl_rt` (`POST /api/auth/refresh`) if `localStorage['qcl.hasSession'] === '1'`. To skip the login form:
 
-Carrito de invitado: el token del carrito se guarda en `localStorage['qcl.cartToken']` y se envía como `X-Cart-Token`; tras el login la SPA lo fusiona con `POST /api/cart/merge`.
+- **Playwright**: call `page.request.post('/api/auth/login', { data })` (it shares cookies with the context), set `localStorage.setItem('qcl.hasSession','1')` and navigate; or save the `storageState` after a login and reuse it.
+- **Cypress**: `cy.request('POST', '/api/auth/login', body)` sets the cookie; add `qcl.hasSession` to `localStorage` before visiting.
+- **Selenium/WebdriverIO**: get the refresh token through the API and create the `qcl_rt` cookie (path `/api/auth`) on the store domain.
+- **API (Postman, REST Assured...)**: use `Authorization: Bearer <accessToken>`; refresh with `POST /api/auth/refresh` and `{ "refreshToken": "..." }`.
 
-## 12. Ejecutar pruebas desde GitHub Actions
+Guest cart: the cart token is stored in `localStorage['qcl.cartToken']` and sent as `X-Cart-Token`; after login the SPA merges it with `POST /api/cart/merge`.
 
-Tu repositorio `qa-commerce-automation` solo necesita la URL del entorno de testing y la clave de la API de testing como secretos. Ejemplo orientativo de configuración (no forma parte de este repositorio):
+## 12. Running tests from GitHub Actions
+
+Your `qa-commerce-automation` repository only needs the testing environment URL and the testing API key as secrets. Indicative configuration example (not part of this repository):
 
 ```yaml
 env:
@@ -363,13 +389,13 @@ env:
   RUN_ID: gh-${{ github.run_id }}-${{ github.run_attempt }}
 ```
 
-Antes de la suite: comprobar `GET /api/health/ready` y `GET /api/info`. Después (incluso si falla, `if: always()`): `DELETE /api/test/runs/$RUN_ID`. Para shards/workers en paralelo, añade el índice del shard al `runId`.
+Before the suite: check `GET /api/health/ready` and `GET /api/info`. Afterwards (even on failure, `if: always()`): `DELETE /api/test/runs/$RUN_ID`. For parallel shards/workers, append the shard index to the `runId`.
 
-Cuenta con la latencia de Internet: usa *timeouts* algo mayores que en local y evita esperas fijas.
+Account for Internet latency: use somewhat longer *timeouts* than locally and avoid fixed waits.
 
-## 13. Qué NO hace la plataforma (a propósito)
+## 13. What the platform does NOT do (on purpose)
 
-- No hay niveles de dificultad, modos de entrenamiento ni selectores aleatorios.
-- No hay errores aleatorios: todo fallo es consecuencia de reglas de negocio o de una simulación explícita.
-- No hay CAPTCHA, bloqueo por intentos fallidos ni verificación de email.
-- No incluye framework de automatización, Page Objects ni fixtures de tus pruebas: eso pertenece a tu repositorio de automatización.
+- There are no difficulty levels, training modes or random selectors.
+- There are no random errors: every failure is the result of a business rule or an explicit simulation.
+- There is no CAPTCHA, lockout after failed attempts or e-mail verification.
+- It does not include an automation framework, Page Objects or test fixtures: those belong in your automation repository.

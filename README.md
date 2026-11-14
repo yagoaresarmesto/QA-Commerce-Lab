@@ -1,33 +1,33 @@
 # QA Commerce Lab
 
-**Tienda de electrónica completa y realista diseñada como *System Under Test* para practicar automatización de pruebas web y API** (Playwright, Cypress, Selenium, WebdriverIO, Postman, REST Assured…).
+**A complete, realistic electronics store built as a *System Under Test* to practise web and API test automation** (Playwright, Cypress, Selenium, WebdriverIO, Postman, REST Assured…).
 
-No es una demo superficial: frontend, backend, base de datos, API REST documentada con OpenAPI, autenticación con sesiones revocables, roles, catálogo de 168 productos, carrito, cupones, checkout transaccional, pagos simulados, pedidos con máquina de estados, área privada, panel de administración e **infraestructura específica para testing** (datos deterministas, escenarios, aislamiento por ejecución, simulación de fallos y limpieza).
+It is not a shallow demo: frontend, backend, database, REST API documented with OpenAPI, authentication with revocable sessions, roles, a 168-product catalog, cart, coupons, transactional checkout, simulated payments, orders with a state machine, customer area, admin panel and **dedicated testing infrastructure** (deterministic data, scenarios, per-run isolation, fault simulation and cleanup).
 
-> El catálogo usa nombres de marcas y modelos **reales** como referencia, pero precios, stock, reseñas, usuarios, pedidos y pagos son **ficticios**. Las marcas pertenecen a sus respectivos propietarios; este proyecto no tiene relación con ellas ni actividad comercial. Nunca introduzcas datos reales (tarjetas, direcciones, contraseñas).
+> The catalog uses **real** brand and model names as a reference, but prices, stock, reviews, users, orders and payments are **fictional**. Brands belong to their respective owners; this project has no relationship with them and no commercial activity. Never enter real data (cards, addresses, passwords).
 
 ![Home](docs/images/home.png)
 
-| Catálogo | Ficha de producto | Panel de administración |
+| Catalog | Product page | Admin panel |
 |---|---|---|
-| ![Catálogo](docs/images/catalog.png) | ![Producto](docs/images/product.png) | ![Admin](docs/images/admin-dashboard.png) |
+| ![Catalog](docs/images/catalog.png) | ![Product](docs/images/product.png) | ![Admin](docs/images/admin-dashboard.png) |
 
-## Contenido
+## Contents
 
-- [Arranque rápido](#arranque-rápido)
-- [URLs y credenciales](#urls-y-credenciales)
-- [Arquitectura](#arquitectura)
-- [Funcionalidades](#funcionalidades)
-- [Infraestructura para QA](#infraestructura-para-qa)
-- [Desarrollo local sin Docker](#desarrollo-local-sin-docker)
-- [Comandos útiles](#comandos-útiles)
-- [Despliegue](#despliegue)
-- [Solución de problemas](#solución-de-problemas)
-- [Documentación](#documentación)
+- [Quick start](#quick-start)
+- [URLs and credentials](#urls-and-credentials)
+- [Architecture](#architecture)
+- [Features](#features)
+- [QA infrastructure](#qa-infrastructure)
+- [Local development without Docker](#local-development-without-docker)
+- [Useful commands](#useful-commands)
+- [Deployment](#deployment)
+- [Troubleshooting](#troubleshooting)
+- [Documentation](#documentation)
 
-## Arranque rápido
+## Quick start
 
-Requisitos: **Docker** con Docker Compose v2.
+Requirements: **Docker** with Docker Compose v2.
 
 ```bash
 git clone https://github.com/yagoaresarmesto/qa-commerce-lab.git
@@ -35,148 +35,148 @@ cd qa-commerce-lab
 docker compose up --build
 ```
 
-El primer arranque aplica las migraciones y carga el dataset de referencia automáticamente.
+The first start applies the migrations and loads the reference dataset automatically.
 
-## URLs y credenciales
+## URLs and credentials
 
-| Recurso | URL |
+| Resource | URL |
 |---|---|
-| Tienda | http://localhost:3000 |
-| API | http://localhost:3001/api (también vía http://localhost:3000/api) |
+| Store | http://localhost:3000 |
+| API | http://localhost:3001/api (also via http://localhost:3000/api) |
 | Swagger UI | http://localhost:3001/api/docs |
 | OpenAPI JSON / YAML | http://localhost:3001/api/docs-json · `/api/docs-yaml` |
 | Health / info | http://localhost:3001/api/health/ready · http://localhost:3001/api/info |
-| Mailpit (opcional) | http://localhost:8025 (`SMTP_HOST=mailpit docker compose --profile mail up`) |
+| Mailpit (optional) | http://localhost:8025 (`SMTP_HOST=mailpit docker compose --profile mail up`) |
 
-Credenciales locales de ejemplo (solo laboratorio):
+Sample local credentials (lab only):
 
-| Usuario | Contraseña | Perfil |
+| User | Password | Profile |
 |---|---|---|
-| `admin@qacommerce.test` | `Admin123!` | Administrador |
-| `customer@qacommerce.test` | `Customer123!` | Cliente estándar |
-| `orders@qacommerce.test` | `Customer123!` | Pedidos en todos los estados |
-| `favorites@qacommerce.test` · `addresses@qacommerce.test` · `noorders@qacommerce.test` | `Customer123!` | Favoritos · varias direcciones · sin pedidos |
-| `disabled@qacommerce.test` | `Customer123!` | Cuenta desactivada |
+| `admin@qacommerce.test` | `Admin123!` | Administrator |
+| `customer@qacommerce.test` | `Customer123!` | Standard customer |
+| `orders@qacommerce.test` | `Customer123!` | Orders in every status |
+| `favorites@qacommerce.test` · `addresses@qacommerce.test` · `noorders@qacommerce.test` | `Customer123!` | Favorites · several addresses · no orders |
+| `disabled@qacommerce.test` | `Customer123!` | Disabled account |
 
-Tarjeta de prueba aprobada: `4242 4242 4242 4242`, cualquier fecha futura y CVC. API de testing local: cabecera `X-Test-Api-Key: local-test-api-key`. Más datos en [docs/TESTING.md](docs/TESTING.md).
+Approved test card: `4242 4242 4242 4242`, any future date and CVC. Local testing API: header `X-Test-Api-Key: local-test-api-key`. More data in [docs/TESTING.md](docs/TESTING.md).
 
-## Arquitectura
+## Architecture
 
 ```
-Navegador / herramientas de test
-        │  (mismo origen)
+Browser / test tools
+        │  (same origin)
         ▼
- Storefront React (Vite) ──/api──▶ API REST NestJS ──▶ PostgreSQL 16 (Prisma)
+ React storefront (Vite) ──/api──▶ NestJS REST API ──▶ PostgreSQL 16 (Prisma)
                                      ├─ Swagger / OpenAPI
-                                     ├─ Simulador de pagos y jobs
-                                     ├─ Buzón de email simulado
-                                     └─ API de testing (solo local/testing)
+                                     ├─ Payment simulator and jobs
+                                     ├─ Simulated mailbox
+                                     └─ Testing API (local/testing only)
 ```
 
-| Capa | Tecnología |
+| Layer | Technology |
 |---|---|
 | Frontend | React 19, TypeScript, Vite 7, React Router 7, TanStack Query, React Hook Form + Zod, Tailwind CSS 4, Radix UI |
-| Backend | Node.js 22, NestJS 11, TypeScript estricto, class-validator, Pino, JWT + sesiones en BD |
-| Datos | PostgreSQL 16, Prisma 6 (migraciones versionadas, seed determinista) |
+| Backend | Node.js 22, NestJS 11, strict TypeScript, class-validator, Pino, JWT + database sessions |
+| Data | PostgreSQL 16, Prisma 6 (versioned migrations, deterministic seed) |
 | Infra | Docker, Docker Compose, Caddy (HTTPS), GitHub Actions, GHCR |
 
-Detalles: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+Details: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ```
-apps/api      API NestJS (+ prisma/, test/)
-apps/web      Storefront y panel admin (React)
-deploy/vps    Despliegue en VPS: Caddy + demo + testing + PostgreSQL
-docs/         Documentación funcional, técnica, API, QA y despliegue
-Dockerfile    Imagen all-in-one para entornos remotos
+apps/api      NestJS API (+ prisma/, test/)
+apps/web      Storefront and admin panel (React)
+deploy/vps    VPS deployment: Caddy + demo + testing + PostgreSQL
+docs/         Functional, technical, API, QA and deployment documentation
+Dockerfile    All-in-one image for remote environments
 ```
 
-## Funcionalidades
+## Features
 
-- **Catálogo**: home con banners y secciones dinámicas, 16 categorías (2 niveles), búsqueda sin tildes con sugerencias, filtros combinables con facetas, 8 ordenaciones, paginación, fichas con galería, especificaciones y reseñas.
-- **Usuarios**: registro, login, logout, renovación de tokens, sesiones revocables, perfil, cambio y recuperación de contraseña (email simulado), direcciones con validación española.
-- **Compra**: carrito persistente (usuario o invitado, con fusión al iniciar sesión), cupones con 9 reglas, envío estándar/exprés/punto de recogida, checkout en 4 pasos, pagos con tarjetas de prueba o transferencia, idempotencia y control de stock concurrente.
-- **Pedidos**: 8 estados con transiciones validadas, historial, cancelaciones con reembolso y reposición, devoluciones con plazo, reintento de pago, cancelación automática de reservas caducadas.
-- **Área privada**: resumen, pedidos, datos personales, direcciones, contraseña y sesiones, favoritos y reseñas.
-- **Administración**: dashboard con métricas, productos (CRUD, stock atómico, activar/desactivar), pedidos (flujo de estados, confirmar transferencias), usuarios (estado y rol) y cupones.
+- **Catalog**: home page with banners and dynamic sections, 16 categories (2 levels), accent-insensitive search with suggestions, combinable filters with facets, 8 sort orders, pagination, product pages with gallery, specifications and reviews.
+- **Users**: sign-up, sign-in, sign-out, token refresh, revocable sessions, profile, password change and recovery (simulated e-mail), addresses with Spanish validation.
+- **Shopping**: persistent cart (user or guest, merged on sign-in), coupons with 9 rules, standard/express/pickup-point shipping, 4-step checkout, payments with test cards or bank transfer, idempotency and concurrent stock control.
+- **Orders**: 8 statuses with validated transitions, history, cancellations with refund and restock, returns within a deadline, payment retry, automatic cancellation of expired reservations.
+- **Customer area**: overview, orders, personal details, addresses, password and sessions, favorites and reviews.
+- **Administration**: dashboard with metrics, products (CRUD, atomic stock, enable/disable), orders (status workflow, confirm bank transfers), users (status and role) and coupons.
 
-Reglas de negocio completas: [docs/FUNCTIONAL.md](docs/FUNCTIONAL.md).
+Full business rules: [docs/FUNCTIONAL.md](docs/FUNCTIONAL.md).
 
-## Infraestructura para QA
+## QA infrastructure
 
-- **Dataset determinista**: 168 productos con inventario especial documentado (agotados, última unidad, descatalogados), 9 cupones con cada caso de error, usuarios en estados concretos, 9 pedidos de referencia (uno por estado), ~500 reseñas.
-- **API de testing** (`/api/test/*`, protegida con `X-Test-Api-Key`, inexistente en la demo): reset global, restauración de referencia, creación de usuarios/productos/cupones/carritos/pedidos en cualquier estado, tokens con TTL configurable, caducidad de sesiones, emails, jobs.
-- **27 escenarios** listos (`checkout-ready`, `cart-with-issues`, `concurrent-last-unit`, `shipped-order`, `expired-coupon`, `expired-session`…).
-- **Aislamiento por ejecución** (`runId` / `X-Test-Run-Id`) y limpieza `DELETE /api/test/runs/{runId}` segura en paralelo.
-- **Simulación controlada de fallos**: errores 500/503/…, latencia y timeouts acotados por ejecución o usuario, con número de usos y caducidad.
-- **Pagos deterministas**: aprobado, rechazado, fondos insuficientes, pendiente→aprobado/rechazado, error de pasarela (502) y timeout (504).
-- **Sin bloqueos artificiales**: ni CAPTCHA, ni bloqueo por intentos, ni verificación de email, ni rate limiting en testing.
-- **Selectores**: HTML semántico, labels exactos, roles ARIA y `data-testid` estables.
+- **Deterministic dataset**: 168 products with documented special inventory (out of stock, last unit, discontinued), 9 coupons covering every error case, users in specific states, 9 reference orders (one per status), ~500 reviews.
+- **Testing API** (`/api/test/*`, protected with `X-Test-Api-Key`, absent from the demo): global reset, reference restore, creation of users/products/coupons/carts/orders in any status, tokens with configurable TTL, session expiry, e-mails, jobs.
+- **27 ready-made scenarios** (`checkout-ready`, `cart-with-issues`, `concurrent-last-unit`, `shipped-order`, `expired-coupon`, `expired-session`…).
+- **Per-run isolation** (`runId` / `X-Test-Run-Id`) and a parallel-safe cleanup `DELETE /api/test/runs/{runId}`.
+- **Controlled fault simulation**: 500/503/… errors, latency and timeouts scoped by run or user, with a number of uses and an expiry.
+- **Deterministic payments**: approved, declined, insufficient funds, pending→approved/declined, gateway error (502) and timeout (504).
+- **No artificial blockers**: no CAPTCHA, no lockout after failed attempts, no e-mail verification, no rate limiting in testing.
+- **Selectors**: semantic HTML, exact labels, ARIA roles and stable `data-testid` attributes.
 
-Guía completa para automatizar: [docs/TESTING.md](docs/TESTING.md).
+Complete automation guide: [docs/TESTING.md](docs/TESTING.md).
 
-## Desarrollo local sin Docker
+## Local development without Docker
 
-Requisitos: Node.js 22 y PostgreSQL 16.
+Requirements: Node.js 22 and PostgreSQL 16.
 
 ```bash
 npm install
-cp apps/api/.env.example apps/api/.env   # ajusta DATABASE_URL si es necesario
-npm run db:deploy                         # aplica migraciones
-npm run db:reset                          # carga el dataset de referencia
+cp apps/api/.env.example apps/api/.env   # adjust DATABASE_URL if needed
+npm run db:deploy                         # apply migrations
+npm run db:reset                          # load the reference dataset
 npm run dev                               # API :3001 + storefront :3000 (proxy /api)
 ```
 
-## Comandos útiles
+## Useful commands
 
-| Comando | Descripción |
+| Command | Description |
 |---|---|
-| `npm run dev` | API y storefront en modo desarrollo |
-| `npm run build` | Compila API y storefront |
-| `npm run lint` · `npm run typecheck` | Calidad de código |
-| `npm test` | Tests unitarios (motor de precios, estados, pagos) |
-| `npm run test:e2e` | Tests de integración contra PostgreSQL (`DATABASE_URL`) |
-| `npm run db:migrate` | Crea una migración nueva (desarrollo) |
-| `npm run db:deploy` | Aplica migraciones pendientes |
-| `npm run db:seed` | Restaura los datos de referencia sin borrar los de ejecuciones |
-| `npm run db:reset` | Borra todo y siembra desde cero (IDs deterministas) |
-| `docker compose up --build` | Entorno local completo |
-| `docker compose exec api node dist/prisma/seed.js --reset` | Reset completo dentro de Docker |
-| `docker compose down -v` | Para el entorno y elimina la base de datos |
+| `npm run dev` | API and storefront in development mode |
+| `npm run build` | Build the API and the storefront |
+| `npm run lint` · `npm run typecheck` | Code quality |
+| `npm test` | Unit tests (pricing engine, statuses, payments) |
+| `npm run test:e2e` | Integration tests against PostgreSQL (`DATABASE_URL`) |
+| `npm run db:migrate` | Create a new migration (development) |
+| `npm run db:deploy` | Apply pending migrations |
+| `npm run db:seed` | Restore the reference data without deleting run data |
+| `npm run db:reset` | Wipe everything and seed from scratch (deterministic IDs) |
+| `docker compose up --build` | Full local environment |
+| `docker compose exec api node dist/prisma/seed.js --reset` | Full reset inside Docker |
+| `docker compose down -v` | Stop the environment and delete the database |
 
-## Despliegue
+## Deployment
 
-El repositorio está preparado para desplegarse en Internet con **dos entornos separados del mismo código**: *demo pública* (sin API de testing, con rate limiting y reset nocturno) y *testing remoto* (con API de testing protegida). Recomendación: un VPS de ~6-8 €/mes con Docker Compose y HTTPS automático (Caddy); alternativa PaaS con `render.yaml`.
+The repository is ready to be deployed to the Internet as **two separate environments built from the same code**: a *public demo* (no testing API, rate limiting and a nightly reset) and *remote testing* (with the protected testing API). Recommendation: a ~€6-8/month VPS with Docker Compose and automatic HTTPS (Caddy); PaaS alternative with `render.yaml`.
 
-Estudio de viabilidad, costes, comparativa de proveedores y guía paso a paso: [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
+Feasibility study, costs, provider comparison and step-by-step guide: [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
 
-CI/CD (`.github/workflows`): **CI** (lint, tipos, unitarios, integración con PostgreSQL, comprobación de migraciones, build y build de la imagen) y **Release** (publica la imagen en GHCR y, si lo configuras, despliega por SSH en el VPS con comprobación de salud).
+CI/CD (`.github/workflows`): **CI** (lint, types, unit tests, integration tests with PostgreSQL, migration check, build and image build) and **Release** (publishes the image to GHCR and, if you configure it, deploys to the VPS over SSH with a health check).
 
-## Solución de problemas
+## Troubleshooting
 
-| Problema | Solución |
+| Problem | Solution |
 |---|---|
-| El puerto 3000/3001/5433 está ocupado | Cambia `WEB_PORT`, `API_PORT` o `DB_PORT` en un fichero `.env` en la raíz (ver `.env.example`) |
-| `api` no arranca: `Invalid environment configuration` | Revisa las variables; fuera de `local` `JWT_SECRET` debe tener ≥ 32 caracteres y `TEST_API_KEY` ≥ 24 |
-| La tienda carga pero sin productos | `docker compose logs api` (migraciones/seed) y `docker compose exec api node dist/prisma/seed.js --reset` |
-| `401 TEST_API_KEY_INVALID` | Envía `X-Test-Api-Key` (en local: `local-test-api-key`) |
-| `404` en `/api/test/*` | Estás en `APP_ENV=demo/production`: la API de testing no existe allí |
-| `403 GLOBAL_RESET_DISABLED` | El reset global está deshabilitado en el entorno: usa `DELETE /api/test/runs/{runId}` o `POST /api/test/seed` |
-| Los datos de referencia han cambiado tras ejecutar pruebas | `POST /api/test/seed` (o `npm run db:seed`) |
-| `429 RATE_LIMITED` | Solo ocurre con `RATE_LIMIT_ENABLED=true` (demo) |
-| Prisma: `Can't reach database server` | Comprueba `DATABASE_URL` y que PostgreSQL esté arriba (`docker compose ps`) |
-| Cambios en `schema.prisma` | `npm run db:migrate -- --name <cambio>` y commitea la migración (CI comprueba que coinciden) |
+| Port 3000/3001/5433 is already in use | Change `WEB_PORT`, `API_PORT` or `DB_PORT` in a `.env` file at the repository root (see `.env.example`) |
+| `api` does not start: `Invalid environment configuration` | Check the variables; outside `local`, `JWT_SECRET` must be ≥ 32 characters and `TEST_API_KEY` ≥ 24 |
+| The store loads but shows no products | `docker compose logs api` (migrations/seed) and `docker compose exec api node dist/prisma/seed.js --reset` |
+| `401 TEST_API_KEY_INVALID` | Send `X-Test-Api-Key` (locally: `local-test-api-key`) |
+| `404` on `/api/test/*` | You are on `APP_ENV=demo/production`: the testing API does not exist there |
+| `403 GLOBAL_RESET_DISABLED` | Global reset is disabled in that environment: use `DELETE /api/test/runs/{runId}` or `POST /api/test/seed` |
+| Reference data changed after running tests | `POST /api/test/seed` (or `npm run db:seed`) |
+| `429 RATE_LIMITED` | Only happens with `RATE_LIMIT_ENABLED=true` (demo) |
+| Prisma: `Can't reach database server` | Check `DATABASE_URL` and that PostgreSQL is up (`docker compose ps`) |
+| Changes to `schema.prisma` | `npm run db:migrate -- --name <change>` and commit the migration (CI checks they match) |
 
-## Documentación
+## Documentation
 
-| Documento | Contenido |
+| Document | Contents |
 |---|---|
-| [docs/TESTING.md](docs/TESTING.md) | Guía para QA Automation: datos, API de testing, escenarios, aislamiento, fallos, selectores |
-| [docs/FUNCTIONAL.md](docs/FUNCTIONAL.md) | Funcionalidades, roles, permisos, reglas de negocio, estados de pedido |
-| [docs/API.md](docs/API.md) | Convenciones, autenticación, errores, endpoints y ejemplos |
-| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Stack, módulos, modelo de datos, concurrencia, seguridad |
-| [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) | Viabilidad, costes, separación demo/testing, guía de despliegue |
-| [docs/PLAN.md](docs/PLAN.md) | Análisis, riesgos y estado de las fases |
+| [docs/TESTING.md](docs/TESTING.md) | QA automation guide: data, testing API, scenarios, isolation, faults, selectors |
+| [docs/FUNCTIONAL.md](docs/FUNCTIONAL.md) | Features, roles, permissions, business rules, order statuses |
+| [docs/API.md](docs/API.md) | Conventions, authentication, errors, endpoints and examples |
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Stack, modules, data model, concurrency, security |
+| [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) | Feasibility, costs, demo/testing separation, deployment guide |
+| [docs/PLAN.md](docs/PLAN.md) | Analysis, risks and phase status |
 
-## Licencia
+## License
 
-Todavía no se ha definido una licencia: elige una (por ejemplo MIT) antes de publicarlo como código abierto. Proyecto educativo sin actividad comercial.
+No license has been chosen yet: pick one (for example MIT) before publishing it as open source. Educational project with no commercial activity.

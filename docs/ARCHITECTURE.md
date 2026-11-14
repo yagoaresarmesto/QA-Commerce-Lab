@@ -1,21 +1,21 @@
-# Arquitectura técnica
+# Technical architecture
 
-## 1. Visión general
+## 1. Overview
 
 ```mermaid
 flowchart LR
-  subgraph Clientes
-    B[Navegador / Playwright / Cypress / Selenium]
+  subgraph Clients
+    B[Browser / Playwright / Cypress / Selenium]
     A[Postman / REST Assured / curl]
   end
-  subgraph "Mismo origen (https://dominio)"
+  subgraph "Same origin (https://domain)"
     W[Storefront SPA<br/>React + Vite]
-    API[API REST NestJS<br/>/api/*]
+    API[NestJS REST API<br/>/api/*]
     SW[Swagger UI<br/>/api/docs]
   end
   DB[(PostgreSQL 16)]
-  MAIL[(Buzón simulado<br/>tabla EmailMessage<br/>+ SMTP opcional)]
-  JOBS[[Jobs: pagos pendientes,<br/>reservas caducadas,<br/>reset nocturno demo]]
+  MAIL[(Simulated mailbox<br/>EmailMessage table<br/>+ optional SMTP)]
+  JOBS[[Jobs: pending payments,<br/>expired reservations,<br/>nightly demo reset]]
 
   B --> W --> API
   A --> API
@@ -25,175 +25,176 @@ flowchart LR
   JOBS --> DB
 ```
 
-- **Monorepo** con npm workspaces: `apps/api` (NestJS) y `apps/web` (React).
-- **Mismo origen** en todos los entornos: Vite proxifica `/api` en desarrollo, nginx en Docker local y la propia API sirve el build de la SPA en la imagen *all-in-one* de despliegue. Ventajas: sin problemas de CORS, cookies first-party para el refresh token y URLs simples para la automatización.
+- **Monorepo** with npm workspaces: `apps/api` (NestJS) and `apps/web` (React).
+- **Same origin** in every environment: Vite proxies `/api` in development, nginx in local Docker and the API itself serves the SPA build in the *all-in-one* deployment image. Benefits: no CORS issues, first-party cookies for the refresh token and simple URLs for automation.
 
-## 2. Decisiones de stack
+## 2. Stack decisions
 
-| Capa | Elección | Motivo |
+| Layer | Choice | Reason |
 |---|---|---|
-| Frontend | **React 19 + Vite 7 + TypeScript** | SPA estática fácil de desplegar y servir desde la API; Next.js no aporta valor (no hay SEO real ni SSR necesario) y complicaría el despliegue |
-| Routing | React Router 7 (modo librería, `createBrowserRouter`) | Estándar, URLs en castellano compartibles |
-| Datos | TanStack Query 5 | Caché, reintentos controlados, *polling* (pagos pendientes), estados de carga/error |
-| Formularios | React Hook Form + Zod | Validación de cliente declarativa; el backend sigue siendo la fuente de verdad |
-| Estilos | Tailwind CSS 4 | Sistema de diseño propio con tokens (`brand`, `accent`) |
-| Accesibilidad | Radix UI (Dialog, DropdownMenu) + HTML semántico | Foco, teclado y ARIA correctos en modales y menús |
-| Backend | **NestJS 11 + TypeScript estricto** | Arquitectura modular, DI, validación con DTOs y OpenAPI generada desde el código |
-| ORM | **Prisma 6** + PostgreSQL 16 | Migraciones versionadas, tipado extremo a extremo, transacciones interactivas |
-| Auth | JWT HS256 (access) + sesión en BD (refresh opaco) | Tokens revocables al instante, ideal para probar caducidad/revocación |
-| Contraseñas | `scrypt` de Node (N=2^15) | Sin dependencias nativas, parámetros recomendados por OWASP |
-| Logs | Pino (`nestjs-pino`), JSON estructurado | `requestId`, `testRunId`, cabeceras sensibles redactadas |
-| Infra | Docker, Docker Compose, Caddy (HTTPS automático) | Reproducible en local y en un VPS barato |
+| Frontend | **React 19 + Vite 7 + TypeScript** | Static SPA that is easy to deploy and to serve from the API; Next.js adds no value (no real SEO or SSR needs) and would complicate deployment |
+| Routing | React Router 7 (library mode, `createBrowserRouter`) | Standard, shareable English URLs (`/product/{slug}`, `/category/{slug}`, `/account/orders`...) |
+| Data | TanStack Query 5 | Caching, controlled retries, *polling* (pending payments), loading/error states |
+| Forms | React Hook Form + Zod | Declarative client validation; the backend remains the source of truth |
+| Styles | Tailwind CSS 4 | Custom design system with tokens (`brand`, `accent`) and the Geist font |
+| Accessibility | Radix UI (Dialog, DropdownMenu) + semantic HTML | Correct focus, keyboard and ARIA handling in modals and menus |
+| Backend | **NestJS 11 + strict TypeScript** | Modular architecture, DI, DTO validation and OpenAPI generated from the code |
+| ORM | **Prisma 6** + PostgreSQL 16 | Versioned migrations, end-to-end typing, interactive transactions |
+| Auth | JWT HS256 (access) + database session (opaque refresh) | Instantly revocable tokens, ideal for testing expiry/revocation |
+| Passwords | Node `scrypt` (N=2^15) | No native dependencies, OWASP-recommended parameters |
+| Logs | Pino (`nestjs-pino`), structured JSON | `requestId`, `testRunId`, sensitive headers redacted |
+| Infra | Docker, Docker Compose, Caddy (automatic HTTPS) | Reproducible locally and on a cheap VPS |
 
-Versiones fijadas en las ramas mayores estables (Nest 11, Prisma 6, TS 5.9, Vite 7) en lugar de las recién publicadas, para priorizar estabilidad.
+Versions are pinned to the stable major lines (Nest 11, Prisma 6, TS 5.9, Vite 7) rather than the freshly released ones, to favour stability.
 
-## 3. Estructura del repositorio
+## 3. Repository layout
 
 ```
 qa-commerce-lab/
 ├── apps/
 │   ├── api/                      # NestJS
-│   │   ├── prisma/               # schema.prisma, migraciones, seed CLI
+│   │   ├── prisma/               # schema.prisma, migrations, seed CLI
 │   │   ├── src/
-│   │   │   ├── common/           # errores, filtro global, guards, decoradores, validación, contexto de petición
-│   │   │   ├── config/           # configuración tipada y validada por entorno (zod)
+│   │   │   ├── common/           # errors, global filter, guards, decorators, validation, request context
+│   │   │   ├── config/           # typed configuration validated per environment (zod)
 │   │   │   ├── modules/
-│   │   │   │   ├── auth/         # registro, login, refresh, logout, recuperación
-│   │   │   │   ├── users/        # perfil, contraseña, sesiones, direcciones
-│   │   │   │   ├── catalog/      # productos, categorías, marcas, home
-│   │   │   │   ├── media/        # ilustraciones SVG propias de producto
-│   │   │   │   ├── cart/         # carrito, cupones, envíos, motor de precios (puro)
-│   │   │   │   ├── orders/       # checkout, pagos (simulador), máquina de estados, ciclo de vida
-│   │   │   │   ├── engagement/   # favoritos y reseñas
-│   │   │   │   ├── admin/        # panel de administración
-│   │   │   │   ├── jobs/         # jobs periódicos y reset programado
-│   │   │   │   ├── mail/         # buzón simulado (+ SMTP opcional)
-│   │   │   │   ├── health/       # health checks e info del entorno
-│   │   │   │   └── testing/      # API de testing, escenarios, limpieza, faults (solo local/testing)
-│   │   │   └── seed/             # dataset de referencia determinista
-│   │   └── test/                 # pruebas de integración técnicas (supertest + PostgreSQL)
+│   │   │   │   ├── auth/         # registration, login, refresh, logout, recovery
+│   │   │   │   ├── users/        # profile, password, sessions, addresses
+│   │   │   │   ├── catalog/      # products, categories, brands, home
+│   │   │   │   ├── media/        # own SVG product illustrations
+│   │   │   │   ├── cart/         # cart, coupons, shipping, (pure) pricing engine
+│   │   │   │   ├── orders/       # checkout, payments (simulator), state machine, lifecycle
+│   │   │   │   ├── engagement/   # favorites and reviews
+│   │   │   │   ├── admin/        # administration panel
+│   │   │   │   ├── jobs/         # periodic jobs and scheduled reset
+│   │   │   │   ├── mail/         # simulated mailbox (+ optional SMTP)
+│   │   │   │   ├── health/       # health checks and environment info
+│   │   │   │   └── testing/      # testing API, scenarios, cleanup, faults (local/testing only)
+│   │   │   └── seed/             # deterministic reference dataset
+│   │   └── test/                 # technical integration tests (supertest + PostgreSQL)
 │   └── web/                      # React + Vite
 │       └── src/
-│           ├── auth/             # proveedor de sesión y guards de rutas
+│           ├── auth/             # session provider and route guards
 │           ├── components/       # ui/ (design system), layout/, product/, checkout/
-│           ├── lib/              # cliente HTTP, tipos de la API, queries, formato
-│           └── pages/            # tienda, cuenta (account/), administración (admin/)
-├── deploy/vps/                   # docker-compose de producción, Caddy, scripts de despliegue y backup
-├── docs/                         # documentación
-├── Dockerfile                    # imagen all-in-one (API + SPA) para despliegues
-├── docker-compose.yml            # entorno local completo
-└── render.yaml                   # alternativa PaaS (Render Blueprint)
+│           ├── lib/              # HTTP client, API types, queries, formatting
+│           └── pages/            # store, account (account/), administration (admin/)
+├── deploy/vps/                   # production docker-compose, Caddy, deployment and backup scripts
+├── docs/                         # documentation
+├── Dockerfile                    # all-in-one image (API + SPA) for deployments
+├── docker-compose.yml            # full local environment
+└── render.yaml                   # PaaS alternative (Render Blueprint)
 ```
 
 ## 4. Backend
 
-### Módulos y capas
+### Modules and layers
 
-Cada módulo de dominio tiene **controller** (HTTP, Swagger, validación de entrada), **service** (reglas de negocio, transacciones) y **DTOs** (contratos de entrada/salida). La lógica pura y crítica está aislada y cubierta por tests unitarios:
+Every domain module has a **controller** (HTTP, Swagger, input validation), a **service** (business rules, transactions) and **DTOs** (input/output contracts). Pure, critical logic is isolated and covered by unit tests:
 
-- `cart/pricing.ts`: motor de precios (subtotal, descuentos, envío gratis, IVA).
-- `orders/order-state-machine.ts`: transiciones permitidas por actor.
-- `orders/payment-simulator.ts`: tarjetas de prueba, Luhn y escenarios.
+- `cart/pricing.ts`: pricing engine (subtotal, discounts, free shipping, VAT).
+- `orders/order-state-machine.ts`: allowed transitions per actor.
+- `orders/payment-simulator.ts`: test cards, Luhn and scenarios.
 
-### Peticiones
+### Requests
 
-1. `pino-http` asigna `X-Request-Id`; `RequestContextMiddleware` crea un contexto (`AsyncLocalStorage`) con el `requestId` y, en local/testing, el `X-Test-Run-Id`.
-2. Guards globales: `ConfigurableThrottlerGuard` (solo si `RATE_LIMIT_ENABLED`) y `AuthGuard` (protegido por defecto; `@Public`, `@OptionalAuth`, `@Roles`). El guard valida el JWT **y** la sesión en BD (revocación inmediata).
-3. `FaultInjectionInterceptor` aplica reglas de fallos (inactivo fuera de testing).
-4. `ValidationPipe` global (whitelist, `forbidNonWhitelisted`, transformación, un error por campo).
-5. `AllExceptionsFilter` normaliza **cualquier** error (de negocio, de Nest, de Prisma o de body-parser) al formato documentado.
+1. `pino-http` assigns `X-Request-Id`; `RequestContextMiddleware` creates a context (`AsyncLocalStorage`) with the `requestId` and, in local/testing, the `X-Test-Run-Id`.
+2. Global guards: `ConfigurableThrottlerGuard` (only if `RATE_LIMIT_ENABLED`) and `AuthGuard` (protected by default; `@Public`, `@OptionalAuth`, `@Roles`). The guard validates the JWT **and** the database session (immediate revocation).
+3. `FaultInjectionInterceptor` applies fault rules (inactive outside testing).
+4. Global `ValidationPipe` (whitelist, `forbidNonWhitelisted`, transformation, one error per field).
+5. `AllExceptionsFilter` normalises **any** error (business, Nest, Prisma or body-parser) into the documented format.
 
-### Consistencia y concurrencia
+### Consistency and concurrency
 
-| Riesgo | Mecanismo |
+| Risk | Mechanism |
 |---|---|
-| Vender más que el stock | `UPDATE ... SET stock = stock - n WHERE stock >= n` dentro de la transacción del pedido |
-| Doble clic / varias pestañas | `SELECT ... FOR UPDATE` sobre el carrito del usuario + `Idempotency-Key` con índice único `(userId, idempotencyKey)` |
-| Repetición tras timeout | Idempotencia con hash del cuerpo (`IDEMPOTENCY_KEY_REUSED` si cambia) |
-| Dos pagos simultáneos | Transición condicional de `paymentStatus` a `PROCESSING` (solo uno la consigue) |
-| Cambios de estado concurrentes | Control optimista `UPDATE ... WHERE status = <anterior>` |
-| Límite global de cupones | Incremento condicional `timesUsed < usageLimit` |
-| Reset concurrente | Cola serializada en `SeedService` |
-| Precios manipulados en el cliente | Totales siempre recalculados en el servidor + `expectedTotalCents` |
+| Selling more than the stock | `UPDATE ... SET stock = stock - n WHERE stock >= n` inside the order transaction |
+| Double click / several tabs | `SELECT ... FOR UPDATE` on the user cart + `Idempotency-Key` with a unique index `(userId, idempotencyKey)` |
+| Replay after a timeout | Idempotency with a body hash (`IDEMPOTENCY_KEY_REUSED` if it changes) |
+| Two simultaneous payments | Conditional transition of `paymentStatus` to `PROCESSING` (only one succeeds) |
+| Concurrent status changes | Optimistic locking `UPDATE ... WHERE status = <previous>` |
+| Global coupon limit | Conditional increment `timesUsed < usageLimit` |
+| Concurrent resets | Serialised queue in `SeedService` |
+| Prices tampered with on the client | Totals always recomputed on the server + `expectedTotalCents` |
 
-### Modelo de datos
+### Data model
 
 ```mermaid
 erDiagram
-  User ||--o{ Session : tiene
-  User ||--o{ PasswordResetToken : solicita
-  User ||--o{ Address : guarda
-  User ||--o| Cart : posee
-  User ||--o{ Order : realiza
-  User ||--o{ Review : escribe
-  User ||--o{ Favorite : marca
-  User ||--o{ CouponRedemption : usa
-  Category ||--o{ Category : "subcategorías"
-  Category ||--o{ Product : agrupa
-  Brand ||--o{ Product : fabrica
-  Product ||--o{ ProductImage : muestra
-  Product ||--o{ CartItem : "en carritos"
-  Product ||--o{ OrderItem : "vendido en"
-  Product ||--o{ Review : recibe
+  User ||--o{ Session : has
+  User ||--o{ PasswordResetToken : requests
+  User ||--o{ Address : saves
+  User ||--o| Cart : owns
+  User ||--o{ Order : places
+  User ||--o{ Review : writes
+  User ||--o{ Favorite : marks
+  User ||--o{ CouponRedemption : uses
+  Category ||--o{ Category : "subcategories"
+  Category ||--o{ Product : groups
+  Brand ||--o{ Product : makes
+  Product ||--o{ ProductImage : shows
+  Product ||--o{ CartItem : "in carts"
+  Product ||--o{ OrderItem : "sold in"
+  Product ||--o{ Review : receives
   Product ||--o{ Favorite : ""
-  Cart ||--o{ CartItem : contiene
-  Coupon ||--o{ CouponRedemption : registra
-  Coupon ||--o{ Cart : "aplicado en"
-  Order ||--|{ OrderItem : incluye
-  Order ||--o{ Payment : "intentos de pago"
-  Order ||--o{ OrderStatusHistory : historial
+  Cart ||--o{ CartItem : contains
+  Coupon ||--o{ CouponRedemption : records
+  Coupon ||--o{ Cart : "applied to"
+  Order ||--|{ OrderItem : includes
+  Order ||--o{ Payment : "payment attempts"
+  Order ||--o{ OrderStatusHistory : history
   Order ||--o| CouponRedemption : ""
   ShippingMethod ||--o{ Order : ""
   PickupPoint ||--o{ Order : ""
 ```
 
-Tablas auxiliares: `EmailMessage` (buzón), `Banner` (home), `TestAuditLog` (auditoría de la API de testing).
+Auxiliary tables: `EmailMessage` (mailbox), `Banner` (home), `TestAuditLog` (testing API audit).
 
-Convenciones:
+Conventions:
 
-- Importes en **céntimos** (`Int`), precios con IVA.
-- `OrderItem` y `Order.shippingAddress` son **instantáneas**: el histórico no cambia aunque cambien productos o direcciones (`OrderItem.productId` pasa a `NULL` si el producto se elimina).
-- Integridad referencial con `onDelete` explícito (Cascade para datos dependientes, Restrict para catálogo, SetNull para históricos).
-- `isReference` marca los datos del seed; `testRunId` etiqueta lo creado por automatización. `Product.searchText` (texto normalizado sin tildes) y `discountPercent` son campos derivados mantenidos por la aplicación para buscar y ordenar en BD.
-- `Order.stockReserved` indica si el pedido retiene inventario (evita reposiciones dobles).
+- Amounts in **cents** (`Int`), prices including VAT.
+- `OrderItem` and `Order.shippingAddress` are **snapshots**: history does not change when products or addresses change (`OrderItem.productId` becomes `NULL` if the product is deleted).
+- Referential integrity with explicit `onDelete` (Cascade for dependent data, Restrict for the catalog, SetNull for history).
+- `isReference` marks seed data; `testRunId` tags what automation creates. `Product.searchText` (normalised, accent-free text) and `discountPercent` are derived fields maintained by the application to search and sort in the database.
+- `Order.stockReserved` tells whether the order holds inventory (prevents double restocking).
 
 ## 5. Frontend
 
-- `lib/api.ts`: cliente `fetch` con access token **en memoria**, renovación silenciosa ante `TOKEN_EXPIRED` (una sola petición de refresh compartida), evento de sesión caducada, carrito de invitado (`X-Cart-Token`) y cabecera `X-Test-Run-Id` opcional.
-- `auth/AuthProvider.tsx`: restaura la sesión al cargar (cookie httpOnly), fusiona el carrito de invitado tras el login y limpia la caché al salir.
-- Estado del servidor con TanStack Query; estado de UI en la URL (filtros, orden, página) para que sea compartible y automatizable.
-- Sistema de diseño propio en `components/ui` (Button, Input/Select/Textarea/Checkbox con label y error asociados, Modal/ConfirmDialog, Badge, Alert, Skeleton, EmptyState, ErrorState, Pagination, Price, Rating, QuantityStepper, Breadcrumbs).
-- Accesibilidad: *skip link*, foco gestionado al navegar, roles ARIA (combobox de búsqueda, radiogroup de valoración, tabs de galería), `aria-live` en resultados y cantidades, `prefers-reduced-motion`, carrusel sin auto-rotación (WCAG 2.2.2).
+- `lib/api.ts`: `fetch` client with the access token **in memory**, silent refresh on `TOKEN_EXPIRED` (a single shared refresh request), session-expired event, guest cart (`X-Cart-Token`) and optional `X-Test-Run-Id` header.
+- `auth/AuthProvider.tsx`: restores the session on load (httpOnly cookie), merges the guest cart after login and clears the cache on sign-out.
+- Server state with TanStack Query; UI state in the URL (filters, sort, page) so it is shareable and automatable.
+- Custom design system in `components/ui` (Button, Input/Select/Textarea/Checkbox with associated label and error, Modal/ConfirmDialog, Badge, Alert, Skeleton, EmptyState, ErrorState, Pagination, Price, Rating, QuantityStepper, Breadcrumbs).
+- Accessibility: *skip link*, focus management on navigation, ARIA roles (search combobox, rating radiogroup, gallery tabs), `aria-live` on results and quantities, `prefers-reduced-motion`, carousel without auto-rotation (WCAG 2.2.2).
+- Formatting: English UI, euros formatted with `en-IE` (`€1,198.99`) and dates with `en-GB` (`14 Nov 2026`).
 
-## 6. Configuración por entorno
+## 6. Per-environment configuration
 
-`APP_ENV` ∈ `local | testing | demo | production` determina los valores por defecto; la configuración se valida al arrancar (la app no inicia con configuración insegura):
+`APP_ENV` ∈ `local | testing | demo | production` sets the defaults; configuration is validated at start-up (the app refuses to start with an insecure configuration):
 
-| Ajuste | local | testing | demo / production |
+| Setting | local | testing | demo / production |
 |---|---|---|---|
-| API de testing | ✅ (clave por defecto) | ✅ (clave ≥ 24 caracteres obligatoria) | ❌ **siempre** (no se registra el módulo) |
-| Reset global | ✅ | ❌ por defecto | ❌ |
-| Faults globales | ✅ | ❌ por defecto | ❌ |
+| Testing API | ✅ (default key) | ✅ (key ≥ 24 characters required) | ❌ **always** (the module is not registered) |
+| Global reset | ✅ | ❌ by default | ❌ |
+| Global faults | ✅ | ❌ by default | ❌ |
 | Rate limiting | ❌ | ❌ | ✅ |
-| `JWT_SECRET` | por defecto | ≥ 32 caracteres obligatorio | ≥ 32 caracteres obligatorio |
-| Cookie `Secure` | ❌ | ✅ | ✅ |
-| Logs | legibles | JSON | JSON |
+| `JWT_SECRET` | default | ≥ 32 characters required | ≥ 32 characters required |
+| `Secure` cookie | ❌ | ✅ | ✅ |
+| Logs | human-readable | JSON | JSON |
 
-Variables completas en [`apps/api/.env.example`](../apps/api/.env.example) y [`deploy/vps/*.env.example`](../deploy/vps).
+Full list of variables in [`apps/api/.env.example`](../apps/api/.env.example) and [`deploy/vps/*.env.example`](../deploy/vps).
 
-## 7. Seguridad
+## 7. Security
 
-- Contraseñas con scrypt y comparación en tiempo constante; login con tiempo similar exista o no el usuario.
-- Tokens de recuperación y refresh tokens almacenados como **hash** (SHA-256); un solo uso para la recuperación.
-- Cabeceras de seguridad con Helmet (CSP estricta cuando se sirve la SPA), `x-powered-by` desactivado, CORS restringido a orígenes configurados.
-- Logs con `authorization`, `cookie` y `x-test-api-key` redactados. Nunca se guardan números de tarjeta completos.
-- API de testing: módulo no registrado en demo/production, clave técnica con comparación en tiempo constante, alcance acotado (runId/usuario), auditoría en `TestAuditLog`.
-- Base de datos de cada entorno remoto con **rol propio** (la demo no puede acceder a la BD de testing).
+- Passwords hashed with scrypt and compared in constant time; login takes a similar time whether or not the user exists.
+- Password reset tokens and refresh tokens stored as a **hash** (SHA-256); reset tokens are single-use.
+- Security headers with Helmet (strict CSP when serving the SPA), `x-powered-by` disabled, CORS restricted to configured origins.
+- Logs with `authorization`, `cookie` and `x-test-api-key` redacted. Full card numbers are never stored.
+- Testing API: module not registered in demo/production, technical key compared in constant time, limited scope (runId/user), audit in `TestAuditLog`.
+- Each remote environment database has **its own role** (the demo cannot access the testing database).
 
-## 8. Pruebas técnicas incluidas
+## 8. Bundled technical tests
 
-Estas pruebas verifican el propio SUT (no son el framework de automatización del laboratorio):
+These tests verify the SUT itself (they are not the lab's automation framework):
 
-- `npm test`: unitarias del motor de precios, máquina de estados y simulador de pagos.
-- `npm run test:e2e`: integración con PostgreSQL real (health, catálogo determinista, filtros, formato de error, protección de la API de testing, compra completa con idempotencia y stock, concurrencia en la última unidad, limpieza por ejecución).
-- CI: lint, tipos, unitarias, integración, comprobación de que el esquema coincide con las migraciones, build y build de la imagen Docker.
+- `npm test`: unit tests for the pricing engine, state machine and payment simulator.
+- `npm run test:e2e`: integration with a real PostgreSQL (health, deterministic catalog, filters, error format, testing API protection, full purchase with idempotency and stock, last-unit concurrency, per-run cleanup).
+- CI: lint, types, unit tests, integration tests, check that the schema matches the migrations, build and Docker image build.

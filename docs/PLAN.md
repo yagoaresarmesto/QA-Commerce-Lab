@@ -1,61 +1,61 @@
-# Análisis, riesgos y plan por fases
+# Analysis, risks and phased plan
 
-## 1. Análisis de requisitos
+## 1. Requirements analysis
 
-El objetivo es un **System Under Test** realista y duradero, no una demo. De los requisitos se derivan cinco ejes que guían todas las decisiones:
+The goal is a realistic, long-lived **System Under Test**, not a demo. Five principles derived from the requirements guide every decision:
 
-1. **Funcionalidad real y coherente**: cada acción de la UI llama a la API y tiene efectos verificables en base de datos (stock, pagos, pedidos, cupones, emails).
-2. **Backend como fuente de verdad**: precios, totales, stock, permisos y transiciones de estado se calculan y validan en el servidor.
-3. **Testabilidad sin trampas**: sin CAPTCHA ni bloqueos en testing, datos deterministas, selectores estables y accesibles, contratos documentados (OpenAPI) y errores con códigos estables.
-4. **Control del entorno**: API de testing para preparar, aislar, simular fallos y limpiar; inexistente en la demo pública.
-5. **Operación sencilla y barata**: Docker en local, una sola imagen para los entornos remotos, despliegue automatizado y coste mensual bajo.
+1. **Real, consistent functionality**: every UI action calls the API and has verifiable effects in the database (stock, payments, orders, coupons, e-mails).
+2. **The backend as the source of truth**: prices, totals, stock, permissions and status transitions are computed and validated on the server.
+3. **Testability without tricks**: no CAPTCHA or lockouts in testing, deterministic data, stable and accessible selectors, documented contracts (OpenAPI) and errors with stable codes.
+4. **Environment control**: a testing API to prepare, isolate, simulate faults and clean up; absent from the public demo.
+5. **Simple, cheap operations**: Docker locally, a single image for the remote environments, automated deployment and a low monthly cost.
 
-## 2. Arquitectura definitiva
+## 2. Final architecture
 
-Ver [ARCHITECTURE.md](ARCHITECTURE.md) (stack, módulos, modelo de datos, seguridad) y [DEPLOYMENT.md](DEPLOYMENT.md) (viabilidad, costes, separación demo/testing).
+See [ARCHITECTURE.md](ARCHITECTURE.md) (stack, modules, data model, security) and [DEPLOYMENT.md](DEPLOYMENT.md) (feasibility, costs, demo/testing separation).
 
-## 3. Seeds, reset y aislamiento
+## 3. Seeds, reset and isolation
 
-Ver [TESTING.md](TESTING.md):
+See [TESTING.md](TESTING.md):
 
-- **Seed determinista** basado en *upserts* por claves naturales (slug, SKU, código, email): el mismo código sirve para sembrar desde cero (IDs idénticos tras `TRUNCATE ... RESTART IDENTITY`) y para **restaurar** los datos de referencia sin borrar los de otras ejecuciones.
-- **Tres niveles de limpieza**: por ejecución (`runId`, seguro en paralelo), restauración de referencia y reset global (solo entornos dedicados).
-- **Aislamiento lógico** por `runId`: etiquetado de datos, catálogo con visibilidad por ejecución, fallos acotados y limpieza que revierte efectos colaterales en datos compartidos.
+- **Deterministic seed** based on *upserts* by natural keys (slug, SKU, code, e-mail): the same code seeds from scratch (identical IDs after `TRUNCATE ... RESTART IDENTITY`) and **restores** the reference data without deleting other runs' data.
+- **Three cleanup levels**: per run (`runId`, parallel-safe), reference restore and global reset (dedicated environments only).
+- **Logical isolation** by `runId`: data tagging, per-run catalog visibility, scoped faults and a cleanup that reverts side effects on shared data.
 
-## 4. Riesgos técnicos y mitigación
+## 4. Technical risks and mitigation
 
-| Riesgo | Impacto | Mitigación aplicada |
+| Risk | Impact | Applied mitigation |
 |---|---|---|
-| Sobreventa / carreras en el checkout | Datos incoherentes, tests de concurrencia imposibles | Decremento atómico condicional, bloqueo del carrito, idempotencia, control optimista de estados (verificado con tests de integración) |
-| Suites paralelas que se pisan | Tests inestables | `runId`, visibilidad del catálogo por ejecución, escenarios que crean datos nuevos, limpieza por ejecución |
-| Reset global destruye otras ejecuciones | Fallos en cascada | Deshabilitado por defecto en testing; alternativas por `runId` y restauración de referencia |
-| API de testing expuesta en producción | Borrado de datos de la demo | Módulo no registrado en demo/production (garantía en código), clave técnica obligatoria y ≥ 24 caracteres en remoto, auditoría |
-| Fallos simulados que afectan a otros | Falsos negativos | Reglas siempre acotadas (runId/usuario), con caducidad y número de usos; globales solo con flag explícito |
-| Planes gratuitos que se duermen o caducan | Timeouts en el primer test, pérdida de datos | Recomendación de VPS 24/7 de coste fijo; tabla de límites documentada |
-| Selectores frágiles | Mantenimiento de suites costoso | HTML semántico, labels exactos, roles ARIA, `data-testid` estables documentados, sin IDs aleatorios en el DOM público |
-| Deriva del dataset de referencia (stock, ventas, valoraciones) | Asserts que dejan de cumplirse con el tiempo | Limpieza que revierte efectos, `POST /api/test/seed`, reset nocturno de la demo, contadores derivados recalculados |
-| Dependencia de servicios externos (pagos, email, imágenes) | Entorno inestable | Simulador de pagos propio, buzón en BD (SMTP opcional), ilustraciones SVG generadas por la propia API |
-| Diferencias entre entornos | "En local funciona" | Misma imagen y mismo código; configuración validada al arrancar; `GET /api/info` |
-| Esquema y migraciones desincronizados | Despliegues rotos | Comprobación `prisma migrate diff --exit-code` en CI |
-| Secretos en el repositorio | Seguridad | `.env` ignorados, plantillas `*.example`, secretos en GitHub Secrets |
+| Overselling / checkout race conditions | Inconsistent data, impossible concurrency tests | Conditional atomic decrement, cart lock, idempotency, optimistic status locking (verified with integration tests) |
+| Parallel suites stepping on each other | Flaky tests | `runId`, per-run catalog visibility, scenarios that create new data, per-run cleanup |
+| Global reset destroying other runs | Cascading failures | Disabled by default in testing; per-`runId` alternatives and reference restore |
+| Testing API exposed in production | Demo data deleted | Module not registered in demo/production (guaranteed in code), technical key required and ≥ 24 characters remotely, audit log |
+| Simulated faults affecting others | False negatives | Rules always scoped (runId/user), with expiry and a number of uses; global ones only with an explicit flag |
+| Free plans that sleep or expire | Timeouts on the first test, data loss | Recommendation of a fixed-cost 24/7 VPS; documented table of limits |
+| Brittle selectors | Expensive suite maintenance | Semantic HTML, exact labels, ARIA roles, documented stable `data-testid` attributes, no random IDs in the public DOM |
+| Reference dataset drift (stock, sales, ratings) | Assertions that stop holding over time | Cleanup that reverts effects, `POST /api/test/seed`, nightly demo reset, recomputed derived counters |
+| Dependence on external services (payments, e-mail, images) | Unstable environment | Own payment simulator, database mailbox (optional SMTP), SVG illustrations generated by the API itself |
+| Differences between environments | "It works on my machine" | Same image and code; configuration validated on start-up; `GET /api/info` |
+| Schema and migrations out of sync | Broken deployments | `prisma migrate diff --exit-code` check in CI |
+| Secrets in the repository | Security | Ignored `.env` files, `*.example` templates, secrets in GitHub Secrets |
 
-## 5. Plan por fases y estado
+## 5. Phased plan and status
 
-| Fase | Entregables verificables | Estado |
+| Phase | Verifiable deliverables | Status |
 |---|---|---|
-| 1. Arquitectura | Monorepo, esquema Prisma y migración, configuración por entorno, Docker Compose | ✅ Completada |
-| 2. Catálogo | 168 productos/16 categorías/20 marcas deterministas, home, fichas, búsqueda sin tildes, filtros combinables con facetas, ordenación, paginación, ilustraciones propias | ✅ Completada |
-| 3. Usuarios | Registro, login, logout, refresh, sesiones revocables, roles, perfil, direcciones, recuperación de contraseña con buzón simulado | ✅ Completada |
-| 4. Compra | Carrito persistente e invitado con fusión, cupones con 9 reglas, checkout transaccional, simulador de pagos (9 escenarios), pedidos, inventario, reservas con caducidad | ✅ Completada |
-| 5. Funcionalidades adicionales | Favoritos, reseñas, historial, cancelaciones, devoluciones, panel de administración completo | ✅ Completada |
-| 6. API y documentación | OpenAPI de 99 operaciones con esquemas, catálogo de errores, documentación funcional, técnica y de API | ✅ Completada |
-| 7. Infraestructura QA | Seeds deterministas, reset, restauración, 27 escenarios, fixtures, faults, buzón, aislamiento por runId, auditoría | ✅ Completada |
-| 8. Despliegue | Imagen all-in-one, stack VPS (Caddy + 2 entornos + 2 BD), Render Blueprint, workflows de CI y Release con despliegue SSH | ✅ Preparado · ⏳ **Pendiente de tu acción**: contratar VPS/dominio y configurar secretos (ver DEPLOYMENT.md §6) |
-| 9. Validación final | Lint, tipos, 14 tests unitarios, 8 de integración, recorridos E2E por la UI (compra completa, pago rechazado y reintento, pago asíncrono, cancelación, admin), stack Docker y modo demo verificados | ✅ Completada en local · ⏳ Verificación remota tras el despliegue |
+| 1. Architecture | Monorepo, Prisma schema and migration, per-environment configuration, Docker Compose | ✅ Done |
+| 2. Catalog | 168 products/16 categories/39 brands (real model names), home, product pages, accent-insensitive search, combinable filters with facets, sorting, pagination, own illustrations | ✅ Done |
+| 3. Users | Registration, login, logout, refresh, revocable sessions, roles, profile, addresses, password recovery with a simulated mailbox | ✅ Done |
+| 4. Shopping | Persistent and guest cart with merge, coupons with 9 rules, transactional checkout, payment simulator (9 scenarios), orders, inventory, expiring reservations | ✅ Done |
+| 5. Additional features | Favorites, reviews, history, cancellations, returns, full admin panel | ✅ Done |
+| 6. API and documentation | OpenAPI with 99 operations and schemas, error catalog, functional, technical and API documentation | ✅ Done |
+| 7. QA infrastructure | Deterministic seeds, reset, restore, 27 scenarios, fixtures, faults, mailbox, per-runId isolation, audit log | ✅ Done |
+| 8. Deployment | All-in-one image, VPS stack (Caddy + 2 environments + 2 databases), Render Blueprint, CI and Release workflows with SSH deployment | ✅ Ready · ⏳ **Waiting for your action**: sign up for a VPS/domain and configure secrets (see DEPLOYMENT.md §6) |
+| 9. Final validation | Lint, types, 14 unit tests, 8 integration tests, UI E2E walkthroughs (full purchase, declined payment and retry, asynchronous payment, cancellation, admin), Docker stack and demo mode verified | ✅ Done locally · ⏳ Remote verification after deployment |
+| 10. Redesign and English | Modern visual redesign, real product names, English UI, routes, data, API messages and documentation | ✅ Done |
 
-## 6. Siguientes pasos sugeridos (no bloqueantes)
+## 6. Suggested next steps (non-blocking)
 
-- Ejecutar el workflow **Release** y desplegar en el VPS (requiere tu cuenta y secretos).
-- Añadir subida de imágenes de producto en el panel admin (hoy se aceptan URLs o se generan ilustraciones).
-- Exportar métricas (Prometheus) si quieres practicar pruebas de rendimiento con observabilidad.
-- Internacionalización (inglés) si el portfolio lo requiere.
+- Run the **Release** workflow and deploy to the VPS (requires your account and secrets).
+- Add product image uploads to the admin panel (today URLs are accepted or illustrations are generated).
+- Export metrics (Prometheus) if you want to practise performance testing with observability.

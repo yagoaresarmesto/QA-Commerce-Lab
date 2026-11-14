@@ -1,136 +1,136 @@
-# Despliegue en Internet: estudio de viabilidad y guía
+# Deploying to the Internet: feasibility study and guide
 
-> **Precios orientativos** consultados en noviembre de 2026 en las webs de los proveedores y en comparativas recientes (ver [Fuentes](#fuentes)). Las condiciones cambian a menudo: **verifícalas en la web oficial antes de contratar**.
+> **Indicative prices** checked in November 2026 on the providers' websites and recent comparisons (see [Sources](#sources)). Terms change often: **verify them on the official website before signing up**.
 
-## 1. Resumen y recomendación
+## 1. Summary and recommendation
 
-| Pregunta | Respuesta |
+| Question | Answer |
 |---|---|
-| ¿Es viable alojar la aplicación completa? | **Sí.** Es una app Node + PostgreSQL ligera: cabe holgadamente en 1-2 vCPU y 2-4 GB de RAM para ambos entornos. |
-| ¿Puede estar accesible 24/7? | Sí, con un VPS o servicios PaaS de pago. Los planes gratuitos **se duermen** o **caducan** (ver tabla). |
-| Arquitectura recomendada | **Un VPS con Docker Compose**: Caddy (HTTPS automático) + 2 contenedores de la misma imagen (`demo` y `testing`) + PostgreSQL con 2 bases de datos y 2 roles. Ya está preparada en [`deploy/vps`](../deploy/vps). |
-| Coste estimado | **~6-8 €/mes** (VPS 2 vCPU / 4 GB) + dominio opcional (~10-15 €/año). Sin dominio: subdominios gratuitos tipo `sslip.io`. |
-| Alternativa sin administrar servidores | Railway (Hobby 5 $/mes + consumo) o Render (servicios web y Postgres de pago por entorno, ~25-30 $/mes para los dos). |
-| Alternativa casi gratuita | Fly.io (máquina pequeña ~2 $/mes) + Neon Free (Postgres serverless con *autosuspend*). Con arranques en frío y límites de cómputo. |
+| Is it feasible to host the full application? | **Yes.** It is a lightweight Node + PostgreSQL app: it fits comfortably in 1-2 vCPUs and 2-4 GB of RAM for both environments. |
+| Can it be available 24/7? | Yes, with a VPS or paid PaaS services. Free plans **go to sleep** or **expire** (see table). |
+| Recommended architecture | **One VPS with Docker Compose**: Caddy (automatic HTTPS) + 2 containers of the same image (`demo` and `testing`) + PostgreSQL with 2 databases and 2 roles. Already prepared in [`deploy/vps`](../deploy/vps). |
+| Estimated cost | **~€6-8/month** (VPS 2 vCPU / 4 GB) + optional domain (~€10-15/year). Without a domain: free `sslip.io`-style subdomains. |
+| Alternative without managing servers | Railway (Hobby $5/month + usage) or Render (paid web services and Postgres per environment, ~$25-30/month for both). |
+| Almost-free alternative | Fly.io (small machine ~$2/month) + Neon Free (serverless Postgres with *autosuspend*). With cold starts and compute limits. |
 
-## 2. Cómo se aloja cada pieza
+## 2. How each piece is hosted
 
-La imagen **all-in-one** (`Dockerfile` en la raíz) contiene la API NestJS **y** el build del storefront: la API sirve la SPA y `/api/*` en el mismo origen. Por eso:
+The **all-in-one** image (`Dockerfile` at the root) contains the NestJS API **and** the storefront build: the API serves the SPA and `/api/*` on the same origin. Therefore:
 
-- **Frontend + backend**: un único contenedor por entorno (sin CORS, cookies first-party, una sola URL para Playwright y Postman).
-- **Base de datos**: PostgreSQL gestionado (Render, Neon, Railway…) o un contenedor con volumen persistente en el VPS.
-- **Swagger**: `https://<dominio>/api/docs` en ambos entornos (la demo documenta la API real; los endpoints de testing solo aparecen en testing).
-- **HTTPS**: automático (Caddy en VPS; incluido en PaaS).
+- **Frontend + backend**: a single container per environment (no CORS, first-party cookies, one URL for Playwright and Postman).
+- **Database**: managed PostgreSQL (Render, Neon, Railway…) or a container with a persistent volume on the VPS.
+- **Swagger**: `https://<domain>/api/docs` in both environments (the demo documents the real API; the testing endpoints only appear in testing).
+- **HTTPS**: automatic (Caddy on a VPS; included in PaaS).
 
-## 3. Comparativa de plataformas
+## 3. Platform comparison
 
-| Opción | Precio aproximado | 24/7 | Postgres | Pros | Contras / límites |
+| Option | Approximate price | 24/7 | Postgres | Pros | Cons / limits |
 |---|---|---|---|---|---|
-| **VPS Hetzner** (CX23: 2 vCPU, 4 GB, 40 GB) | ~5,49 € + 0,50 € IPv4/mes tras la subida de junio 2026 (alternativa CPX22 si no hay stock) | ✅ | En el propio VPS | Precio fijo, recursos de sobra para demo + testing, control total, sin dormirse | Administras tú el servidor (actualizaciones, backups, firewall) |
-| **Railway** | Hobby 5 $/mes con 5 $ de consumo incluido; el exceso se cobra por uso | ✅ | Plantilla Postgres con volumen | Despliegue desde GitHub muy sencillo | Coste variable; dos entornos + 2 BD pueden superar el crédito incluido |
-| **Render** | Web Starter de pago por servicio + Postgres desde ~6 $/mes (256 MB) por BD; plan de workspace aparte | ✅ (de pago) | Gestionado | Blueprint incluido (`render.yaml`), backups gestionados | Gratis: el servicio web se duerme a los 15 min (30-60 s de arranque en frío) y la BD gratuita se **borra a los 30 días** |
-| **Fly.io** | shared-cpu-1x 256 MB ≈ 2,19 $/mes (tarifas oct. 2026); Managed Postgres desde ~38 $/mes | ✅ | Gestionado caro o externo (Neon) | Muy barato para la app | Postgres gestionado caro; sin plan gratuito clásico |
-| **Neon** (solo BD) | Free: 100 CU-h/proyecto/mes, 1 GB por proyecto | ⚠️ Autosuspend (arranque en frío de cientos de ms) | Serverless | Gratis, un proyecto por entorno | Límite de cómputo mensual; sin backups largos en free |
-| **Supabase** (solo BD) | Free: 500 MB; Pro 25 $/mes | ⚠️ Free se pausa tras 1 semana sin actividad | Gestionado | Panel muy completo | Pausa en free; sin backups automáticos en free |
-| **Koyeb** | Información contradictoria en 2026 sobre el plan gratuito para cuentas nuevas | ⚠️ | Postgres con scale-to-zero | | Verificar condiciones actuales |
-| **Oracle Cloud Always Free** | 0 € (Ampere A1, reducido según informes a 2 OCPU / 12 GB en junio 2026) | ✅ | En la VM | Gratis | Disponibilidad de capacidad irregular, riesgo de reclamación de instancias inactivas, configuración compleja |
+| **Hetzner VPS** (CX23: 2 vCPU, 4 GB, 40 GB) | ~€5.49 + €0.50 IPv4/month after the June 2026 price increase (CPX22 as an alternative when out of stock) | ✅ | On the VPS itself | Fixed price, plenty of resources for demo + testing, full control, never sleeps | You manage the server (updates, backups, firewall) |
+| **Railway** | Hobby $5/month with $5 of usage included; overage billed by usage | ✅ | Postgres template with a volume | Very easy deployment from GitHub | Variable cost; two environments + 2 databases may exceed the included credit |
+| **Render** | Paid Web Starter per service + Postgres from ~$6/month (256 MB) per database; separate workspace plan | ✅ (paid) | Managed | Blueprint included (`render.yaml`), managed backups | Free: the web service sleeps after 15 min (30-60 s cold start) and the free database is **deleted after 30 days** |
+| **Fly.io** | shared-cpu-1x 256 MB ≈ $2.19/month (Oct. 2026 prices); Managed Postgres from ~$38/month | ✅ | Expensive managed or external (Neon) | Very cheap for the app | Expensive managed Postgres; no classic free plan |
+| **Neon** (database only) | Free: 100 CU-h/project/month, 1 GB per project | ⚠️ Autosuspend (cold start of a few hundred ms) | Serverless | Free, one project per environment | Monthly compute limit; no long backups on free |
+| **Supabase** (database only) | Free: 500 MB; Pro $25/month | ⚠️ Free pauses after 1 week of inactivity | Managed | Very complete dashboard | Pauses on free; no automatic backups on free |
+| **Koyeb** | Conflicting information in 2026 about the free plan for new accounts | ⚠️ | Postgres with scale-to-zero | | Check the current terms |
+| **Oracle Cloud Always Free** | €0 (Ampere A1, reportedly reduced to 2 OCPU / 12 GB in June 2026) | ✅ | On the VM | Free | Irregular capacity availability, risk of idle instances being reclaimed, complex setup |
 
-### ¿Por qué el VPS?
+### Why the VPS?
 
-1. **24/7 sin arranques en frío**: ningún test falla por timeouts del primer request.
-2. **Coste fijo** independientemente de cuántas suites ejecutes.
-3. Los dos entornos (demo y testing) y sus bases de datos caben en una sola máquina pequeña.
-4. Despliegue reproducible (`docker compose`), HTTPS automático, backups con `pg_dump`.
+1. **24/7 with no cold starts**: no test fails because of a timeout on the first request.
+2. **Fixed cost** regardless of how many suites you run.
+3. Both environments (demo and testing) and their databases fit on one small machine.
+4. Reproducible deployment (`docker compose`), automatic HTTPS, backups with `pg_dump`.
 
-## 4. Impacto de ejecutar cientos de tests
+## 4. Impact of running hundreds of tests
 
-Estimaciones para una suite típica (UI + API):
+Estimates for a typical suite (UI + API):
 
-- Un test de UI genera ~10-40 peticiones a la API (HTML/JS/CSS se cachean); un test de API, 1-10.
-- Las operaciones más costosas son el hash de contraseñas (scrypt, ~50-100 ms de CPU por login/registro) y el checkout (transacción con bloqueos). **Recomendación**: reutilizar sesiones (login programático + `storageState`) y crear usuarios con la API de testing en lugar de registrarlos por la UI en cada test.
-- Con 2 vCPU, la API sostiene sin problema **4-8 workers** de Playwright en paralelo; más allá, el cuello de botella suele ser la latencia de red desde el runner de GitHub Actions, no el servidor.
-- Memoria aproximada: API 150-250 MB por entorno, PostgreSQL 150-300 MB. Total < 1,5 GB para los dos entornos.
-- Datos: limpia cada ejecución (`DELETE /api/test/runs/{runId}`) para que la BD no crezca; el nightly reset de la demo la mantiene limpia.
-- No hay rate limiting en testing, por lo que no habrá `429` aunque lances cientos de logins.
+- A UI test generates ~10-40 API requests (HTML/JS/CSS are cached); an API test, 1-10.
+- The most expensive operations are password hashing (scrypt, ~50-100 ms of CPU per login/registration) and the checkout (transaction with locks). **Recommendation**: reuse sessions (programmatic login + `storageState`) and create users with the testing API instead of registering them through the UI in every test.
+- With 2 vCPUs, the API comfortably handles **4-8 Playwright workers** in parallel; beyond that, the bottleneck is usually the network latency from the GitHub Actions runner, not the server.
+- Approximate memory: API 150-250 MB per environment, PostgreSQL 150-300 MB. Total < 1.5 GB for both environments.
+- Data: clean up every run (`DELETE /api/test/runs/{runId}`) so the database does not grow; the demo nightly reset keeps it clean.
+- There is no rate limiting in testing, so you will not get `429` even if you run hundreds of logins.
 
-## 5. Separación demo / testing
+## 5. Demo / testing separation
 
-| Aspecto | Demo pública | Testing remoto |
+| Aspect | Public demo | Remote testing |
 |---|---|---|
 | `APP_ENV` | `demo` | `testing` |
-| API de testing | **Inexistente** (módulo no registrado → 404) | Habilitada con `TEST_API_KEY` secreta |
-| Rate limiting | Activo (300 req/min por IP; 20/min en login y registro) | Desactivado |
-| Reset global | Automático nocturno (`AUTO_RESET_CRON`) | Deshabilitado por defecto (limpieza por `runId`) |
-| Base de datos | `qacl_demo` con rol `qacl_demo` | `qacl_testing` con rol `qacl_testing` |
-| Dominio | `demo.<tu-dominio>` | `testing.<tu-dominio>` |
+| Testing API | **Absent** (module not registered → 404) | Enabled with a secret `TEST_API_KEY` |
+| Rate limiting | On (300 req/min per IP; 20/min on login and registration) | Off |
+| Global reset | Automatic nightly (`AUTO_RESET_CRON`) | Disabled by default (per-`runId` cleanup) |
+| Database | `qacl_demo` with the `qacl_demo` role | `qacl_testing` with the `qacl_testing` role |
+| Domain | `demo.<your-domain>` | `testing.<your-domain>` |
 
-Mismo código e imagen; solo cambia la configuración.
+Same code and image; only the configuration changes.
 
-## 6. Guía paso a paso (VPS recomendado)
+## 6. Step-by-step guide (recommended VPS)
 
-### Requisitos que tienes que contratar o crear tú
+### What you need to sign up for or create yourself
 
-1. **Un VPS** Linux (Ubuntu 24.04 LTS recomendado) con 2 vCPU y 4 GB de RAM (ej. Hetzner CX23/CPX22). Necesitarás tarjeta para darte de alta en el proveedor.
-2. **Dominio** (opcional). Sin dominio puedes usar `demo.<IP-con-guiones>.sslip.io` y `testing.<IP-con-guiones>.sslip.io`, que resuelven a la IP del VPS.
-3. Acceso a **GitHub** (el workflow `Release` publica la imagen en GitHub Container Registry).
+1. **A Linux VPS** (Ubuntu 24.04 LTS recommended) with 2 vCPUs and 4 GB of RAM (e.g. Hetzner CX23/CPX22). You will need a card to sign up with the provider.
+2. **A domain** (optional). Without a domain you can use `demo.<IP-with-dashes>.sslip.io` and `testing.<IP-with-dashes>.sslip.io`, which resolve to the VPS IP.
+3. Access to **GitHub** (the `Release` workflow publishes the image to GitHub Container Registry).
 
-### Pasos
+### Steps
 
 ```bash
-# 1. En tu máquina: genera una clave SSH para el despliegue automático
+# 1. On your machine: generate an SSH key for automatic deployment
 ssh-keygen -t ed25519 -f qacl_deploy -C "qacl-deploy"
 
-# 2. En el VPS (como root o con sudo): Docker + firewall
+# 2. On the VPS (as root or with sudo): Docker + firewall
 curl -fsSL https://get.docker.com | sh
 ufw allow OpenSSH && ufw allow 80 && ufw allow 443 && ufw --force enable
 adduser --disabled-password --gecos "" deploy && usermod -aG docker deploy
-mkdir -p /home/deploy/.ssh && cat qacl_deploy.pub >> /home/deploy/.ssh/authorized_keys   # copia la clave pública
+mkdir -p /home/deploy/.ssh && cat qacl_deploy.pub >> /home/deploy/.ssh/authorized_keys   # copy the public key
 mkdir -p /opt/qa-commerce-lab && chown deploy:deploy /opt/qa-commerce-lab
 
-# 3. Como usuario deploy: clona el repositorio y crea los ficheros de configuración
-git clone https://github.com/<usuario>/qa-commerce-lab.git /opt/qa-commerce-lab
+# 3. As the deploy user: clone the repository and create the configuration files
+git clone https://github.com/<user>/qa-commerce-lab.git /opt/qa-commerce-lab
 cd /opt/qa-commerce-lab/deploy/vps
 cp .env.example .env && cp demo.env.example demo.env && cp testing.env.example testing.env
 chmod 600 .env demo.env testing.env
-# Edita los tres ficheros: dominios, email, contraseñas (openssl rand -base64 32), JWT_SECRET, TEST_API_KEY
+# Edit the three files: domains, e-mail, passwords (openssl rand -base64 32), JWT_SECRET, TEST_API_KEY
 
-# 4. DNS: registros A de DEMO_DOMAIN y TESTING_DOMAIN apuntando a la IP del VPS (no necesario con sslip.io)
+# 4. DNS: A records for DEMO_DOMAIN and TESTING_DOMAIN pointing to the VPS IP (not needed with sslip.io)
 
-# 5. Primer arranque (la imagen debe existir en GHCR: ejecuta antes el workflow "Release")
-docker login ghcr.io   # solo si el paquete es privado (token con read:packages)
+# 5. First start (the image must exist in GHCR: run the "Release" workflow first)
+docker login ghcr.io   # only if the package is private (token with read:packages)
 ./deploy.sh
 ```
 
-6. **Despliegue automático** desde GitHub: en *Settings → Secrets and variables → Actions* crea los secretos `VPS_HOST`, `VPS_USER` (`deploy`), `VPS_SSH_KEY` (contenido de `qacl_deploy`), y las variables `DEPLOY_TARGET=vps` y `TESTING_URL=https://testing.<dominio>`. Cada push a `main` construirá la imagen, la publicará y la desplegará con comprobación de salud.
-7. **Backups**: añade al crontab del VPS `30 3 * * * /opt/qa-commerce-lab/deploy/vps/backup.sh >> /var/log/qacl-backup.log 2>&1` (guarda 7 días). Copia periódicamente `/var/backups/qacl` fuera del servidor (o activa los snapshots del proveedor).
-8. **Comprobación**: `https://testing.<dominio>/api/health/ready`, `https://testing.<dominio>/api/info` y `https://demo.<dominio>`.
+6. **Automatic deployment** from GitHub: in *Settings → Secrets and variables → Actions* create the secrets `VPS_HOST`, `VPS_USER` (`deploy`), `VPS_SSH_KEY` (contents of `qacl_deploy`), and the variables `DEPLOY_TARGET=vps` and `TESTING_URL=https://testing.<domain>`. Every push to `main` will build the image, publish it and deploy it with a health check.
+7. **Backups**: add `30 3 * * * /opt/qa-commerce-lab/deploy/vps/backup.sh >> /var/log/qacl-backup.log 2>&1` to the VPS crontab (keeps 7 days). Regularly copy `/var/backups/qacl` off the server (or enable the provider's snapshots).
+8. **Check**: `https://testing.<domain>/api/health/ready`, `https://testing.<domain>/api/info` and `https://demo.<domain>`.
 
-Para restaurar un backup: `docker compose exec -T db pg_restore -U postgres -d qacl_testing --clean < fichero.dump`.
+To restore a backup: `docker compose exec -T db pg_restore -U postgres -d qacl_testing --clean < file.dump`.
 
-## 7. Alternativa PaaS: Render
+## 7. PaaS alternative: Render
 
-1. Crea una cuenta y conecta el repositorio de GitHub.
-2. *New → Blueprint* y selecciona el repositorio: Render leerá [`render.yaml`](../render.yaml) y creará `qacl-demo`, `qacl-testing` y sus dos bases de datos.
-3. Rellena `PUBLIC_WEB_URL` de cada servicio con su URL (`https://qacl-testing.onrender.com`…). `TEST_API_KEY` y `JWT_SECRET` se generan automáticamente: copia `TEST_API_KEY` desde el panel para tu repositorio de automatización.
-4. Revisa los planes antes de aplicar: los gratuitos no son aptos para 24/7.
+1. Create an account and connect the GitHub repository.
+2. *New → Blueprint* and select the repository: Render reads [`render.yaml`](../render.yaml) and creates `qacl-demo`, `qacl-testing` and their two databases.
+3. Fill in `PUBLIC_WEB_URL` for each service with its URL (`https://qacl-testing.onrender.com`…). `TEST_API_KEY` and `JWT_SECRET` are generated automatically: copy `TEST_API_KEY` from the dashboard into your automation repository.
+4. Review the plans before applying: the free ones are not suitable for 24/7.
 
-Railway o Fly.io funcionan igual con el `Dockerfile` raíz: variables `APP_ENV`, `DATABASE_URL`, `JWT_SECRET`, `PUBLIC_WEB_URL`, `PORT` (y `TEST_API_KEY` en testing). La imagen aplica las migraciones y siembra la BD vacía al arrancar (`SEED_ON_START=if-empty`).
+Railway or Fly.io work the same way with the root `Dockerfile`: variables `APP_ENV`, `DATABASE_URL`, `JWT_SECRET`, `PUBLIC_WEB_URL`, `PORT` (and `TEST_API_KEY` in testing). The image applies the migrations and seeds an empty database on start (`SEED_ON_START=if-empty`).
 
-## 8. Operación
+## 8. Operations
 
-| Tarea | Cómo |
+| Task | How |
 |---|---|
-| Logs | `docker compose logs -f testing` (JSON con `requestId` y `testRunId`) |
-| Salud | `GET /api/health` (liveness), `GET /api/health/ready` (BD); healthchecks Docker integrados |
-| Migraciones | Automáticas al arrancar el contenedor (`prisma migrate deploy`) |
-| Reset del entorno de testing | `docker compose exec testing node dist/prisma/seed.js --reset` (o `ALLOW_GLOBAL_RESET=true` y `POST /api/test/reset`) |
-| Restaurar datos de referencia | `POST /api/test/seed` |
-| Rotar la clave de testing | Cambia `TEST_API_KEY` en `testing.env` y `docker compose up -d testing` |
-| Secretos | Solo en los `.env` del servidor (permisos 600) y en GitHub Secrets; nunca en el repositorio |
+| Logs | `docker compose logs -f testing` (JSON with `requestId` and `testRunId`) |
+| Health | `GET /api/health` (liveness), `GET /api/health/ready` (database); built-in Docker healthchecks |
+| Migrations | Automatic on container start (`prisma migrate deploy`) |
+| Reset the testing environment | `docker compose exec testing node dist/prisma/seed.js --reset` (or `ALLOW_GLOBAL_RESET=true` and `POST /api/test/reset`) |
+| Restore reference data | `POST /api/test/seed` |
+| Rotate the testing key | Change `TEST_API_KEY` in `testing.env` and run `docker compose up -d testing` |
+| Secrets | Only in the server `.env` files (permissions 600) and in GitHub Secrets; never in the repository |
 
-## Fuentes
+## Sources
 
-Consultadas en noviembre de 2026; cifras orientativas:
+Checked in November 2026; indicative figures:
 
 - Render: [render.com/pricing](https://render.com/pricing), [Render Pricing 2026 (temps.sh)](https://temps.sh/blog/render-pricing-2026), [Free PostgreSQL Hosting 2026 (swyftstack)](https://swyftstack.com/blog/free-postgresql-hosting)
 - Railway: [docs.railway.com/pricing/plans](https://docs.railway.com/pricing/plans)
