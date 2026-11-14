@@ -1,38 +1,38 @@
 import type { OrderPaymentStatus, OrderStatus, PaymentStatus } from './types';
 
-const eur = new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' });
-const date = new Intl.DateTimeFormat('es-ES', { day: '2-digit', month: 'short', year: 'numeric' });
-const dateTime = new Intl.DateTimeFormat('es-ES', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+const eur = new Intl.NumberFormat('en-IE', { style: 'currency', currency: 'EUR' });
+const date = new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+const dateTime = new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 
 export const formatPrice = (cents: number) => eur.format(cents / 100);
 export const formatDate = (iso: string | null | undefined) => (iso ? date.format(new Date(iso)) : '—');
 export const formatDateTime = (iso: string | null | undefined) => (iso ? dateTime.format(new Date(iso)) : '—');
 
 export const ORDER_STATUS_LABEL: Record<OrderStatus, string> = {
-  PENDING: 'Pendiente',
-  PAID: 'Pagado',
-  PREPARING: 'Preparando',
-  SHIPPED: 'Enviado',
-  DELIVERED: 'Entregado',
-  CANCELLED: 'Cancelado',
-  RETURN_REQUESTED: 'Devolución solicitada',
-  RETURNED: 'Devuelto',
+  PENDING: 'Pending',
+  PAID: 'Paid',
+  PREPARING: 'Preparing',
+  SHIPPED: 'Shipped',
+  DELIVERED: 'Delivered',
+  CANCELLED: 'Cancelled',
+  RETURN_REQUESTED: 'Return requested',
+  RETURNED: 'Returned',
 };
 
 export const PAYMENT_STATUS_LABEL: Record<OrderPaymentStatus, string> = {
-  AWAITING_PAYMENT: 'Pendiente de pago',
-  PROCESSING: 'Procesando pago',
-  PAID: 'Pagado',
-  FAILED: 'Pago fallido',
-  REFUNDED: 'Reembolsado',
+  AWAITING_PAYMENT: 'Awaiting payment',
+  PROCESSING: 'Processing payment',
+  PAID: 'Paid',
+  FAILED: 'Payment failed',
+  REFUNDED: 'Refunded',
 };
 
 export const PAYMENT_ATTEMPT_LABEL: Record<PaymentStatus, string> = {
-  PENDING: 'Pendiente',
-  APPROVED: 'Aprobado',
-  DECLINED: 'Rechazado',
-  FAILED: 'Fallido',
-  REFUNDED: 'Reembolsado',
+  PENDING: 'Pending',
+  APPROVED: 'Approved',
+  DECLINED: 'Declined',
+  FAILED: 'Failed',
+  REFUNDED: 'Refunded',
 };
 
 /** Parses a euro amount typed by the user ("12,50" / "12.5") into cents. */

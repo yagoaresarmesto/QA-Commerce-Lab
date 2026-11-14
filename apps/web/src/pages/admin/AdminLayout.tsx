@@ -4,10 +4,10 @@ import { cn } from '../../lib/cn';
 
 const NAV = [
   ['/admin', 'Dashboard', LayoutDashboard],
-  ['/admin/productos', 'Productos', Boxes],
-  ['/admin/pedidos', 'Pedidos', ClipboardList],
-  ['/admin/usuarios', 'Usuarios', Users],
-  ['/admin/cupones', 'Cupones', Tag],
+  ['/admin/products', 'Products', Boxes],
+  ['/admin/orders', 'Orders', ClipboardList],
+  ['/admin/users', 'Users', Users],
+  ['/admin/coupons', 'Coupons', Tag],
 ] as const;
 
 export function AdminLayout() {
@@ -17,9 +17,9 @@ export function AdminLayout() {
         <aside className="mesh-dark flex h-fit flex-col gap-5 rounded-4xl p-4 text-white lg:sticky lg:top-40 lg:min-h-[32rem] lg:p-5">
           <div className="px-2 pt-1">
             <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-accent-400">Backoffice</p>
-            <p className="mt-0.5 text-lg font-semibold tracking-tight">Panel de administración</p>
+            <p className="mt-0.5 text-lg font-semibold tracking-tight">Admin panel</p>
           </div>
-          <nav aria-label="Administración" className="flex gap-1 overflow-x-auto lg:flex-col">
+          <nav aria-label="Administration" className="flex gap-1 overflow-x-auto lg:flex-col">
             {NAV.map(([to, label, Icon]) => (
               <NavLink
                 key={to}
@@ -33,7 +33,7 @@ export function AdminLayout() {
             ))}
           </nav>
           <NavLink to="/" className="mt-auto hidden items-center gap-2 rounded-full border border-white/15 px-4 py-2.5 text-sm text-white/80 transition hover:bg-white/10 lg:flex">
-            <Store className="h-4 w-4" /> Ver tienda
+            <Store className="h-4 w-4" /> View store
           </NavLink>
         </aside>
         <div className="min-w-0">

@@ -45,11 +45,11 @@ export function OrderTotals({ order }: { order: Order }) {
     <dl className="space-y-2 text-sm" data-testid="order-totals">
       <div className="flex justify-between"><dt className="text-slate-600">Subtotal</dt><dd>{formatPrice(order.subtotalCents)}</dd></div>
       {order.discountCents > 0 && (
-        <div className="flex justify-between text-emerald-700"><dt>Descuento {order.couponCode && `(${order.couponCode})`}</dt><dd>−{formatPrice(order.discountCents)}</dd></div>
+        <div className="flex justify-between text-emerald-700"><dt>Discount {order.couponCode && `(${order.couponCode})`}</dt><dd>−{formatPrice(order.discountCents)}</dd></div>
       )}
-      <div className="flex justify-between"><dt className="text-slate-600">Envío ({order.shippingMethod.name})</dt><dd>{order.shippingCents === 0 ? 'Gratis' : formatPrice(order.shippingCents)}</dd></div>
+      <div className="flex justify-between"><dt className="text-slate-600">Shipping ({order.shippingMethod.name})</dt><dd>{order.shippingCents === 0 ? 'Free' : formatPrice(order.shippingCents)}</dd></div>
       <div className="flex items-baseline justify-between border-t border-slate-200 pt-3 text-base font-semibold"><dt>Total</dt><dd className="text-2xl tracking-tight" data-testid="order-total">{formatPrice(order.totalCents)}</dd></div>
-      <p className="text-xs text-slate-500">IVA incluido: {formatPrice(order.taxCents)}</p>
+      <p className="text-xs text-slate-500">VAT included: {formatPrice(order.taxCents)}</p>
     </dl>
   );
 }
@@ -66,7 +66,7 @@ export function OrderItems({ order }: { order: Order }) {
           )}
           <div className="min-w-0 flex-1 text-sm">
             {i.productSlug ? (
-              <Link to={`/producto/${i.productSlug}`} className="font-medium text-slate-950 hover:underline">
+              <Link to={`/product/${i.productSlug}`} className="font-medium text-slate-950 hover:underline">
                 {i.name}
               </Link>
             ) : (
@@ -88,16 +88,16 @@ export function OrderInfo({ order }: { order: Order }) {
   return (
     <div className="grid gap-4 text-sm sm:grid-cols-2">
       <div className="rounded-3xl bg-slate-50 p-5">
-        <p className="mb-1 flex items-center gap-1.5 font-semibold"><MapPin className="h-4 w-4" /> Dirección de envío</p>
+        <p className="mb-1 flex items-center gap-1.5 font-semibold"><MapPin className="h-4 w-4" /> Shipping address</p>
         <p className="text-slate-600">{a.fullName} · {a.phone}</p>
         <p className="text-slate-600">{a.line1}{a.line2 ? `, ${a.line2}` : ''}</p>
         <p className="text-slate-600">{a.postalCode} {a.city} ({a.province})</p>
       </div>
       <div className="rounded-3xl bg-slate-50 p-5">
-        <p className="mb-1 flex items-center gap-1.5 font-semibold"><Truck className="h-4 w-4" /> Envío</p>
+        <p className="mb-1 flex items-center gap-1.5 font-semibold"><Truck className="h-4 w-4" /> Shipping</p>
         <p className="text-slate-600">{order.shippingMethod.name}</p>
-        {order.pickupPoint && <p className="text-slate-600">Recogida: {order.pickupPoint.name}, {order.pickupPoint.address} ({order.pickupPoint.city})</p>}
-        {order.trackingNumber && <p className="text-slate-600">Seguimiento: <span className="font-mono" data-testid="tracking-number">{order.trackingNumber}</span></p>}
+        {order.pickupPoint && <p className="text-slate-600">Pickup: {order.pickupPoint.name}, {order.pickupPoint.address} ({order.pickupPoint.city})</p>}
+        {order.trackingNumber && <p className="text-slate-600">Tracking: <span className="font-mono" data-testid="tracking-number">{order.trackingNumber}</span></p>}
       </div>
     </div>
   );
@@ -124,13 +124,13 @@ export function OrderTimeline({ order }: { order: Order }) {
 }
 
 export function OrderPayments({ order }: { order: Order }) {
-  if (!order.payments.length) return <p className="text-sm text-slate-500">Sin intentos de pago.</p>;
+  if (!order.payments.length) return <p className="text-sm text-slate-500">No payment attempts.</p>;
   return (
     <ul className="space-y-2 text-sm" data-testid="order-payments">
       {order.payments.map((p) => (
         <li key={p.id} className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-slate-200/80 p-4" data-testid="payment-attempt" data-status={p.status}>
           <span>
-            {p.method === 'CARD' ? `Tarjeta ${p.cardBrand ?? ''} ****${p.cardLast4 ?? ''}` : `Transferencia · ref. ${p.providerReference}`}
+            {p.method === 'CARD' ? `Card ${p.cardBrand ?? ''} ****${p.cardLast4 ?? ''}` : `Bank transfer · ref. ${p.providerReference}`}
             <span className="block text-xs text-slate-500">{formatDateTime(p.createdAt)}{p.failureMessage ? ` · ${p.failureMessage}` : ''}</span>
           </span>
           <Badge tone={p.status === 'APPROVED' ? 'green' : p.status === 'PENDING' ? 'amber' : p.status === 'REFUNDED' ? 'slate' : 'red'}>{PAYMENT_ATTEMPT_LABEL[p.status]}</Badge>

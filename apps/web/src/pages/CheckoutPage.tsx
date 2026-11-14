@@ -16,11 +16,11 @@ import { useAddresses, useCart, useShippingMethods } from '../lib/queries';
 import type { OrderPaymentResult, PaymentMethod, PickupPoint, Quote } from '../lib/types';
 import { useDocumentTitle } from './useDocumentTitle';
 
-const STEPS = ['Dirección', 'Envío', 'Pago', 'Revisión'] as const;
+const STEPS = ['Address', 'Shipping', 'Payment', 'Review'] as const;
 
 function Stepper({ step, onStep }: { step: number; onStep: (s: number) => void }) {
   return (
-    <ol className="mb-10 flex items-center gap-2 rounded-full bg-slate-50 p-1.5" aria-label="Pasos del checkout" data-testid="checkout-steps">
+    <ol className="mb-10 flex items-center gap-2 rounded-full bg-slate-50 p-1.5" aria-label="Checkout steps" data-testid="checkout-steps">
       {STEPS.map((label, i) => {
         const done = i < step;
         return (
@@ -47,7 +47,7 @@ function Stepper({ step, onStep }: { step: number; onStep: (s: number) => void }
 }
 
 export function CheckoutPage() {
-  useDocumentTitle('Finalizar compra');
+  useDocumentTitle('Checkout');
   const navigate = useNavigate();
   const qc = useQueryClient();
   const cart = useCart();
@@ -77,7 +77,7 @@ export function CheckoutPage() {
   const quote = useQuery({
     queryKey: ['quote', addressId, shippingCode, pickupPointId, cart.data?.updatedAt],
     queryFn: () => http.post<Quote>('/checkout/quote', { addressId, shippingMethodCode: shippingCode, pickupPointId }),
-    enabled: !!addressId && step >= 1 && (!selectedMethod?.requiresPickupPoint || !!pickupPointId),
+    enabled: !!addressId && step >= 1 && (cart.data?.items.length ?? 0) > 0 && (!selectedMethod?.requiresPickupPoint || !!pickupPointId),
   });
 
   const payload = useMemo(
@@ -101,7 +101,7 @@ export function CheckoutPage() {
       void qc.invalidateQueries({ queryKey: ['cart'] });
       void qc.invalidateQueries({ queryKey: ['orders'] });
       void qc.invalidateQueries({ queryKey: ['catalog'] });
-      navigate(`/checkout/resultado/${res.order.id}`, { replace: true });
+      navigate(`/checkout/result/${res.order.id}`, { replace: true });
     },
     onError: (e) => {
       if (!(e instanceof ApiError)) return setSubmitError(errorMessage(e));
@@ -109,16 +109,16 @@ export function CheckoutPage() {
       if ((e.status === 502 || e.status === 504) && details?.orderId) {
         void qc.invalidateQueries({ queryKey: ['cart'] });
         toast.error(e.message);
-        return navigate(`/checkout/resultado/${details.orderId}`, { replace: true, state: { gatewayError: e.message } });
+        return navigate(`/checkout/result/${details.orderId}`, { replace: true, state: { gatewayError: e.message } });
       }
       if (e.code === 'PRICE_CHANGED') {
         void quote.refetch();
-        return setSubmitError('El importe del pedido ha cambiado. Revisa el resumen actualizado y vuelve a confirmar.');
+        return setSubmitError('The order total has changed. Review the updated summary and confirm again.');
       }
       if (['CART_HAS_ISSUES', 'CART_EMPTY', 'INSUFFICIENT_STOCK'].includes(e.code)) {
         toast.error(e.message);
         void qc.invalidateQueries({ queryKey: ['cart'] });
-        return navigate('/carrito');
+        return navigate('/cart');
       }
       if (e.code.startsWith('CARD_')) {
         setStep(2);
@@ -138,15 +138,15 @@ export function CheckoutPage() {
   if (!cart.data || cart.data.items.length === 0) {
     return (
       <div className="container-page py-8">
-        <EmptyState title="No hay nada que pagar" description="Tu carrito está vacío." action={<ButtonLink to="/">Ir a la tienda</ButtonLink>} testId="checkout-empty" />
+        <EmptyState title="Nothing to pay for" description="Your cart is empty." action={<ButtonLink to="/">Go to the store</ButtonLink>} testId="checkout-empty" />
       </div>
     );
   }
   if (cart.data.hasIssues) {
     return (
       <div className="container-page py-8">
-        <Alert tone="warning" title="Tu carrito necesita cambios" testId="checkout-cart-issues">
-          Hay productos no disponibles o sin stock suficiente. <ButtonLink to="/carrito" variant="outline" size="sm" className="ml-2">Revisar carrito</ButtonLink>
+        <Alert tone="warning" title="Your cart needs changes" testId="checkout-cart-issues">
+          Some products are unavailable or do not have enough stock. <ButtonLink to="/cart" variant="outline" size="sm" className="ml-2">Review cart</ButtonLink>
         </Alert>
       </div>
     );
@@ -154,8 +154,8 @@ export function CheckoutPage() {
 
   const next = () => {
     setSubmitError(undefined);
-    if (step === 0 && !addressId) return toast.error('Selecciona o añade una dirección de envío');
-    if (step === 1 && selectedMethod?.requiresPickupPoint && !pickupPointId) return toast.error('Selecciona un punto de recogida');
+    if (step === 0 && !addressId) return toast.error('Select or add a shipping address');
+    if (step === 1 && selectedMethod?.requiresPickupPoint && !pickupPointId) return toast.error('Select a pickup point');
     if (step === 2 && paymentMethod === 'CARD') {
       const errors = validateCard(card);
       setCardErrors(errors);
@@ -170,27 +170,27 @@ export function CheckoutPage() {
   return (
     <div className="container-page max-w-6xl py-8 sm:py-10">
       <div className="mb-8 space-y-1.5">
-        <p className="eyebrow">Pago seguro simulado</p>
-        <h1 className="heading-xl">Finalizar compra</h1>
+        <p className="eyebrow">Simulated secure payment</p>
+        <h1 className="heading-xl">Checkout</h1>
       </div>
       <Stepper step={step} onStep={(s) => s <= step && setStep(s)} />
       <div className="grid gap-8 lg:grid-cols-[1fr_22rem] xl:gap-12">
         <section aria-labelledby="step-title">
           <h2 id="step-title" className="mb-6 text-2xl font-semibold tracking-tight">
-            {step + 1}. {STEPS[step] === 'Dirección' ? 'Dirección de envío' : STEPS[step] === 'Envío' ? 'Método de envío' : STEPS[step] === 'Pago' ? 'Método de pago' : 'Revisa y confirma tu pedido'}
+            {step + 1}. {STEPS[step] === 'Address' ? 'Shipping address' : STEPS[step] === 'Shipping' ? 'Shipping method' : STEPS[step] === 'Payment' ? 'Payment method' : 'Review and confirm your order'}
           </h2>
 
           {step === 0 && (
             <div className="space-y-4">
               {addresses.data && addresses.data.length > 0 && !addingAddress && (
                 <fieldset className="grid gap-3 sm:grid-cols-2" data-testid="address-options">
-                  <legend className="sr-only">Selecciona una dirección</legend>
+                  <legend className="sr-only">Select an address</legend>
                   {addresses.data.map((a) => (
                     <label key={a.id} className="choice" data-testid="address-option">
                       <input type="radio" name="address" className="mt-1 h-4 w-4 accent-slate-950" checked={addressId === a.id} onChange={() => setAddressId(a.id)} />
                       <span className="text-sm">
                         <span className="block font-semibold">
-                          {a.label ?? 'Dirección'} {a.isDefault && <span className="ml-1 rounded-full bg-accent-300 px-2 py-0.5 text-[11px] font-semibold text-slate-950">predeterminada</span>}
+                          {a.label ?? 'Address'} {a.isDefault && <span className="ml-1 rounded-full bg-accent-300 px-2 py-0.5 text-[11px] font-semibold text-slate-950">default</span>}
                         </span>
                         <span className="block text-slate-600">{a.fullName}</span>
                         <span className="block text-slate-600">
@@ -215,7 +215,7 @@ export function CheckoutPage() {
                 />
               ) : (
                 <Button variant="outline" icon={<Plus className="h-4 w-4" />} onClick={() => setAddingAddress(true)} data-testid="add-address">
-                  Añadir nueva dirección
+                  Add a new address
                 </Button>
               )}
             </div>
@@ -224,7 +224,7 @@ export function CheckoutPage() {
           {step === 1 && (
             <div className="space-y-4">
               <fieldset className="space-y-3" data-testid="shipping-options">
-                <legend className="sr-only">Selecciona un método de envío</legend>
+                <legend className="sr-only">Select a shipping method</legend>
                 {methods.data?.map((m) => {
                   const subtotalAfterDiscount = cart.data!.totals.subtotalCents - cart.data!.totals.discountCents;
                   const free = m.freeOverCents !== null && subtotalAfterDiscount >= m.freeOverCents;
@@ -234,11 +234,11 @@ export function CheckoutPage() {
                       <span className="flex-1">
                         <span className="block font-semibold">{m.name}</span>
                         <span className="block text-sm text-slate-500">
-                          {m.description} · {m.minDays === m.maxDays ? `${m.minDays} día` : `${m.minDays}-${m.maxDays} días`}
+                          {m.description} · {m.minDays === m.maxDays ? `${m.minDays} day` : `${m.minDays}-${m.maxDays} days`}
                         </span>
-                        {m.freeOverCents !== null && <span className="block text-xs text-slate-500">Gratis desde {formatPrice(m.freeOverCents)}</span>}
+                        {m.freeOverCents !== null && <span className="block text-xs text-slate-500">Free over {formatPrice(m.freeOverCents)}</span>}
                       </span>
-                      <span className="font-semibold">{free || m.priceCents === 0 ? 'Gratis' : formatPrice(m.priceCents)}</span>
+                      <span className="font-semibold">{free || m.priceCents === 0 ? 'Free' : formatPrice(m.priceCents)}</span>
                     </label>
                   );
                 })}
@@ -246,10 +246,10 @@ export function CheckoutPage() {
               {selectedMethod?.requiresPickupPoint && (
                 <div className="space-y-2">
                   <label htmlFor="pickup-point" className="text-sm font-medium text-slate-700">
-                    Punto de recogida <span className="text-rose-600">*</span>
+                    Pickup point <span className="text-rose-600">*</span>
                   </label>
                   <select id="pickup-point" value={pickupPointId ?? ''} onChange={(e) => setPickupPointId(e.target.value ? Number(e.target.value) : undefined)} className="h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm focus:border-slate-950 focus:outline-none focus:ring-4 focus:ring-brand-100" data-testid="pickup-point-select">
-                    <option value="">Selecciona un punto…</option>
+                    <option value="">Select a point…</option>
                     {pickupPoints.data?.map((p) => (
                       <option key={p.id} value={p.id}>
                         {p.city} · {p.name} — {p.address}
@@ -280,7 +280,7 @@ export function CheckoutPage() {
               </ul>
               <div className="grid gap-4 text-sm sm:grid-cols-2">
                 <div className="rounded-3xl bg-slate-50 p-5">
-                  <p className="mb-1 flex items-center gap-1.5 font-semibold"><MapPin className="h-4 w-4" /> Envío</p>
+                  <p className="mb-1 flex items-center gap-1.5 font-semibold"><MapPin className="h-4 w-4" /> Shipping</p>
                   {address && (
                     <p className="text-slate-600">
                       {address.fullName}, {address.line1}, {address.postalCode} {address.city}
@@ -289,13 +289,13 @@ export function CheckoutPage() {
                   <p className="text-slate-600">{selectedMethod?.name}{selectedMethod?.requiresPickupPoint && pickupPoints.data ? ` · ${pickupPoints.data.find((p) => p.id === pickupPointId)?.name ?? ''}` : ''}</p>
                 </div>
                 <div className="rounded-3xl bg-slate-50 p-5">
-                  <p className="mb-1 font-semibold">Pago</p>
-                  <p className="text-slate-600">{paymentMethod === 'CARD' ? `Tarjeta terminada en ${card.number.replace(/\D/g, '').slice(-4)}` : 'Transferencia bancaria'}</p>
+                  <p className="mb-1 font-semibold">Payment</p>
+                  <p className="text-slate-600">{paymentMethod === 'CARD' ? `Card ending in ${card.number.replace(/\D/g, '').slice(-4)}` : 'Bank transfer'}</p>
                 </div>
               </div>
-              <Textarea label="Notas para el pedido (opcional)" value={note} onChange={(e) => setNote(e.target.value)} maxLength={500} />
+              <Textarea label="Order notes (optional)" value={note} onChange={(e) => setNote(e.target.value)} maxLength={500} />
               {submitError && (
-                <Alert tone="error" title="No se ha podido completar el pedido" testId="checkout-error">
+                <Alert tone="error" title="The order could not be completed" testId="checkout-error">
                   {submitError}
                 </Alert>
               )}
@@ -305,28 +305,28 @@ export function CheckoutPage() {
           <div className="mt-8 flex justify-between gap-3 border-t border-slate-200/80 pt-6">
             {step > 0 ? (
               <Button variant="ghost" onClick={() => setStep((s) => s - 1)} disabled={placeOrder.isPending}>
-                ← Volver
+                ← Back
               </Button>
             ) : (
-              <ButtonLink to="/carrito" variant="ghost">
-                ← Carrito
+              <ButtonLink to="/cart" variant="ghost">
+                ← Cart
               </ButtonLink>
             )}
             {step < 3 ? (
               <Button size="lg" onClick={next} data-testid="checkout-next">
-                Continuar
+                Continue
               </Button>
             ) : (
               <Button size="lg" onClick={() => placeOrder.mutate()} loading={placeOrder.isPending} disabled={!q || quote.isFetching} data-testid="place-order">
-                {placeOrder.isPending ? 'Procesando…' : `Confirmar y pagar ${q ? formatPrice(q.totalCents) : ''}`}
+                {placeOrder.isPending ? 'Processing…' : `Confirm and pay ${q ? formatPrice(q.totalCents) : ''}`}
               </Button>
             )}
           </div>
         </section>
 
         <aside className="panel h-fit space-y-4 text-sm lg:sticky lg:top-40" data-testid="checkout-summary">
-          <h2 className="text-xl font-semibold tracking-tight">Resumen del pedido</h2>
-          <ul className="space-y-3 border-b border-slate-200 pb-4" aria-label="Productos">
+          <h2 className="text-xl font-semibold tracking-tight">Order summary</h2>
+          <ul className="space-y-3 border-b border-slate-200 pb-4" aria-label="Products">
             {cart.data.items.map((i) => (
               <li key={i.id} className="flex items-center gap-3">
                 <span className="relative shrink-0 rounded-2xl bg-white p-1 ring-1 ring-slate-900/5">
@@ -345,10 +345,10 @@ export function CheckoutPage() {
             return (
               <dl className="space-y-2.5">
                 <div className="flex justify-between"><dt className="text-slate-600">Subtotal</dt><dd data-testid="checkout-subtotal">{formatPrice(t.subtotalCents)}</dd></div>
-                {t.discountCents > 0 && <div className="flex justify-between text-emerald-700"><dt>Descuento</dt><dd data-testid="checkout-discount">−{formatPrice(t.discountCents)}</dd></div>}
-                <div className="flex justify-between"><dt className="text-slate-600">Envío</dt><dd data-testid="checkout-shipping">{t.shippingCents === undefined ? 'Se calcula en el paso 2' : t.shippingCents === 0 ? 'Gratis' : formatPrice(t.shippingCents)}</dd></div>
+                {t.discountCents > 0 && <div className="flex justify-between text-emerald-700"><dt>Discount</dt><dd data-testid="checkout-discount">−{formatPrice(t.discountCents)}</dd></div>}
+                <div className="flex justify-between"><dt className="text-slate-600">Shipping</dt><dd data-testid="checkout-shipping">{t.shippingCents === undefined ? 'Calculated in step 2' : t.shippingCents === 0 ? 'Free' : formatPrice(t.shippingCents)}</dd></div>
                 <div className="flex items-baseline justify-between border-t border-slate-200 pt-3 text-base font-semibold"><dt>Total</dt><dd className="text-2xl tracking-tight" data-testid="checkout-total">{formatPrice(t.totalCents)}</dd></div>
-                <p className="text-xs text-slate-500">IVA incluido ({formatPrice(t.taxCents)})</p>
+                <p className="text-xs text-slate-500">VAT included ({formatPrice(t.taxCents)})</p>
               </dl>
             );
           })()}

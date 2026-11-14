@@ -68,7 +68,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     () =>
       session.onExpired(() => {
         clearLocalSession();
-        toast.warning('Tu sesión ha caducado. Inicia sesión de nuevo.', { id: 'session-expired' });
+        toast.warning('Your session has expired. Please sign in again.', { id: 'session-expired' });
       }),
     [clearLocalSession],
   );

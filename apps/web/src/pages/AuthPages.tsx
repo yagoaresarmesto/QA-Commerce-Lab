@@ -18,11 +18,11 @@ import { useDocumentTitle } from './useDocumentTitle';
 
 export const passwordSchema = z
   .string()
-  .min(8, 'Mínimo 8 caracteres')
-  .max(64, 'Máximo 64 caracteres')
-  .regex(/[a-z]/, 'Incluye una minúscula')
-  .regex(/[A-Z]/, 'Incluye una mayúscula')
-  .regex(/\d/, 'Incluye un número');
+  .min(8, 'At least 8 characters')
+  .max(64, 'At most 64 characters')
+  .regex(/[a-z]/, 'Include a lowercase letter')
+  .regex(/[A-Z]/, 'Include an uppercase letter')
+  .regex(/\d/, 'Include a number');
 
 function AuthCard({ title, subtitle, children }: { title: string; subtitle?: ReactNode; children: ReactNode }) {
   return (
@@ -32,10 +32,10 @@ function AuthCard({ title, subtitle, children }: { title: string; subtitle?: Rea
           <Logo light />
           <div className="space-y-5">
             <p className="text-4xl font-semibold leading-[1.05] tracking-[-0.04em] xl:text-5xl">
-              La tecnología que buscas, <span className="text-accent-400">al mejor precio.</span>
+              The tech you want, <span className="text-accent-400">at the best price.</span>
             </p>
             <ul className="space-y-2.5 text-sm text-white/70">
-              {['Envío gratis desde 99 €', 'Devolución gratuita durante 14 días', 'Seguimiento de pedidos en tiempo real'].map((t) => (
+              {['Free shipping over €99', 'Free returns within 14 days', 'Real-time order tracking'].map((t) => (
                 <li key={t} className="flex items-center gap-2.5">
                   <span className="flex h-5 w-5 items-center justify-center rounded-full bg-accent-400 text-slate-950">
                     <Check className="h-3 w-3" />
@@ -45,7 +45,7 @@ function AuthCard({ title, subtitle, children }: { title: string; subtitle?: Rea
               ))}
             </ul>
           </div>
-          <p className="text-xs text-white/40">Entorno de pruebas · los pedidos y pagos son simulados</p>
+          <p className="text-xs text-white/40">Test environment · orders and payments are simulated</p>
         </aside>
         <div className="flex justify-center px-5 py-10 sm:px-10 sm:py-14">
           <div className="w-full max-w-md">
@@ -66,7 +66,7 @@ function PasswordInput(props: React.ComponentProps<typeof Input>) {
       {...props}
       type={visible ? 'text' : 'password'}
       endAdornment={
-        <button type="button" onClick={() => setVisible((v) => !v)} className="rounded-full p-1.5 text-slate-500 hover:bg-slate-100" aria-label={visible ? 'Ocultar contraseña' : 'Mostrar contraseña'} aria-pressed={visible}>
+        <button type="button" onClick={() => setVisible((v) => !v)} className="rounded-full p-1.5 text-slate-500 hover:bg-slate-100" aria-label={visible ? 'Hide password' : 'Show password'} aria-pressed={visible}>
           {visible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
         </button>
       }
@@ -76,13 +76,13 @@ function PasswordInput(props: React.ComponentProps<typeof Input>) {
 
 export function PasswordRules({ value }: { value: string }) {
   const rules: Array<[string, boolean]> = [
-    ['Entre 8 y 64 caracteres', value.length >= 8 && value.length <= 64],
-    ['Una letra minúscula', /[a-z]/.test(value)],
-    ['Una letra mayúscula', /[A-Z]/.test(value)],
-    ['Un número', /\d/.test(value)],
+    ['8 to 64 characters', value.length >= 8 && value.length <= 64],
+    ['One lowercase letter', /[a-z]/.test(value)],
+    ['One uppercase letter', /[A-Z]/.test(value)],
+    ['One number', /\d/.test(value)],
   ];
   return (
-    <ul className="grid grid-cols-2 gap-1 text-xs" aria-label="Requisitos de la contraseña" data-testid="password-rules">
+    <ul className="grid grid-cols-2 gap-1 text-xs" aria-label="Password requirements" data-testid="password-rules">
       {rules.map(([label, ok]) => (
         <li key={label} className={cn('flex items-center gap-1', ok ? 'text-emerald-700' : 'text-slate-500')} data-valid={ok}>
           <Check className={cn('h-3.5 w-3.5', !ok && 'opacity-30')} /> {label}
@@ -93,12 +93,12 @@ export function PasswordRules({ value }: { value: string }) {
 }
 
 const loginSchema = z.object({
-  email: z.string().trim().min(1, 'El email es obligatorio').email('Introduce un email válido'),
-  password: z.string().min(1, 'La contraseña es obligatoria'),
+  email: z.string().trim().min(1, 'E-mail is required').email('Enter a valid e-mail'),
+  password: z.string().min(1, 'Password is required'),
 });
 
 export function LoginPage() {
-  useDocumentTitle('Iniciar sesión');
+  useDocumentTitle('Sign in');
   const { login } = useAuth();
   const navigate = useNavigate();
   const [params] = useSearchParams();
@@ -110,19 +110,19 @@ export function LoginPage() {
     setError(undefined);
     try {
       const user = await login(email, password);
-      toast.success(`¡Hola de nuevo, ${user.firstName}!`);
-      navigate(redirect && redirect.startsWith('/') ? redirect : user.role === 'ADMIN' ? '/admin' : '/cuenta', { replace: true });
+      toast.success(`Welcome back, ${user.firstName}!`);
+      navigate(redirect && redirect.startsWith('/') ? redirect : user.role === 'ADMIN' ? '/admin' : '/account', { replace: true });
     } catch (e) {
       setError(errorMessage(e));
     }
   });
 
   return (
-    <AuthCard title="Iniciar sesión" subtitle="Accede a tu cuenta para comprar y consultar tus pedidos.">
-      <form onSubmit={onSubmit} noValidate className="space-y-4" aria-label="Formulario de inicio de sesión" data-testid="login-form">
+    <AuthCard title="Sign in" subtitle="Access your account to shop and track your orders.">
+      <form onSubmit={onSubmit} noValidate className="space-y-4" aria-label="Sign-in form" data-testid="login-form">
         {redirect && !error && (
           <Alert tone="info" testId="login-required">
-            Inicia sesión para continuar.
+            Sign in to continue.
           </Alert>
         )}
         {error && (
@@ -131,20 +131,20 @@ export function LoginPage() {
           </Alert>
         )}
         <Input label="Email" type="email" autoComplete="email" required {...register('email')} error={formState.errors.email?.message} data-testid="login-email" />
-        <PasswordInput label="Contraseña" autoComplete="current-password" required {...register('password')} error={formState.errors.password?.message} data-testid="login-password" />
+        <PasswordInput label="Password" autoComplete="current-password" required {...register('password')} error={formState.errors.password?.message} data-testid="login-password" />
         <div className="flex justify-end">
-          <Link to="/recuperar-contrasena" className="text-sm font-semibold text-slate-950 underline-offset-2 hover:underline">
-            ¿Has olvidado tu contraseña?
+          <Link to="/forgot-password" className="text-sm font-semibold text-slate-950 underline-offset-2 hover:underline">
+            Forgot your password?
           </Link>
         </div>
         <Button type="submit" size="lg" className="w-full" loading={formState.isSubmitting} data-testid="login-submit">
-          Iniciar sesión
+          Sign in
         </Button>
       </form>
       <p className="mt-6 text-center text-sm text-slate-600">
-        ¿Aún no tienes cuenta?{' '}
-        <Link to={`/registro${redirect ? `?redirect=${encodeURIComponent(redirect)}` : ''}`} className="font-semibold text-slate-950 underline underline-offset-2">
-          Crear una cuenta
+        Don't have an account yet?{' '}
+        <Link to={`/register${redirect ? `?redirect=${encodeURIComponent(redirect)}` : ''}`} className="font-semibold text-slate-950 underline underline-offset-2">
+          Create an account
         </Link>
       </p>
     </AuthCard>
@@ -153,19 +153,19 @@ export function LoginPage() {
 
 const registerSchema = z
   .object({
-    firstName: z.string().trim().min(2, 'El nombre debe tener al menos 2 caracteres').max(50),
-    lastName: z.string().trim().min(2, 'El apellido debe tener al menos 2 caracteres').max(80),
-    email: z.string().trim().min(1, 'El email es obligatorio').email('Introduce un email válido'),
-    phone: z.string().trim().regex(/^((\+34|0034)?[6789]\d{8})?$/, 'Teléfono español no válido').optional(),
+    firstName: z.string().trim().min(2, 'First name must be at least 2 characters long').max(50),
+    lastName: z.string().trim().min(2, 'Last name must be at least 2 characters long').max(80),
+    email: z.string().trim().min(1, 'E-mail is required').email('Enter a valid e-mail'),
+    phone: z.string().trim().regex(/^((\+34|0034)?[6789]\d{8})?$/, 'Invalid Spanish phone number').optional(),
     password: passwordSchema,
-    confirmPassword: z.string().min(1, 'Repite la contraseña'),
-    acceptTerms: z.boolean().refine((v) => v, 'Debes aceptar los términos y condiciones'),
+    confirmPassword: z.string().min(1, 'Repeat the password'),
+    acceptTerms: z.boolean().refine((v) => v, 'You must accept the terms and conditions'),
     marketingOptIn: z.boolean().optional(),
   })
-  .refine((v) => v.password === v.confirmPassword, { path: ['confirmPassword'], message: 'Las contraseñas no coinciden' });
+  .refine((v) => v.password === v.confirmPassword, { path: ['confirmPassword'], message: 'The passwords do not match' });
 
 export function RegisterPage() {
-  useDocumentTitle('Crear cuenta');
+  useDocumentTitle('Create account');
   const { register: signUp } = useAuth();
   const navigate = useNavigate();
   const [params] = useSearchParams();
@@ -178,9 +178,9 @@ export function RegisterPage() {
     setError(undefined);
     try {
       await signUp({ ...data, phone: phone || undefined });
-      toast.success('¡Cuenta creada! Bienvenido a QA Commerce Lab');
+      toast.success('Account created! Welcome to QA Commerce Lab');
       const redirect = params.get('redirect');
-      navigate(redirect && redirect.startsWith('/') ? redirect : '/cuenta', { replace: true });
+      navigate(redirect && redirect.startsWith('/') ? redirect : '/account', { replace: true });
     } catch (e) {
       if (e instanceof ApiError) {
         if (e.code === 'EMAIL_ALREADY_REGISTERED') setFieldError('email', { message: e.message });
@@ -191,43 +191,43 @@ export function RegisterPage() {
   });
   const err = formState.errors;
   return (
-    <AuthCard title="Crear una cuenta" subtitle="Regístrate en menos de un minuto. No necesitas verificar el email.">
-      <form onSubmit={onSubmit} noValidate className="space-y-4" aria-label="Formulario de registro" data-testid="register-form">
+    <AuthCard title="Create an account" subtitle="Sign up in less than a minute. No e-mail verification needed.">
+      <form onSubmit={onSubmit} noValidate className="space-y-4" aria-label="Registration form" data-testid="register-form">
         {error && (
           <Alert tone="error" testId="register-error">
             {error}
           </Alert>
         )}
         <div className="grid gap-4 sm:grid-cols-2">
-          <Input label="Nombre" required autoComplete="given-name" {...register('firstName')} error={err.firstName?.message} />
-          <Input label="Apellidos" required autoComplete="family-name" {...register('lastName')} error={err.lastName?.message} />
+          <Input label="First name" required autoComplete="given-name" {...register('firstName')} error={err.firstName?.message} />
+          <Input label="Last name" required autoComplete="family-name" {...register('lastName')} error={err.lastName?.message} />
         </div>
         <Input label="Email" type="email" required autoComplete="email" {...register('email')} error={err.email?.message} />
-        <Input label="Teléfono" type="tel" autoComplete="tel" hint="Opcional" {...register('phone')} error={err.phone?.message} />
-        <PasswordInput label="Contraseña" required autoComplete="new-password" {...register('password')} error={err.password?.message} />
+        <Input label="Phone" type="tel" autoComplete="tel" hint="Optional" {...register('phone')} error={err.phone?.message} />
+        <PasswordInput label="Password" required autoComplete="new-password" {...register('password')} error={err.password?.message} />
         <PasswordRules value={watch('password') ?? ''} />
-        <PasswordInput label="Repite la contraseña" required autoComplete="new-password" {...register('confirmPassword')} error={err.confirmPassword?.message} />
+        <PasswordInput label="Repeat password" required autoComplete="new-password" {...register('confirmPassword')} error={err.confirmPassword?.message} />
         <Checkbox
           label={
             <>
-              Acepto los{' '}
-              <Link to="/info/terminos" className="font-semibold text-slate-950 underline underline-offset-2" target="_blank">
-                términos y condiciones
+              I accept the{' '}
+              <Link to="/info/terms" className="font-semibold text-slate-950 underline underline-offset-2" target="_blank">
+                terms and conditions
               </Link>
             </>
           }
           {...register('acceptTerms')}
           error={err.acceptTerms?.message}
         />
-        <Checkbox label="Quiero recibir ofertas por email" {...register('marketingOptIn')} />
+        <Checkbox label="I want to receive offers by e-mail" {...register('marketingOptIn')} />
         <Button type="submit" size="lg" className="w-full" loading={formState.isSubmitting} data-testid="register-submit">
-          Crear cuenta
+          Create account
         </Button>
       </form>
       <p className="mt-6 text-center text-sm text-slate-600">
-        ¿Ya tienes cuenta?{' '}
+        Already have an account?{' '}
         <Link to="/login" className="font-semibold text-slate-950 underline underline-offset-2">
-          Inicia sesión
+          Sign in
         </Link>
       </p>
     </AuthCard>
@@ -235,22 +235,22 @@ export function RegisterPage() {
 }
 
 export function ForgotPasswordPage() {
-  useDocumentTitle('Recuperar contraseña');
+  useDocumentTitle('Forgot password');
   const [sent, setSent] = useState(false);
-  const schema = z.object({ email: z.string().trim().min(1, 'El email es obligatorio').email('Introduce un email válido') });
+  const schema = z.object({ email: z.string().trim().min(1, 'E-mail is required').email('Enter a valid e-mail') });
   const { register, handleSubmit, formState } = useForm<z.infer<typeof schema>>({ resolver: zodResolver(schema) });
   const send = useMutation({ mutationFn: (email: string) => http.post('/auth/forgot-password', { email }), onSuccess: () => setSent(true) });
   return (
-    <AuthCard title="Recuperar contraseña" subtitle="Te enviaremos un enlace para crear una contraseña nueva.">
+    <AuthCard title="Forgot your password?" subtitle="We will send you a link to create a new password.">
       {sent ? (
         <div className="space-y-4 text-center" data-testid="forgot-success">
           <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-accent-400 text-slate-950">
             <MailCheck className="h-8 w-8" />
           </span>
-          <p className="text-sm text-slate-700">Si el email está registrado, recibirás un enlace en unos instantes. El enlace caduca en 30 minutos.</p>
-          <p className="text-xs text-slate-500">Entorno de pruebas: los emails se guardan en el buzón simulado (API de testing / Mailpit en local).</p>
+          <p className="text-sm text-slate-700">If the e-mail is registered, you will receive a link shortly. The link expires in 30 minutes.</p>
+          <p className="text-xs text-slate-500">Test environment: e-mails are stored in the simulated mailbox (testing API / Mailpit locally).</p>
           <ButtonLink to="/login" variant="outline">
-            Volver a iniciar sesión
+            Back to sign in
           </ButtonLink>
         </div>
       ) : (
@@ -258,11 +258,11 @@ export function ForgotPasswordPage() {
           {send.isError && <Alert tone="error">{errorMessage(send.error)}</Alert>}
           <Input label="Email" type="email" required autoComplete="email" {...register('email')} error={formState.errors.email?.message} />
           <Button type="submit" size="lg" className="w-full" loading={send.isPending} data-testid="forgot-submit">
-            Enviar enlace
+            Send link
           </Button>
           <p className="text-center text-sm">
             <Link to="/login" className="font-semibold text-slate-950 underline underline-offset-2">
-              Volver a iniciar sesión
+              Back to sign in
             </Link>
           </p>
         </form>
@@ -272,11 +272,11 @@ export function ForgotPasswordPage() {
 }
 
 const resetSchema = z
-  .object({ newPassword: passwordSchema, confirmPassword: z.string().min(1, 'Repite la contraseña') })
-  .refine((v) => v.newPassword === v.confirmPassword, { path: ['confirmPassword'], message: 'Las contraseñas no coinciden' });
+  .object({ newPassword: passwordSchema, confirmPassword: z.string().min(1, 'Repeat the password') })
+  .refine((v) => v.newPassword === v.confirmPassword, { path: ['confirmPassword'], message: 'The passwords do not match' });
 
 export function ResetPasswordPage() {
-  useDocumentTitle('Nueva contraseña');
+  useDocumentTitle('New password');
   const [params] = useSearchParams();
   const navigate = useNavigate();
   const token = params.get('token') ?? '';
@@ -290,36 +290,36 @@ export function ResetPasswordPage() {
   const reset = useMutation({
     mutationFn: (newPassword: string) => http.post('/auth/reset-password', { token, newPassword }),
     onSuccess: () => {
-      toast.success('Contraseña actualizada. Ya puedes iniciar sesión');
+      toast.success('Password updated. You can now sign in');
       navigate('/login', { replace: true });
     },
   });
   return (
-    <AuthCard title="Crea una nueva contraseña">
+    <AuthCard title="Create a new password">
       {!token || status.isError ? (
         <div className="space-y-4" data-testid="reset-invalid">
-          <Alert tone="error" title="Enlace no válido">
-            {status.error ? errorMessage(status.error) : 'Falta el token de recuperación.'}
+          <Alert tone="error" title="Invalid link">
+            {status.error ? errorMessage(status.error) : 'The reset token is missing.'}
           </Alert>
-          <ButtonLink to="/recuperar-contrasena" variant="outline">
-            Solicitar un nuevo enlace
+          <ButtonLink to="/forgot-password" variant="outline">
+            Request a new link
           </ButtonLink>
         </div>
       ) : status.isLoading ? (
         <div className="flex justify-center py-6">
-          <Spinner label="Comprobando enlace" />
+          <Spinner label="Checking link" />
         </div>
       ) : (
         <form onSubmit={handleSubmit((v) => reset.mutate(v.newPassword))} noValidate className="space-y-4" data-testid="reset-form">
           <p className="flex items-center gap-2 text-sm text-slate-600">
-            <Lock className="h-4 w-4" /> Cuenta: <strong>{status.data?.email}</strong>
+            <Lock className="h-4 w-4" /> Account: <strong>{status.data?.email}</strong>
           </p>
           {reset.isError && <Alert tone="error" testId="reset-error">{errorMessage(reset.error)}</Alert>}
-          <PasswordInput label="Nueva contraseña" required autoComplete="new-password" {...register('newPassword')} error={formState.errors.newPassword?.message} />
+          <PasswordInput label="New password" required autoComplete="new-password" {...register('newPassword')} error={formState.errors.newPassword?.message} />
           <PasswordRules value={watch('newPassword') ?? ''} />
-          <PasswordInput label="Repite la contraseña" required autoComplete="new-password" {...register('confirmPassword')} error={formState.errors.confirmPassword?.message} />
+          <PasswordInput label="Repeat password" required autoComplete="new-password" {...register('confirmPassword')} error={formState.errors.confirmPassword?.message} />
           <Button type="submit" size="lg" className="w-full" loading={reset.isPending} data-testid="reset-submit">
-            Guardar contraseña
+            Save password
           </Button>
         </form>
       )}

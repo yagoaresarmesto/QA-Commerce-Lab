@@ -126,7 +126,7 @@ export async function api<T>(path: string, opts: RequestOptions = {}, retried = 
     });
   } catch (err) {
     if ((err as Error).name === 'AbortError') throw err;
-    throw new ApiError(0, { message: 'No se ha podido conectar con el servidor. Revisa tu conexión' });
+    throw new ApiError(0, { message: 'Could not connect to the server. Check your connection' });
   }
 
   if (res.status === 204) return undefined as T;
@@ -160,7 +160,7 @@ export const http = {
   delete: <T>(path: string, opts?: Omit<RequestOptions, 'method' | 'body'>) => api<T>(path, { ...opts, method: 'DELETE' }),
 };
 
-export function errorMessage(err: unknown, fallback = 'Ha ocurrido un error inesperado'): string {
+export function errorMessage(err: unknown, fallback = 'An unexpected error occurred'): string {
   if (err instanceof ApiError) return err.message;
   if (err instanceof Error && err.message) return err.message;
   return fallback;

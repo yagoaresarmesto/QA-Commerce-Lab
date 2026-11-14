@@ -27,9 +27,9 @@ export function SearchBox({ className }: { className?: string }) {
   const wrapperRef = useRef<HTMLFormElement>(null);
 
   const options = [
-    ...(data?.products ?? []).map((p) => ({ key: `p-${p.id}`, to: `/producto/${p.slug}`, label: p.name, meta: formatPrice(p.priceCents), image: p.imageUrl, type: 'Producto' })),
-    ...(data?.categories ?? []).map((c) => ({ key: `c-${c.id}`, to: `/categoria/${c.slug}`, label: c.name, meta: 'Categoría', image: undefined, type: 'Categoría' })),
-    ...(data?.brands ?? []).map((b) => ({ key: `b-${b.id}`, to: `/buscar?brand=${b.slug}`, label: b.name, meta: 'Marca', image: undefined, type: 'Marca' })),
+    ...(data?.products ?? []).map((p) => ({ key: `p-${p.id}`, to: `/product/${p.slug}`, label: p.name, meta: formatPrice(p.priceCents), image: p.imageUrl, type: 'Product' })),
+    ...(data?.categories ?? []).map((c) => ({ key: `c-${c.id}`, to: `/category/${c.slug}`, label: c.name, meta: 'Category', image: undefined, type: 'Category' })),
+    ...(data?.brands ?? []).map((b) => ({ key: `b-${b.id}`, to: `/search?brand=${b.slug}`, label: b.name, meta: 'Brand', image: undefined, type: 'Brand' })),
   ];
   const showList = open && debounced.trim().length >= 2 && (options.length > 0 || !isFetching);
 
@@ -51,7 +51,7 @@ export function SearchBox({ className }: { className?: string }) {
     e.preventDefault();
     const q = value.trim();
     if (active >= 0 && options[active]) return go(options[active].to);
-    go(q ? `/buscar?q=${encodeURIComponent(q)}` : '/buscar');
+    go(q ? `/search?q=${encodeURIComponent(q)}` : '/search');
   };
 
   const onKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
@@ -71,7 +71,7 @@ export function SearchBox({ className }: { className?: string }) {
   return (
     <form ref={wrapperRef} role="search" onSubmit={onSubmit} className={cn('relative', className)}>
       <label htmlFor="site-search" className="sr-only">
-        Buscar productos
+        Search products
       </label>
       <input
         id="site-search"
@@ -82,7 +82,7 @@ export function SearchBox({ className }: { className?: string }) {
         aria-autocomplete="list"
         aria-activedescendant={active >= 0 && options[active] ? `${listId}-${active}` : undefined}
         autoComplete="off"
-        placeholder="Busca portátiles, gráficas, móviles…"
+        placeholder="Search laptops, graphics cards, phones…"
         value={value}
         onChange={(e) => {
           setValue(e.target.value);
@@ -96,12 +96,12 @@ export function SearchBox({ className }: { className?: string }) {
         maxLength={100}
       />
       <Search className="pointer-events-none absolute left-4 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-slate-500" aria-hidden="true" />
-      <button type="submit" className="absolute right-1 top-1 flex h-9 items-center justify-center rounded-full bg-slate-950 px-3.5 text-xs font-semibold text-white transition hover:bg-brand-600" aria-label="Buscar" data-testid="search-submit">
-        Buscar
+      <button type="submit" className="absolute right-1 top-1 flex h-9 items-center justify-center rounded-full bg-slate-950 px-3.5 text-xs font-semibold text-white transition hover:bg-brand-600" aria-label="Search" data-testid="search-submit">
+        Search
       </button>
       {showList && (
-        <ul id={listId} role="listbox" aria-label="Sugerencias" className="absolute left-0 right-0 top-[3.25rem] z-40 overflow-hidden rounded-3xl border border-slate-200/80 bg-white p-2 shadow-pop" data-testid="search-suggestions">
-          {options.length === 0 && <li className="px-4 py-3 text-sm text-slate-500">Sin sugerencias para “{debounced}”</li>}
+        <ul id={listId} role="listbox" aria-label="Suggestions" className="absolute left-0 right-0 top-[3.25rem] z-40 overflow-hidden rounded-3xl border border-slate-200/80 bg-white p-2 shadow-pop" data-testid="search-suggestions">
+          {options.length === 0 && <li className="px-4 py-3 text-sm text-slate-500">No suggestions for “{debounced}”</li>}
           {options.map((o, i) => (
             <li
               key={o.key}

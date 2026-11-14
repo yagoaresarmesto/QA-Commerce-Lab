@@ -169,7 +169,7 @@ export function useFavoriteToggle() {
       return !isFavorite;
     },
     onSuccess: (nowFavorite) => {
-      toast.success(nowFavorite ? 'Añadido a favoritos' : 'Eliminado de favoritos');
+      toast.success(nowFavorite ? 'Added to favorites' : 'Removed from favorites');
       void qc.invalidateQueries({ queryKey: ['favorites'] });
     },
     onError: (e) => toast.error(errorMessage(e)),

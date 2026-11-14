@@ -13,27 +13,27 @@ export interface CardValues {
 export const emptyCard: CardValues = { number: '', holderName: '', expiry: '', cvc: '' };
 
 export const TEST_CARDS = [
-  ['4242 4242 4242 4242', 'Pago aprobado'],
-  ['4000 0000 0000 0002', 'Pago rechazado'],
-  ['4000 0000 0000 9995', 'Fondos insuficientes'],
-  ['4000 0000 0000 0077', 'Pendiente → aprobado'],
-  ['4000 0000 0000 0085', 'Pendiente → rechazado'],
-  ['4000 0000 0000 0119', 'Error de procesamiento'],
-  ['4000 0000 0000 0408', 'Timeout de la pasarela'],
+  ['4242 4242 4242 4242', 'Payment approved'],
+  ['4000 0000 0000 0002', 'Payment declined'],
+  ['4000 0000 0000 9995', 'Insufficient funds'],
+  ['4000 0000 0000 0077', 'Pending → approved'],
+  ['4000 0000 0000 0085', 'Pending → declined'],
+  ['4000 0000 0000 0119', 'Processing error'],
+  ['4000 0000 0000 0408', 'Gateway timeout'],
 ] as const;
 
 export function validateCard(card: CardValues): Partial<Record<keyof CardValues, string>> {
   const errors: Partial<Record<keyof CardValues, string>> = {};
   const digits = card.number.replace(/\D/g, '');
-  if (digits.length < 12 || digits.length > 19) errors.number = 'Introduce un número de tarjeta válido';
-  if (card.holderName.trim().length < 2) errors.holderName = 'Indica el titular de la tarjeta';
+  if (digits.length < 12 || digits.length > 19) errors.number = 'Enter a valid card number';
+  if (card.holderName.trim().length < 2) errors.holderName = 'Enter the cardholder name';
   const m = card.expiry.match(/^(\d{2})\s*\/\s*(\d{2})$/);
-  if (!m || Number(m[1]) < 1 || Number(m[1]) > 12) errors.expiry = 'Formato MM/AA';
+  if (!m || Number(m[1]) < 1 || Number(m[1]) > 12) errors.expiry = 'Use the MM/YY format';
   else {
     const exp = new Date(2000 + Number(m[2]), Number(m[1]), 1);
-    if (exp <= new Date()) errors.expiry = 'La tarjeta está caducada';
+    if (exp <= new Date()) errors.expiry = 'The card has expired';
   }
-  if (!/^\d{3,4}$/.test(card.cvc)) errors.cvc = 'CVC de 3 o 4 dígitos';
+  if (!/^\d{3,4}$/.test(card.cvc)) errors.cvc = '3 or 4 digit CVC';
   return errors;
 }
 
@@ -70,18 +70,18 @@ export function PaymentFields({
   return (
     <div className="space-y-4">
       <fieldset className="grid gap-3 sm:grid-cols-2">
-        <legend className="sr-only">Método de pago</legend>
-        {option('CARD', 'Tarjeta de crédito o débito', 'Pago inmediato con tarjetas de prueba', CreditCard)}
-        {option('BANK_TRANSFER', 'Transferencia bancaria', 'Reservamos tu pedido 72 h hasta recibirla', Landmark)}
+        <legend className="sr-only">Payment method</legend>
+        {option('CARD', 'Credit or debit card', 'Instant payment with test cards', CreditCard)}
+        {option('BANK_TRANSFER', 'Bank transfer', 'We hold your order for 72 h until it arrives', Landmark)}
       </fieldset>
       {method === 'CARD' && (
         <div className="space-y-4" data-testid="card-form">
           <div className="rounded-3xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
             <p className="flex items-center gap-2 font-semibold">
-              <FlaskConical className="h-4 w-4" /> Entorno de pruebas: nunca introduzcas una tarjeta real
+              <FlaskConical className="h-4 w-4" /> Test environment: never enter a real card
             </p>
             <button type="button" className="mt-1 text-xs font-semibold underline" onClick={() => setShowCards((s) => !s)} aria-expanded={showCards} data-testid="toggle-test-cards">
-              {showCards ? 'Ocultar' : 'Ver'} tarjetas de prueba
+              {showCards ? 'Hide' : 'Show'} test cards
             </button>
             {showCards && (
               <ul className="mt-2 grid gap-1 text-xs sm:grid-cols-2" data-testid="test-cards">
@@ -93,13 +93,13 @@ export function PaymentFields({
                     · {label}
                   </li>
                 ))}
-                <li className="sm:col-span-2">Cualquier titular, fecha futura (MM/AA) y CVC de 3 dígitos.</li>
+                <li className="sm:col-span-2">Any cardholder name, a future date (MM/YY) and a 3-digit CVC.</li>
               </ul>
             )}
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <Input
-              label="Número de tarjeta"
+              label="Card number"
               required
               inputMode="numeric"
               autoComplete="off"
@@ -111,9 +111,9 @@ export function PaymentFields({
               wrapperClassName="sm:col-span-2"
               data-testid="card-number"
             />
-            <Input label="Titular" required autoComplete="off" value={card.holderName} onChange={(e) => set('holderName', e.target.value)} error={errors.holderName} wrapperClassName="sm:col-span-2" data-testid="card-holder" />
+            <Input label="Cardholder name" required autoComplete="off" value={card.holderName} onChange={(e) => set('holderName', e.target.value)} error={errors.holderName} wrapperClassName="sm:col-span-2" data-testid="card-holder" />
             <Input
-              label="Caducidad (MM/AA)"
+              label="Expiry date (MM/YY)"
               required
               placeholder="12/30"
               inputMode="numeric"
@@ -134,7 +134,7 @@ export function PaymentFields({
       )}
       {method === 'BANK_TRANSFER' && (
         <p className="rounded-3xl bg-slate-50 p-5 text-sm text-slate-700" data-testid="transfer-info">
-          Al confirmar recibirás la referencia y los datos de la cuenta (ficticia). El pedido se cancelará automáticamente si no recibimos la transferencia en 72 horas.
+          After confirming you will receive the reference and the (fictional) account details. The order is cancelled automatically if the transfer does not arrive within 72 hours.
         </p>
       )}
     </div>

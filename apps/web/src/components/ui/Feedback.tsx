@@ -34,7 +34,7 @@ export function EmptyState({
   );
 }
 
-export function ErrorState({ title = 'No se ha podido cargar el contenido', message, onRetry }: { title?: string; message?: string; onRetry?: () => void }) {
+export function ErrorState({ title = 'The content could not be loaded', message, onRetry }: { title?: string; message?: string; onRetry?: () => void }) {
   return (
     <div className="flex flex-col items-center rounded-4xl bg-rose-50/60 px-6 py-14 text-center" role="alert" data-testid="error-state">
       <div className="mb-5 rounded-full bg-white p-5 text-rose-600 shadow-soft">
@@ -44,7 +44,7 @@ export function ErrorState({ title = 'No se ha podido cargar el contenido', mess
       {message && <p className="mt-1 max-w-md text-sm text-slate-600">{message}</p>}
       {onRetry && (
         <Button variant="outline" className="mt-6" onClick={onRetry}>
-          Reintentar
+          Try again
         </Button>
       )}
     </div>

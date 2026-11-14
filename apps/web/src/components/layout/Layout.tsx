@@ -11,7 +11,7 @@ export function Layout() {
   return (
     <div className="flex min-h-screen flex-col">
       <a href="#main-content" className="sr-only z-50 rounded-lg bg-white px-4 py-2 font-semibold focus:not-sr-only focus:fixed focus:left-4 focus:top-4">
-        Saltar al contenido principal
+        Skip to main content
       </a>
       <Header />
       <main id="main-content" tabIndex={-1} className="flex-1 focus:outline-none">

@@ -41,9 +41,9 @@ function RouteError() {
   const error = useRouteError() as Error;
   return (
     <div className="container-page py-16">
-      <ErrorState title="Algo ha ido mal" message={error?.message} onRetry={() => window.location.reload()} />
+      <ErrorState title="Something went wrong" message={error?.message} onRetry={() => window.location.reload()} />
       <div className="mt-6 text-center">
-        <ButtonLink to="/" variant="outline">Volver al inicio</ButtonLink>
+        <ButtonLink to="/" variant="outline">Back to home</ButtonLink>
       </div>
     </div>
   );
@@ -61,7 +61,7 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { error?: Error }
     if (this.state.error) {
       return (
         <div className="container-page py-16">
-          <ErrorState title="La aplicación ha encontrado un error" message={this.state.error.message} onRetry={() => window.location.reload()} />
+          <ErrorState title="The application ran into an error" message={this.state.error.message} onRetry={() => window.location.reload()} />
         </div>
       );
     }
@@ -87,31 +87,31 @@ const router = createBrowserRouter([
         element: <Layout />,
         children: [
           { index: true, element: <HomePage /> },
-          { path: 'categoria/:slug', element: <CatalogPage mode="category" /> },
-          { path: 'buscar', element: <CatalogPage mode="search" /> },
-          { path: 'productos', element: <CatalogPage mode="search" /> },
-          { path: 'ofertas', element: <CatalogPage mode="offers" /> },
-          { path: 'producto/:slug', element: <ProductPage /> },
-          { path: 'carrito', element: <CartPage /> },
+          { path: 'category/:slug', element: <CatalogPage mode="category" /> },
+          { path: 'search', element: <CatalogPage mode="search" /> },
+          { path: 'products', element: <CatalogPage mode="search" /> },
+          { path: 'deals', element: <CatalogPage mode="offers" /> },
+          { path: 'product/:slug', element: <ProductPage /> },
+          { path: 'cart', element: <CartPage /> },
           { path: 'checkout', element: <RequireAuth><CheckoutPage /></RequireAuth> },
-          { path: 'checkout/resultado/:id', element: <RequireAuth><OrderResultPage /></RequireAuth> },
+          { path: 'checkout/result/:id', element: <RequireAuth><OrderResultPage /></RequireAuth> },
           { path: 'login', element: <GuestOnly><LoginPage /></GuestOnly> },
-          { path: 'registro', element: <GuestOnly><RegisterPage /></GuestOnly> },
-          { path: 'recuperar-contrasena', element: <ForgotPasswordPage /> },
-          { path: 'restablecer-contrasena', element: <ResetPasswordPage /> },
+          { path: 'register', element: <GuestOnly><RegisterPage /></GuestOnly> },
+          { path: 'forgot-password', element: <ForgotPasswordPage /> },
+          { path: 'reset-password', element: <ResetPasswordPage /> },
           { path: 'info/:slug', element: <InfoPage /> },
           {
-            path: 'cuenta',
+            path: 'account',
             element: <RequireAuth><AccountLayout /></RequireAuth>,
             children: [
               { index: true, element: <AccountDashboardPage /> },
-              { path: 'pedidos', element: <OrdersPage /> },
-              { path: 'pedidos/:id', element: <OrderDetailPage /> },
-              { path: 'perfil', element: <ProfilePage /> },
-              { path: 'direcciones', element: <AddressesPage /> },
-              { path: 'seguridad', element: <SecurityPage /> },
-              { path: 'favoritos', element: <FavoritesPage /> },
-              { path: 'resenas', element: <MyReviewsPage /> },
+              { path: 'orders', element: <OrdersPage /> },
+              { path: 'orders/:id', element: <OrderDetailPage /> },
+              { path: 'profile', element: <ProfilePage /> },
+              { path: 'addresses', element: <AddressesPage /> },
+              { path: 'security', element: <SecurityPage /> },
+              { path: 'favorites', element: <FavoritesPage /> },
+              { path: 'reviews', element: <MyReviewsPage /> },
             ],
           },
           {
@@ -119,12 +119,12 @@ const router = createBrowserRouter([
             element: <RequireAdmin><AdminLayout /></RequireAdmin>,
             children: [
               { index: true, element: <AdminDashboardPage /> },
-              { path: 'productos', element: <AdminProductsPage /> },
-              { path: 'productos/:id', element: <AdminProductFormPage /> },
-              { path: 'pedidos', element: <AdminOrdersPage /> },
-              { path: 'pedidos/:id', element: <AdminOrderDetailPage /> },
-              { path: 'usuarios', element: <AdminUsersPage /> },
-              { path: 'cupones', element: <AdminCouponsPage /> },
+              { path: 'products', element: <AdminProductsPage /> },
+              { path: 'products/:id', element: <AdminProductFormPage /> },
+              { path: 'orders', element: <AdminOrdersPage /> },
+              { path: 'orders/:id', element: <AdminOrderDetailPage /> },
+              { path: 'users', element: <AdminUsersPage /> },
+              { path: 'coupons', element: <AdminCouponsPage /> },
             ],
           },
           { path: '403', element: <ForbiddenPage /> },

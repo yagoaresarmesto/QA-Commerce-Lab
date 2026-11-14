@@ -22,24 +22,24 @@ import { NotFoundPage } from './NotFoundPage';
 import { useDocumentTitle } from './useDocumentTitle';
 
 const reviewSchema = z.object({
-  rating: z.number({ message: 'Selecciona una valoración' }).int().min(1, 'Selecciona una valoración').max(5),
-  title: z.string().trim().min(3, 'El título debe tener al menos 3 caracteres').max(120, 'Máximo 120 caracteres'),
-  comment: z.string().trim().min(10, 'El comentario debe tener al menos 10 caracteres').max(2000, 'Máximo 2000 caracteres'),
+  rating: z.number({ message: 'Select a rating' }).int().min(1, 'Select a rating').max(5),
+  title: z.string().trim().min(3, 'The title must be at least 3 characters long').max(120, 'Maximum 120 characters'),
+  comment: z.string().trim().min(10, 'The comment must be at least 10 characters long').max(2000, 'Maximum 2000 characters'),
 });
 type ReviewForm = z.infer<typeof reviewSchema>;
 
 function StarInput({ value, onChange, error }: { value: number; onChange: (v: number) => void; error?: string }) {
   return (
     <fieldset>
-      <legend className="mb-1.5 text-sm font-medium text-slate-700">Tu valoración</legend>
-      <div className="flex gap-1" role="radiogroup" aria-label="Valoración">
+      <legend className="mb-1.5 text-sm font-medium text-slate-700">Your rating</legend>
+      <div className="flex gap-1" role="radiogroup" aria-label="Rating">
         {[1, 2, 3, 4, 5].map((i) => (
           <button
             key={i}
             type="button"
             role="radio"
             aria-checked={value === i}
-            aria-label={`${i} ${i === 1 ? 'estrella' : 'estrellas'}`}
+            aria-label={`${i} ${i === 1 ? 'star' : 'stars'}`}
             onClick={() => onChange(i)}
             className="rounded p-0.5"
             data-testid={`rating-star-${i}`}
@@ -66,7 +66,7 @@ function ReviewFormCard({ productId, existing, onDone }: { productId: number; ex
   const save = useMutation({
     mutationFn: (v: ReviewForm) => (existing ? http.patch(`/reviews/${existing.id}`, v) : http.post(`/products/${productId}/reviews`, v)),
     onSuccess: () => {
-      toast.success(existing ? 'Reseña actualizada' : '¡Gracias por tu reseña!');
+      toast.success(existing ? 'Review updated' : 'Thanks for your review!');
       void qc.invalidateQueries({ queryKey: ['catalog'] });
       onDone();
     },
@@ -76,16 +76,16 @@ function ReviewFormCard({ productId, existing, onDone }: { productId: number; ex
     },
   });
   return (
-    <form onSubmit={handleSubmit((v) => save.mutate(v))} className="space-y-4 rounded-4xl border border-slate-200/80 p-6" noValidate aria-label="Escribir reseña" data-testid="review-form">
+    <form onSubmit={handleSubmit((v) => save.mutate(v))} className="space-y-4 rounded-4xl border border-slate-200/80 p-6" noValidate aria-label="Write a review" data-testid="review-form">
       <StarInput value={watch('rating')} onChange={(v) => setValue('rating', v, { shouldValidate: true })} error={formState.errors.rating?.message} />
-      <Input label="Título" required {...register('title')} error={formState.errors.title?.message} maxLength={120} />
-      <Textarea label="Comentario" required {...register('comment')} error={formState.errors.comment?.message} maxLength={2000} />
+      <Input label="Title" required {...register('title')} error={formState.errors.title?.message} maxLength={120} />
+      <Textarea label="Comment" required {...register('comment')} error={formState.errors.comment?.message} maxLength={2000} />
       <div className="flex gap-3">
         <Button type="submit" loading={save.isPending} data-testid="review-submit">
-          {existing ? 'Guardar cambios' : 'Publicar reseña'}
+          {existing ? 'Save changes' : 'Post review'}
         </Button>
         <Button variant="ghost" onClick={onDone}>
-          Cancelar
+          Cancel
         </Button>
       </div>
     </form>
@@ -105,7 +105,7 @@ function Reviews({ product }: { product: ProductDetail }) {
   const remove = useMutation({
     mutationFn: (id: number) => http.delete(`/reviews/${id}`),
     onSuccess: () => {
-      toast.success('Reseña eliminada');
+      toast.success('Review deleted');
       setDeleting(null);
       void qc.invalidateQueries({ queryKey: ['catalog'] });
     },
@@ -114,18 +114,18 @@ function Reviews({ product }: { product: ProductDetail }) {
   const summary = reviews.data?.summary;
 
   return (
-    <section aria-labelledby="reviews-title" className="space-y-6" id="resenas" data-testid="reviews">
+    <section aria-labelledby="reviews-title" className="space-y-6" id="reviews" data-testid="reviews">
       <div className="space-y-1.5">
-        <p className="eyebrow">Valoraciones</p>
+        <p className="eyebrow">Ratings</p>
         <h2 id="reviews-title" className="heading-lg">
-          Opiniones de clientes
+          Customer reviews
         </h2>
       </div>
       <div className="grid gap-6 md:grid-cols-[18rem_1fr]">
         <div className="h-fit space-y-4 rounded-4xl bg-slate-50 p-6" data-testid="rating-summary">
           <div className="flex items-end gap-2">
             <span className="text-5xl font-semibold tracking-tight">{summary ? summary.average.toFixed(1) : '–'}</span>
-            <span className="pb-1 text-sm text-slate-500">de 5</span>
+            <span className="pb-1 text-sm text-slate-500">out of 5</span>
           </div>
           <Rating value={summary?.average ?? 0} count={summary?.count} />
           <ul className="space-y-1.5">
@@ -147,15 +147,15 @@ function Reviews({ product }: { product: ProductDetail }) {
           {status === 'authenticated' ? (
             !mine && !writing && (
               <Button variant="outline" className="w-full" onClick={() => setWriting(true)} data-testid="write-review">
-                Escribir una reseña
+                Write a review
               </Button>
             )
           ) : (
             <p className="text-sm text-slate-600">
-              <Link to={`/login?redirect=/producto/${product.slug}`} className="font-semibold text-brand-700">
-                Inicia sesión
+              <Link to={`/login?redirect=/product/${product.slug}`} className="font-semibold text-slate-950 underline underline-offset-2">
+                Sign in
               </Link>{' '}
-              para escribir una reseña.
+              to write a review.
             </p>
           )}
         </div>
@@ -171,9 +171,9 @@ function Reviews({ product }: { product: ProductDetail }) {
             />
           )}
           <div className="flex items-center justify-between">
-            <p className="text-sm text-slate-500">{summary?.count ?? 0} reseñas</p>
+            <p className="text-sm text-slate-500">{summary?.count ?? 0} reviews</p>
             <label className="flex items-center gap-2 text-sm">
-              <span className="text-slate-600">Ordenar</span>
+              <span className="text-slate-600">Sort</span>
               <select
                 value={sort}
                 onChange={(e) => {
@@ -183,15 +183,15 @@ function Reviews({ product }: { product: ProductDetail }) {
                 className="h-10 rounded-full border border-slate-200 pl-3.5 pr-8 text-sm"
                 data-testid="reviews-sort"
               >
-                <option value="newest">Más recientes</option>
-                <option value="oldest">Más antiguas</option>
-                <option value="rating_desc">Mejor valoradas</option>
-                <option value="rating_asc">Peor valoradas</option>
+                <option value="newest">Newest</option>
+                <option value="oldest">Oldest</option>
+                <option value="rating_desc">Highest rated</option>
+                <option value="rating_asc">Lowest rated</option>
               </select>
             </label>
           </div>
           {reviews.isLoading && <Skeleton className="h-32" />}
-          {reviews.data?.data.length === 0 && <p className="rounded-3xl bg-slate-50 p-6 text-sm text-slate-500">Todavía no hay reseñas. ¡Sé el primero en opinar!</p>}
+          {reviews.data?.data.length === 0 && <p className="rounded-3xl bg-slate-50 p-6 text-sm text-slate-500">No reviews yet. Be the first to share your opinion!</p>}
           <ul className="space-y-3">
             {reviews.data?.data.map((r) => (
               <li key={r.id} className="rounded-3xl border border-slate-200/80 p-6" data-testid="review-item" data-review-id={r.id}>
@@ -202,7 +202,7 @@ function Reviews({ product }: { product: ProductDetail }) {
                   </div>
                   {r.isVerifiedPurchase && (
                     <Badge tone="green">
-                      <BadgeCheck className="h-3.5 w-3.5" /> Compra verificada
+                      <BadgeCheck className="h-3.5 w-3.5" /> Verified purchase
                     </Badge>
                   )}
                 </div>
@@ -213,11 +213,11 @@ function Reviews({ product }: { product: ProductDetail }) {
                   </span>
                   {r.author.id === user?.id && (
                     <span className="flex gap-3">
-                      <button className="font-semibold text-brand-700" onClick={() => setEditing(r)} data-testid="edit-review">
-                        Editar
+                      <button className="font-semibold text-slate-950" onClick={() => setEditing(r)} data-testid="edit-review">
+                        Edit
                       </button>
                       <button className="font-semibold text-rose-600" onClick={() => setDeleting(r)} data-testid="delete-review">
-                        Eliminar
+                        Delete
                       </button>
                     </span>
                   )}
@@ -231,9 +231,9 @@ function Reviews({ product }: { product: ProductDetail }) {
       <ConfirmDialog
         open={!!deleting}
         onOpenChange={(o) => !o && setDeleting(null)}
-        title="Eliminar reseña"
-        description="Esta acción no se puede deshacer."
-        confirmLabel="Eliminar"
+        title="Delete review"
+        description="This action cannot be undone."
+        confirmLabel="Delete"
         loading={remove.isPending}
         onConfirm={() => deleting && remove.mutate(deleting.id)}
       />
@@ -281,24 +281,24 @@ export function ProductPage() {
 
   return (
     <div className="container-page py-6">
-      <Breadcrumbs items={[...product.categoryPath.map((c) => ({ label: c.name, to: `/categoria/${c.slug}` })), { label: product.name }]} />
+      <Breadcrumbs items={[...product.categoryPath.map((c) => ({ label: c.name, to: `/category/${c.slug}` })), { label: product.name }]} />
       <div className="grid gap-10 lg:grid-cols-[1.15fr_1fr] xl:gap-16" data-testid="product-detail" data-product-id={product.id} data-sku={product.sku}>
         <div className="space-y-4 lg:sticky lg:top-40 lg:self-start">
           <div className="tile relative overflow-hidden rounded-4xl p-8 sm:p-14">
             <div className="absolute left-5 top-5 z-10 flex gap-2">
               {product.discountPercent > 0 && <Badge tone="dark" className="px-3 py-1.5 text-xs">-{product.discountPercent}%</Badge>}
-              {product.isNew && <Badge tone="lime" className="px-3 py-1.5 text-xs">Novedad</Badge>}
+              {product.isNew && <Badge tone="lime" className="px-3 py-1.5 text-xs">New</Badge>}
             </div>
             <ProductImage src={image.url} alt={image.alt} className="mx-auto aspect-square w-full max-w-xl" />
           </div>
           {product.images.length > 1 && (
-            <div className="flex gap-3" role="tablist" aria-label="Imágenes del producto">
+            <div className="flex gap-3" role="tablist" aria-label="Product images">
               {product.images.map((img, i) => (
                 <button
                   key={img.url}
                   role="tab"
                   aria-selected={i === activeImage}
-                  aria-label={`Ver imagen ${i + 1}`}
+                  aria-label={`View image ${i + 1}`}
                   onClick={() => setActiveImage(i)}
                   className={cn('tile h-20 w-20 overflow-hidden rounded-2xl p-2 transition sm:h-24 sm:w-24', i === activeImage ? 'ring-2 ring-slate-950' : 'opacity-70 hover:opacity-100')}
                   data-testid="product-thumbnail"
@@ -313,10 +313,10 @@ export function ProductPage() {
         <div className="space-y-7">
           <div className="space-y-4">
             <div className="flex flex-wrap items-center gap-3">
-              <Link to={`/buscar?brand=${product.brand.slug}`} className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700 transition hover:bg-slate-950 hover:text-white">
+              <Link to={`/search?brand=${product.brand.slug}`} className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700 transition hover:bg-slate-950 hover:text-white">
                 {product.brand.name}
               </Link>
-              <a href="#resenas" className="text-sm text-slate-500 hover:text-slate-950">
+              <a href="#reviews" className="text-sm text-slate-500 hover:text-slate-950">
                 <Rating value={product.ratingAvg} count={product.ratingCount} showValue />
               </a>
             </div>
@@ -345,20 +345,20 @@ export function ProductPage() {
               <div>
                 <Price cents={product.priceCents} compareAt={product.compareAtPriceCents} size="lg" />
                 <p className="mt-1 text-xs text-slate-500">
-                  IVA incluido
-                  {saving > 0 && <span className="ml-2 rounded-full bg-accent-300 px-2 py-0.5 font-semibold text-slate-950">Ahorras {formatPrice(saving)}</span>}
+                  VAT included
+                  {saving > 0 && <span className="ml-2 rounded-full bg-accent-300 px-2 py-0.5 font-semibold text-slate-950">You save {formatPrice(saving)}</span>}
                 </p>
               </div>
               <AvailabilityLabel availability={product.availability} stock={product.stock} />
             </div>
             {product.availability === 'DISCONTINUED' && (
-              <Alert tone="warning" title="Producto descatalogado">
-                Este producto ya no está a la venta.
+              <Alert tone="warning" title="Discontinued product">
+                This product is no longer for sale.
               </Alert>
             )}
             {product.availability === 'OUT_OF_STOCK' && (
-              <Alert tone="info" title="Sin stock por el momento">
-                Guárdalo en favoritos y vuelve a consultarlo más adelante.
+              <Alert tone="info" title="Currently out of stock">
+                Save it to your favorites and check back later.
               </Alert>
             )}
             <div className="flex flex-wrap items-center gap-3">
@@ -375,8 +375,8 @@ export function ProductPage() {
                     { productId: product.id, quantity },
                     {
                       onSuccess: () => {
-                        toast.success(`${quantity} × ${product.name} añadido al carrito`, {
-                          action: { label: 'Ver carrito', onClick: () => navigate('/carrito') },
+                        toast.success(`${quantity} × ${product.name} added to cart`, {
+                          action: { label: 'View cart', onClick: () => navigate('/cart') },
                         });
                         setQuantity(1);
                       },
@@ -385,18 +385,18 @@ export function ProductPage() {
                   )
                 }
               >
-                {purchasable ? 'Añadir al carrito' : 'No disponible'}
+                {purchasable ? 'Add to cart' : 'Unavailable'}
               </Button>
               <FavoriteButton productId={product.id} />
             </div>
-            {purchasable && <p className="text-xs text-slate-500">Máximo {product.maxQuantityPerOrder} unidades por pedido.</p>}
+            {purchasable && <p className="text-xs text-slate-500">Maximum {product.maxQuantityPerOrder} units per order.</p>}
           </div>
 
           <ul className="grid gap-3 text-sm text-slate-600 sm:grid-cols-3">
             {[
-              [Truck, 'Envío gratis', 'Desde 99 €'],
-              [RotateCcw, 'Devolución', '14 días'],
-              [ShieldCheck, 'Garantía', '3 años'],
+              [Truck, 'Free shipping', 'Over €99'],
+              [RotateCcw, 'Returns', '14 days'],
+              [ShieldCheck, 'Warranty', '3 years'],
             ].map(([Icon, title, text]) => {
               const I = Icon as typeof Truck;
               return (
@@ -417,18 +417,18 @@ export function ProductPage() {
 
       <div className="mt-20 grid gap-12 lg:grid-cols-[1fr_1.2fr]">
         <section aria-labelledby="description-title" className="space-y-4">
-          <p className="eyebrow">Sobre el producto</p>
+          <p className="eyebrow">About the product</p>
           <h2 id="description-title" className="heading-lg">
-            Descripción
+            Description
           </h2>
           <p className="text-[17px] leading-relaxed text-slate-600" data-testid="product-description">
             {product.description}
           </p>
         </section>
         <section aria-labelledby="specs-title" className="space-y-4">
-          <p className="eyebrow">Ficha técnica</p>
+          <p className="eyebrow">Tech specs</p>
           <h2 id="specs-title" className="heading-lg">
-            Especificaciones
+            Specifications
           </h2>
           <table className="w-full overflow-hidden rounded-3xl text-sm" data-testid="product-specs">
             <tbody>
@@ -451,12 +451,12 @@ export function ProductPage() {
 
       {related.data && related.data.length > 0 && (
         <div className="mt-20">
-          <ProductRail eyebrow="Misma categoría" title="También te puede interesar" products={related.data} testId="related-products" />
+          <ProductRail eyebrow="Same category" title="You may also like" products={related.data} testId="related-products" />
         </div>
       )}
       <div className="mt-10 text-center">
-        <ButtonLink to={`/categoria/${product.category.slug}`} variant="outline">
-          Ver más en {product.category.name}
+        <ButtonLink to={`/category/${product.category.slug}`} variant="outline">
+          See more in {product.category.name}
         </ButtonLink>
       </div>
     </div>

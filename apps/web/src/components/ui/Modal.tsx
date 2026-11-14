@@ -42,7 +42,7 @@ export function Modal({ open, onOpenChange, title, description, children, footer
               )}
             </div>
             <Dialog.Close asChild>
-              <button className="rounded-full p-2 text-slate-500 hover:bg-slate-100" aria-label="Cerrar">
+              <button className="rounded-full p-2 text-slate-500 hover:bg-slate-100" aria-label="Close">
                 <X className="h-5 w-5" />
               </button>
             </Dialog.Close>
@@ -73,7 +73,7 @@ export function ConfirmDialog({ open, onOpenChange, title, description, confirmL
   const [error, setError] = useState<string>();
   const submit = () => {
     if (withReason?.required && reason.trim().length < (withReason.minLength ?? 1)) {
-      setError(`Indica un motivo (mínimo ${withReason.minLength ?? 1} caracteres)`);
+      setError(`Enter a reason (at least ${withReason.minLength ?? 1} characters)`);
       return;
     }
     onConfirm(withReason ? reason.trim() : undefined);
@@ -95,7 +95,7 @@ export function ConfirmDialog({ open, onOpenChange, title, description, confirmL
       footer={
         <>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Volver
+            Go back
           </Button>
           <Button variant={tone === 'danger' ? 'danger' : 'primary'} loading={loading} onClick={submit} data-testid="confirm-dialog-confirm">
             {confirmLabel}

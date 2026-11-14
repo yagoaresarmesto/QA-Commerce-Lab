@@ -4,60 +4,60 @@ import { NotFoundPage } from './NotFoundPage';
 import { useDocumentTitle } from './useDocumentTitle';
 
 const PAGES: Record<string, { title: string; body: Array<[string, string]> }> = {
-  envios: {
-    title: 'Envíos y entregas',
+  shipping: {
+    title: 'Shipping & delivery',
     body: [
-      ['Envío estándar', 'Entrega a domicilio en 2-4 días laborables por 4,99 €. Gratis en pedidos desde 99 € (importe tras descuentos).'],
-      ['Envío exprés 24 h', 'Entrega el siguiente día laborable por 12,99 € para pedidos confirmados antes de las 14:00 (simulado).'],
-      ['Recogida en punto de entrega', 'Recoge tu pedido en uno de nuestros puntos de conveniencia en 3-5 días por 1,99 €. Gratis desde 49 €.'],
-      ['Zona de envío', 'Solo realizamos envíos a direcciones de España. Todos los plazos y transportistas son ficticios.'],
+      ['Standard shipping', 'Home delivery in 2-4 business days for €4.99. Free on orders over €99 (amount after discounts).'],
+      ['Express shipping 24 h', 'Delivery on the next business day for €12.99 for orders confirmed before 14:00 (simulated).'],
+      ['Pickup point collection', 'Collect your order at one of our convenience points in 3-5 days for €1.99. Free over €49.'],
+      ['Shipping area', 'We only ship to addresses in Spain. All delivery times and carriers are fictional.'],
     ],
   },
-  devoluciones: {
-    title: 'Devoluciones',
+  returns: {
+    title: 'Returns',
     body: [
-      ['Plazo', 'Dispones de 14 días naturales desde la entrega para solicitar la devolución desde “Mis pedidos”.'],
-      ['Proceso', 'La solicitud queda “Devolución solicitada” hasta que nuestro equipo la revisa. Al aprobarla, el pedido pasa a “Devuelto” y se reembolsa el importe.'],
-      ['Cancelaciones', 'Puedes cancelar un pedido pendiente o pagado mientras no esté en preparación. Si estaba pagado, el reembolso es inmediato (simulado).'],
+      ['Return window', 'You have 14 calendar days from delivery to request a return from “My orders”.'],
+      ['Process', 'The request stays as “Return requested” until our team reviews it. Once approved, the order becomes “Returned” and the amount is refunded.'],
+      ['Cancellations', 'You can cancel a pending or paid order as long as it is not being prepared. If it was paid, the refund is immediate (simulated).'],
     ],
   },
-  pagos: {
-    title: 'Métodos de pago',
+  payments: {
+    title: 'Payment methods',
     body: [
-      ['Tarjeta', 'Pago inmediato mediante un simulador. Solo se aceptan tarjetas de prueba documentadas; nunca introduzcas datos reales.'],
-      ['Transferencia bancaria', 'Reservamos los productos durante 72 horas. Si no se recibe la transferencia, el pedido se cancela automáticamente.'],
-      ['Seguridad', 'No se almacenan números de tarjeta completos: solo la marca y los 4 últimos dígitos.'],
+      ['Card', 'Instant payment through a simulator. Only the documented test cards are accepted; never enter real card details.'],
+      ['Bank transfer', 'We hold the products for 72 hours. If the transfer does not arrive, the order is cancelled automatically.'],
+      ['Security', 'Full card numbers are never stored: only the brand and the last 4 digits.'],
     ],
   },
-  garantia: {
-    title: 'Garantía',
-    body: [['Garantía de 3 años', 'Todos los productos incluyen 3 años de garantía (ficticia). Los nombres de productos y marcas pertenecen a sus respectivos propietarios y se usan solo con fines ilustrativos: la tienda no tiene relación con ellos y las imágenes son ilustraciones genéricas.']],
+  warranty: {
+    title: 'Warranty',
+    body: [['3-year warranty', 'Every product includes a 3-year (fictional) warranty. Product and brand names belong to their respective owners and are used for illustrative purposes only: the store has no relationship with them and the images are generic illustrations.']],
   },
-  contacto: {
-    title: 'Contacto',
+  contact: {
+    title: 'Contact',
     body: [
-      ['Atención al cliente', 'Este es un proyecto educativo sin actividad comercial: no existe un servicio de atención real.'],
-      ['Email', 'soporte@qacommerce.test (dominio reservado para pruebas, no recibe correo).'],
+      ['Customer support', 'This is an educational project with no commercial activity: there is no real customer support service.'],
+      ['E-mail', 'support@qacommerce.test (a domain reserved for testing that does not receive mail).'],
     ],
   },
-  'sobre-nosotros': {
-    title: 'Sobre QA Commerce Lab',
+  about: {
+    title: 'About QA Commerce Lab',
     body: [
-      ['¿Qué es?', 'Una tienda de electrónica completa y realista creada como System Under Test para practicar automatización de pruebas web y API.'],
-      ['Datos ficticios', 'Los productos toman nombres de modelos reales como referencia, pero precios, stock, usuarios, pagos y envíos son simulados. Puedes registrarte y comprar tantas veces como quieras.'],
-      ['Para QA Engineers', 'Incluye API REST documentada con OpenAPI, datos deterministas, escenarios preparados y simulación controlada de errores en los entornos de testing.'],
+      ['What is it?', 'A complete, realistic electronics store built as a System Under Test to practise web and API test automation.'],
+      ['Fictional data', 'Products use real model names as a reference, but prices, stock, users, payments and shipping are simulated. You can sign up and buy as many times as you like.'],
+      ['For QA engineers', 'It includes a REST API documented with OpenAPI, deterministic data, ready-made scenarios and controlled error simulation in the testing environments.'],
     ],
   },
-  terminos: {
-    title: 'Términos y condiciones',
+  terms: {
+    title: 'Terms & conditions',
     body: [
-      ['Uso', 'El sitio se ofrece únicamente con fines de aprendizaje y demostración. No se realizan ventas ni cobros reales.'],
-      ['Contenido', 'Los datos pueden restablecerse en cualquier momento. No introduzcas información personal real.'],
+      ['Use', 'The site is provided for learning and demonstration purposes only. No real sales or charges take place.'],
+      ['Content', 'Data may be reset at any time. Do not enter real personal information.'],
     ],
   },
-  privacidad: {
-    title: 'Privacidad',
-    body: [['Datos', 'Utiliza datos inventados. Las cuentas y pedidos de prueba pueden eliminarse periódicamente. Solo se usan cookies técnicas de sesión.']],
+  privacy: {
+    title: 'Privacy',
+    body: [['Data', 'Use made-up data. Test accounts and orders may be deleted periodically. Only technical session cookies are used.']],
   },
 };
 
@@ -68,7 +68,7 @@ export function InfoPage() {
   if (!page) return <NotFoundPage />;
   return (
     <div className="container-page max-w-3xl py-10 sm:py-14">
-      <Breadcrumbs items={[{ label: 'Información' }, { label: page.title }]} />
+      <Breadcrumbs items={[{ label: 'Information' }, { label: page.title }]} />
       <article className="space-y-8" data-testid="info-page">
         <h1 className="text-4xl font-semibold tracking-[-0.035em] sm:text-5xl">{page.title}</h1>
         {page.body.map(([h, p]) => (
@@ -78,7 +78,7 @@ export function InfoPage() {
           </section>
         ))}
         <p className="rounded-3xl bg-slate-50 p-5 text-sm text-slate-500">
-          Más información: <Link to="/info/envios" className="font-medium text-slate-950 underline underline-offset-2">envíos</Link> · <Link to="/info/devoluciones" className="font-medium text-slate-950 underline underline-offset-2">devoluciones</Link> · <Link to="/info/pagos" className="font-medium text-slate-950 underline underline-offset-2">pagos</Link>
+          More information: <Link to="/info/shipping" className="font-medium text-slate-950 underline underline-offset-2">shipping</Link> · <Link to="/info/returns" className="font-medium text-slate-950 underline underline-offset-2">returns</Link> · <Link to="/info/payments" className="font-medium text-slate-950 underline underline-offset-2">payments</Link>
         </p>
       </article>
     </div>

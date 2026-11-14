@@ -31,7 +31,7 @@ export function GuestOnly({ children }: { children: ReactNode }) {
   if (status === 'loading') return <PageLoader />;
   if (status === 'authenticated') {
     const redirect = new URLSearchParams(location.search).get('redirect');
-    return <Navigate to={redirect && redirect.startsWith('/') ? redirect : '/cuenta'} replace />;
+    return <Navigate to={redirect && redirect.startsWith('/') ? redirect : '/account'} replace />;
   }
   return <>{children}</>;
 }

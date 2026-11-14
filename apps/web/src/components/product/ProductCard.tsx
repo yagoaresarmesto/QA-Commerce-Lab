@@ -14,7 +14,7 @@ import { Spinner } from '../ui/Spinner';
 export function ProductImage({ src, alt, className }: { src: string; alt: string; className?: string }) {
   const [failed, setFailed] = useState(false);
   return failed ? (
-    <div className={cn('flex items-center justify-center bg-slate-100 text-xs text-slate-400', className)}>Sin imagen</div>
+    <div className={cn('flex items-center justify-center bg-slate-100 text-xs text-slate-400', className)}>No image</div>
   ) : (
     <img src={src} alt={alt} loading="lazy" decoding="async" onError={() => setFailed(true)} className={cn('object-contain', className)} />
   );
@@ -36,13 +36,13 @@ export function FavoriteButton({ productId, className, size = 'md' }: { productI
         className,
       )}
       aria-pressed={isFavorite}
-      aria-label={isFavorite ? 'Quitar de favoritos' : 'Añadir a favoritos'}
+      aria-label={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
       data-testid="favorite-toggle"
       disabled={toggle.isPending}
       onClick={(e) => {
         e.preventDefault();
         if (status !== 'authenticated') {
-          toast.info('Inicia sesión para guardar favoritos');
+          toast.info('Sign in to save favorites');
           navigate(`/login?redirect=${encodeURIComponent(window.location.pathname)}`);
           return;
         }
@@ -72,24 +72,24 @@ export function ProductCard({ product }: { product: ProductSummary }) {
               -{product.discountPercent}%
             </Badge>
           )}
-          {product.isNew && <Badge tone="lime">Novedad</Badge>}
+          {product.isNew && <Badge tone="lime">New</Badge>}
         </div>
         <FavoriteButton productId={product.id} size="sm" className="absolute right-3 top-3 z-10" />
-        <Link to={`/producto/${product.slug}`} className="block h-full p-6" tabIndex={-1} aria-hidden="true">
+        <Link to={`/product/${product.slug}`} className="block h-full p-6" tabIndex={-1} aria-hidden="true">
           <ProductImage src={product.imageUrl} alt="" className="h-full w-full transition duration-500 ease-out group-hover:scale-[1.06]" />
         </Link>
         <button
           type="button"
           className="absolute bottom-3 right-3 z-10 flex h-11 w-11 items-center justify-center rounded-full bg-slate-950 text-white shadow-soft transition hover:scale-105 hover:bg-brand-600 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-500 disabled:shadow-none"
           disabled={!purchasable || add.isPending}
-          aria-label={`Añadir ${product.name} al carrito`}
-          title={purchasable ? 'Añadir al carrito' : 'No disponible'}
+          aria-label={`Add ${product.name} to cart`}
+          title={purchasable ? 'Add to cart' : 'Unavailable'}
           data-testid="add-to-cart"
           onClick={() =>
             add.mutate(
               { productId: product.id, quantity: 1 },
               {
-                onSuccess: () => toast.success('Producto añadido al carrito', { description: product.name }),
+                onSuccess: () => toast.success('Added to cart', { description: product.name }),
                 onError: (e) => toast.error(errorMessage(e)),
               },
             )
@@ -104,7 +104,7 @@ export function ProductCard({ product }: { product: ProductSummary }) {
           <Rating value={product.ratingAvg} count={product.ratingCount} />
         </div>
         <h3 id={`product-${product.id}-name`} className="line-clamp-2 min-h-10 text-[15px] font-medium leading-5 tracking-tight text-slate-950">
-          <Link to={`/producto/${product.slug}`} className="after:absolute after:inset-0 after:z-0" data-testid="product-card-link">
+          <Link to={`/product/${product.slug}`} className="after:absolute after:inset-0 after:z-0" data-testid="product-card-link">
             {product.name}
           </Link>
         </h3>
@@ -168,13 +168,13 @@ export function ProductRail({
         <div className="flex items-center gap-2">
           {href && (
             <Link to={href} className="group mr-2 hidden items-center gap-1 text-sm font-semibold text-slate-950 sm:flex">
-              Ver todo <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
+              View all <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
             </Link>
           )}
-          <button type="button" onClick={() => scroll(-1)} className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 text-slate-700 transition hover:bg-slate-950 hover:text-white" aria-label={`Desplazar ${title} a la izquierda`}>
+          <button type="button" onClick={() => scroll(-1)} className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 text-slate-700 transition hover:bg-slate-950 hover:text-white" aria-label={`Scroll ${title} left`}>
             <ChevronLeft className="h-5 w-5" />
           </button>
-          <button type="button" onClick={() => scroll(1)} className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 text-slate-700 transition hover:bg-slate-950 hover:text-white" aria-label={`Desplazar ${title} a la derecha`}>
+          <button type="button" onClick={() => scroll(1)} className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 text-slate-700 transition hover:bg-slate-950 hover:text-white" aria-label={`Scroll ${title} right`}>
             <ChevronRight className="h-5 w-5" />
           </button>
         </div>

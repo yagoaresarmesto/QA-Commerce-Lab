@@ -4,42 +4,42 @@ import { Logo } from './Header';
 
 const columns = [
   {
-    title: 'Comprar',
+    title: 'Shop',
     links: [
-      ['Ofertas', '/ofertas'],
-      ['Portátiles', '/categoria/portatiles'],
-      ['Componentes', '/categoria/componentes'],
-      ['Smartphones', '/categoria/smartphones'],
-      ['Novedades', '/buscar?sort=newest'],
+      ['Deals', '/deals'],
+      ['Laptops', '/category/laptops'],
+      ['Components', '/category/components'],
+      ['Smartphones', '/category/smartphones'],
+      ['New arrivals', '/search?sort=newest'],
     ],
   },
   {
-    title: 'Ayuda',
+    title: 'Help',
     links: [
-      ['Envíos y entregas', '/info/envios'],
-      ['Devoluciones', '/info/devoluciones'],
-      ['Métodos de pago', '/info/pagos'],
-      ['Garantía', '/info/garantia'],
-      ['Contacto', '/info/contacto'],
+      ['Shipping & delivery', '/info/shipping'],
+      ['Returns', '/info/returns'],
+      ['Payment methods', '/info/payments'],
+      ['Warranty', '/info/warranty'],
+      ['Contact', '/info/contact'],
     ],
   },
   {
     title: 'QA Commerce Lab',
     links: [
-      ['Sobre el proyecto', '/info/sobre-nosotros'],
-      ['Términos y condiciones', '/info/terminos'],
-      ['Privacidad', '/info/privacidad'],
-      ['Documentación API', '/api/docs'],
+      ['About the project', '/info/about'],
+      ['Terms & conditions', '/info/terms'],
+      ['Privacy', '/info/privacy'],
+      ['API documentation', '/api/docs'],
     ],
   },
 ];
 
 export function TrustBar() {
   const items = [
-    [Truck, 'Envío gratis', 'En pedidos desde 99 €'],
-    [RotateCcw, 'Devolución fácil', '14 días para devolver'],
-    [ShieldCheck, 'Pago seguro', 'Simulador de pagos*'],
-    [Headset, 'Atención experta', 'Te asesoramos en tu compra'],
+    [Truck, 'Free shipping', 'On orders over €99'],
+    [RotateCcw, 'Easy returns', '14 days to return'],
+    [ShieldCheck, 'Secure payment', 'Payment simulator*'],
+    [Headset, 'Expert support', 'We help you choose'],
   ] as const;
   return (
     <div className="grid grid-cols-2 gap-x-6 gap-y-5 rounded-4xl bg-slate-50 px-6 py-6 lg:grid-cols-4 lg:px-8" data-testid="trust-bar">
@@ -65,11 +65,11 @@ export function Footer() {
         <div className="space-y-5">
           <Logo light />
           <p className="max-w-sm text-sm leading-relaxed">
-            Tienda de electrónica <strong className="font-medium text-white">ficticia</strong> creada como laboratorio profesional de QA Automation. Precios, stock,
-            pedidos y pagos son simulados.
+            A <strong className="font-medium text-white">fictional</strong> electronics store built as a professional QA automation lab. Prices, stock,
+            orders and payments are simulated.
           </p>
           <p className="flex items-center gap-2 text-xs">
-            <CreditCard className="h-4 w-4 text-accent-400" aria-hidden="true" /> Solo se aceptan tarjetas de prueba
+            <CreditCard className="h-4 w-4 text-accent-400" aria-hidden="true" /> Only test cards are accepted
           </p>
         </div>
         {columns.map((col) => (
@@ -100,10 +100,10 @@ export function Footer() {
       </div>
       <div className="border-t border-white/10">
         <div className="container-page flex flex-col gap-2 py-6 text-xs sm:flex-row sm:items-center sm:justify-between">
-          <p>© {new Date().getFullYear()} QA Commerce Lab · Proyecto educativo sin actividad comercial</p>
+          <p>© {new Date().getFullYear()} QA Commerce Lab · Educational project with no commercial activity</p>
           <p className="max-w-xl sm:text-right" data-testid="trademark-notice">
-            Los nombres de productos y marcas pertenecen a sus respectivos propietarios y se usan con fines ilustrativos, sin afiliación. Precios con IVA incluido ·
-            *Pagos simulados.
+            Product and brand names belong to their respective owners and are used for illustrative purposes only, with no affiliation. Prices include VAT ·
+            *Simulated payments.
           </p>
         </div>
       </div>

@@ -16,14 +16,14 @@ export const PROVINCES = [
 ];
 
 const schema = z.object({
-  label: z.string().trim().max(40, 'Máximo 40 caracteres').optional(),
-  fullName: z.string().trim().min(3, 'Indica el nombre completo del destinatario').max(100),
-  phone: z.string().trim().regex(/^(\+34|0034)?[6789]\d{8}$/, 'Introduce un teléfono español válido (9 dígitos)'),
-  line1: z.string().trim().min(5, 'La dirección debe tener al menos 5 caracteres').max(120),
+  label: z.string().trim().max(40, 'Maximum 40 characters').optional(),
+  fullName: z.string().trim().min(3, 'Enter the recipient full name').max(100),
+  phone: z.string().trim().regex(/^(\+34|0034)?[6789]\d{8}$/, 'Enter a valid Spanish phone number (9 digits)'),
+  line1: z.string().trim().min(5, 'The address must be at least 5 characters long').max(120),
   line2: z.string().trim().max(120).optional(),
-  city: z.string().trim().min(2, 'Indica la ciudad').max(80),
-  province: z.string().min(1, 'Selecciona una provincia'),
-  postalCode: z.string().trim().regex(/^(0[1-9]|[1-4]\d|5[0-2])\d{3}$/, 'Código postal español no válido (5 dígitos)'),
+  city: z.string().trim().min(2, 'Enter the city').max(80),
+  province: z.string().min(1, 'Select a province'),
+  postalCode: z.string().trim().regex(/^(0[1-9]|[1-4]\d|5[0-2])\d{3}$/, 'Invalid Spanish postal code (5 digits)'),
   isDefault: z.boolean().optional(),
 });
 export type AddressFormValues = z.infer<typeof schema>;
@@ -43,7 +43,7 @@ export function AddressForm({ address, onSaved, onCancel }: { address?: Address;
     },
     onSuccess: (a) => {
       void qc.invalidateQueries({ queryKey: ['addresses'] });
-      toast.success(address ? 'Dirección actualizada' : 'Dirección guardada');
+      toast.success(address ? 'Address updated' : 'Address saved');
       onSaved(a);
     },
     onError: (e) => {
@@ -53,33 +53,33 @@ export function AddressForm({ address, onSaved, onCancel }: { address?: Address;
   });
   const err = formState.errors;
   return (
-    <form onSubmit={handleSubmit((v) => save.mutate(v))} noValidate className="grid gap-4 sm:grid-cols-2" aria-label="Dirección de envío" data-testid="address-form">
-      <Input label="Nombre y apellidos del destinatario" required autoComplete="name" {...register('fullName')} error={err.fullName?.message} wrapperClassName="sm:col-span-2" />
-      <Input label="Dirección" required autoComplete="address-line1" placeholder="Calle, número, piso" {...register('line1')} error={err.line1?.message} wrapperClassName="sm:col-span-2" />
-      <Input label="Información adicional" autoComplete="address-line2" placeholder="Escalera, bloque… (opcional)" {...register('line2')} error={err.line2?.message} wrapperClassName="sm:col-span-2" />
-      <Input label="Código postal" required inputMode="numeric" autoComplete="postal-code" maxLength={5} {...register('postalCode')} error={err.postalCode?.message} />
-      <Input label="Ciudad" required autoComplete="address-level2" {...register('city')} error={err.city?.message} />
-      <Select label="Provincia" required {...register('province')} error={err.province?.message}>
-        <option value="">Selecciona…</option>
+    <form onSubmit={handleSubmit((v) => save.mutate(v))} noValidate className="grid gap-4 sm:grid-cols-2" aria-label="Shipping address" data-testid="address-form">
+      <Input label="Recipient full name" required autoComplete="name" {...register('fullName')} error={err.fullName?.message} wrapperClassName="sm:col-span-2" />
+      <Input label="Address" required autoComplete="address-line1" placeholder="Street, number, floor" {...register('line1')} error={err.line1?.message} wrapperClassName="sm:col-span-2" />
+      <Input label="Additional information" autoComplete="address-line2" placeholder="Staircase, block… (optional)" {...register('line2')} error={err.line2?.message} wrapperClassName="sm:col-span-2" />
+      <Input label="Postal code" required inputMode="numeric" autoComplete="postal-code" maxLength={5} {...register('postalCode')} error={err.postalCode?.message} />
+      <Input label="City" required autoComplete="address-level2" {...register('city')} error={err.city?.message} />
+      <Select label="Province" required {...register('province')} error={err.province?.message}>
+        <option value="">Select…</option>
         {PROVINCES.map((p) => (
           <option key={p} value={p}>
             {p}
           </option>
         ))}
       </Select>
-      <Input label="Teléfono" required type="tel" autoComplete="tel" {...register('phone')} error={err.phone?.message} />
-      <Input label="Etiqueta" placeholder="Casa, trabajo… (opcional)" {...register('label')} error={err.label?.message} />
+      <Input label="Phone" required type="tel" autoComplete="tel" {...register('phone')} error={err.phone?.message} />
+      <Input label="Label" placeholder="Home, work… (optional)" {...register('label')} error={err.label?.message} />
       <div className="flex items-end pb-2">
-        <Checkbox label="Usar como dirección predeterminada" {...register('isDefault')} disabled={address?.isDefault} />
+        <Checkbox label="Use as default address" {...register('isDefault')} disabled={address?.isDefault} />
       </div>
-      <p className="text-xs text-slate-500 sm:col-span-2">Solo realizamos envíos a España.</p>
+      <p className="text-xs text-slate-500 sm:col-span-2">We only ship to Spain.</p>
       <div className="flex gap-3 sm:col-span-2">
         <Button type="submit" loading={save.isPending} data-testid="address-save">
-          Guardar dirección
+          Save address
         </Button>
         {onCancel && (
           <Button variant="ghost" onClick={onCancel}>
-            Cancelar
+            Cancel
           </Button>
         )}
       </div>

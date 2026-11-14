@@ -22,8 +22,8 @@ export function RetryPayment({ order }: { order: Order }) {
     onSuccess: (res) => {
       qc.setQueryData(['order', String(order.id)], res.order);
       void qc.invalidateQueries({ queryKey: ['orders'] });
-      if (res.payment?.status === 'DECLINED') setError(res.payment.failureMessage ?? 'El pago ha sido rechazado');
-      else toast.success(res.order.status === 'PAID' ? 'Pago completado' : 'Pago registrado');
+      if (res.payment?.status === 'DECLINED') setError(res.payment.failureMessage ?? 'The payment was declined');
+      else toast.success(res.order.status === 'PAID' ? 'Payment completed' : 'Payment registered');
     },
     onError: (e) => {
       setError(errorMessage(e));
@@ -53,7 +53,7 @@ export function RetryPayment({ order }: { order: Order }) {
           pay.mutate();
         }}
       >
-        Pagar {formatPrice(order.totalCents)}
+        Pay {formatPrice(order.totalCents)}
       </Button>
     </div>
   );
