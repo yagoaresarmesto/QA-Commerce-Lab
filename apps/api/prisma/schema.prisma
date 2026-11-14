@@ -1,0 +1,555 @@
+// QA Commerce Lab - data model
+// Conventions:
+//  * Monetary values are stored as integer cents (EUR). Prices include VAT (21%).
+//  * Domain entities use autoincrement integer IDs. A global reset truncates tables with
+//    RESTART IDENTITY, so seeded reference data always gets the same IDs.
+//  * Security-sensitive identifiers (sessions, guest cart tokens) use UUIDs.
+//  * `isReference` marks seeded reference data (never removed by per-run cleanup).
+//  * `testRunId` tags data created by an automation run, so it can be cleaned up in isolation.
+
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────── Users & auth ───────────────────────────────
+
+enum Role {
+  CUSTOMER
+  ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  DISABLED
+}
+
+model User {
+  id                Int        @id @default(autoincrement())
+  email             String     @unique
+  passwordHash      String
+  firstName         String
+  lastName          String
+  phone             String?
+  role              Role       @default(CUSTOMER)
+  status            UserStatus @default(ACTIVE)
+  marketingOptIn    Boolean    @default(false)
+  isReference       Boolean    @default(false)
+  testRunId         String?
+  lastLoginAt       DateTime?
+  passwordChangedAt DateTime?
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
+
+  sessions            Session[]
+  passwordResetTokens PasswordResetToken[]
+  addresses           Address[]
+  cart                Cart?
+  orders              Order[]
+  reviews             Review[]
+  favorites           Favorite[]
+  couponRedemptions   CouponRedemption[]
+
+  @@index([testRunId])
+  @@index([role, status])
+}
+
+/// A login session. The refresh token is `<session id>.<secret>`; only a hash of the secret is stored.
+model Session {
+  id               String    @id @default(uuid())
+  userId           Int
+  refreshTokenHash String
+  userAgent        String?
+  ip               String?
+  createdAt        DateTime  @default(now())
+  lastUsedAt       DateTime  @default(now())
+  expiresAt        DateTime
+  revokedAt        DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model PasswordResetToken {
+  id        String    @id @default(uuid())
+  userId    Int
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+/// Local mail outbox (simulated mail service). Readable through the testing API.
+model EmailMessage {
+  id        Int      @id @default(autoincrement())
+  to        String
+  subject   String
+  template  String
+  text      String
+  html      String?
+  metadata  Json?
+  testRunId String?
+  createdAt DateTime @default(now())
+
+  @@index([to])
+  @@index([testRunId])
+}
+
+model Address {
+  id         Int      @id @default(autoincrement())
+  userId     Int
+  label      String?
+  fullName   String
+  phone      String
+  line1      String
+  line2      String?
+  city       String
+  province   String
+  postalCode String
+  country    String   @default("ES")
+  isDefault  Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// ─────────────────────────────── Catalog ───────────────────────────────
+
+model Category {
+  id          Int      @id @default(autoincrement())
+  slug        String   @unique
+  name        String
+  description String?
+  icon        String?
+  position    Int      @default(0)
+  parentId    Int?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  parent   Category?  @relation("CategoryTree", fields: [parentId], references: [id], onDelete: Restrict)
+  children Category[] @relation("CategoryTree")
+  products Product[]
+  coupons  Coupon[]
+}
+
+model Brand {
+  id        Int      @id @default(autoincrement())
+  slug      String   @unique
+  name      String   @unique
+  createdAt DateTime @default(now())
+
+  products Product[]
+}
+
+model Product {
+  id                  Int       @id @default(autoincrement())
+  sku                 String    @unique
+  slug                String    @unique
+  name                String
+  shortDescription    String
+  description         String
+  brandId             Int
+  categoryId          Int
+  priceCents          Int
+  compareAtPriceCents Int?
+  /// Derived from priceCents/compareAtPriceCents, maintained by the application (sortable)
+  discountPercent     Int       @default(0)
+  stock               Int       @default(0)
+  isActive            Boolean   @default(true)
+  isFeatured          Boolean   @default(false)
+  /// Array of { name: string, value: string }
+  specs               Json      @default("[]")
+  /// Normalized (lower-case, accent-free) text used by the search engine: name + brand + category + sku
+  searchText          String    @default("")
+  ratingAvg           Float     @default(0)
+  ratingCount         Int       @default(0)
+  salesCount          Int       @default(0)
+  isReference         Boolean   @default(false)
+  testRunId           String?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  brand      Brand          @relation(fields: [brandId], references: [id], onDelete: Restrict)
+  category   Category       @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  images     ProductImage[]
+  cartItems  CartItem[]
+  orderItems OrderItem[]
+  favorites  Favorite[]
+  reviews    Review[]
+
+  @@index([categoryId])
+  @@index([brandId])
+  @@index([isActive, priceCents])
+  @@index([salesCount])
+  @@index([createdAt])
+  @@index([discountPercent])
+  @@index([testRunId])
+}
+
+model ProductImage {
+  id        Int    @id @default(autoincrement())
+  productId Int
+  url       String
+  alt       String
+  position  Int    @default(0)
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+}
+
+enum BannerPlacement {
+  HERO
+  PROMO
+}
+
+model Banner {
+  id        Int             @id @default(autoincrement())
+  placement BannerPlacement
+  title     String
+  subtitle  String?
+  ctaLabel  String
+  ctaHref   String
+  theme     String          @default("indigo")
+  imageKind String?
+  position  Int             @default(0)
+  isActive  Boolean         @default(true)
+}
+
+// ─────────────────────────────── Cart & coupons ───────────────────────────────
+
+model Cart {
+  id        Int      @id @default(autoincrement())
+  /// Opaque token for guest carts (sent as X-Cart-Token).
+  token     String   @unique @default(uuid())
+  userId    Int?     @unique
+  couponId  Int?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user   User?      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  coupon Coupon?    @relation(fields: [couponId], references: [id], onDelete: SetNull)
+  items  CartItem[]
+}
+
+model CartItem {
+  id                      Int      @id @default(autoincrement())
+  cartId                  Int
+  productId               Int
+  quantity                Int
+  /// Unit price when the item was added/last modified (used to warn about price changes).
+  unitPriceCentsSnapshot  Int
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+
+  cart    Cart    @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([cartId, productId])
+}
+
+enum CouponType {
+  PERCENTAGE
+  FIXED_AMOUNT
+  FREE_SHIPPING
+}
+
+model Coupon {
+  id               Int        @id @default(autoincrement())
+  code             String     @unique
+  description      String
+  type             CouponType
+  /// Percentage (1-100) for PERCENTAGE, cents for FIXED_AMOUNT, ignored for FREE_SHIPPING.
+  value            Int        @default(0)
+  minSubtotalCents Int?
+  maxDiscountCents Int?
+  /// Restricts the discount to products of this category (and its subcategories).
+  categoryId       Int?
+  startsAt         DateTime?
+  expiresAt        DateTime?
+  /// Global maximum number of redemptions. Null = unlimited.
+  usageLimit       Int?
+  perUserLimit     Int        @default(1)
+  timesUsed        Int        @default(0)
+  isActive         Boolean    @default(true)
+  isReference      Boolean    @default(false)
+  testRunId        String?
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+
+  category    Category?          @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  redemptions CouponRedemption[]
+  carts       Cart[]
+  orders      Order[]
+
+  @@index([testRunId])
+}
+
+model CouponRedemption {
+  id        Int      @id @default(autoincrement())
+  couponId  Int
+  userId    Int
+  orderId   Int      @unique
+  createdAt DateTime @default(now())
+
+  coupon Coupon @relation(fields: [couponId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  order  Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([couponId, userId])
+}
+
+// ─────────────────────────────── Shipping ───────────────────────────────
+
+model ShippingMethod {
+  id                  Int      @id @default(autoincrement())
+  code                String   @unique
+  name                String
+  description         String
+  priceCents          Int
+  freeOverCents       Int?
+  minDays             Int
+  maxDays             Int
+  requiresPickupPoint Boolean  @default(false)
+  isActive            Boolean  @default(true)
+  position            Int      @default(0)
+
+  orders Order[]
+}
+
+model PickupPoint {
+  id           Int     @id @default(autoincrement())
+  code         String  @unique
+  name         String
+  address      String
+  city         String
+  province     String
+  postalCode   String
+  openingHours String
+  isActive     Boolean @default(true)
+
+  orders Order[]
+}
+
+// ─────────────────────────────── Orders & payments ───────────────────────────────
+
+enum OrderStatus {
+  PENDING
+  PAID
+  PREPARING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+  RETURN_REQUESTED
+  RETURNED
+}
+
+enum OrderPaymentStatus {
+  /// Awaiting a (new) payment attempt.
+  AWAITING_PAYMENT
+  /// The gateway is processing the payment asynchronously.
+  PROCESSING
+  PAID
+  /// Last attempt failed; a new attempt is allowed while the reservation is valid.
+  FAILED
+  REFUNDED
+}
+
+enum PaymentMethod {
+  CARD
+  BANK_TRANSFER
+}
+
+enum PaymentStatus {
+  PENDING
+  APPROVED
+  DECLINED
+  FAILED
+  REFUNDED
+}
+
+enum ActorType {
+  CUSTOMER
+  ADMIN
+  SYSTEM
+}
+
+model Order {
+  id                   Int                @id @default(autoincrement())
+  orderNumber          String             @unique
+  userId               Int
+  status               OrderStatus        @default(PENDING)
+  paymentStatus        OrderPaymentStatus @default(AWAITING_PAYMENT)
+  paymentMethod        PaymentMethod
+  shippingMethodId     Int
+  shippingMethodCode   String
+  shippingMethodName   String
+  pickupPointId        Int?
+  /// Snapshot of the delivery address: { fullName, phone, line1, line2, city, province, postalCode, country }
+  shippingAddress      Json
+  subtotalCents        Int
+  discountCents        Int                @default(0)
+  shippingCents        Int
+  taxCents             Int
+  totalCents           Int
+  couponId             Int?
+  couponCode           String?
+  idempotencyKey       String?
+  /// Hash of the request body sent with the idempotency key (detects key reuse with another payload)
+  idempotencyHash      String?
+  customerNote         String?
+  trackingNumber       String?
+  reservationExpiresAt DateTime?
+  /// True while the order holds inventory (decremented at checkout, released on cancel/return)
+  stockReserved        Boolean            @default(true)
+  paidAt               DateTime?
+  preparingAt          DateTime?
+  shippedAt            DateTime?
+  deliveredAt          DateTime?
+  cancelledAt          DateTime?
+  cancelReason         String?
+  returnRequestedAt    DateTime?
+  returnReason         String?
+  returnedAt           DateTime?
+  isReference          Boolean            @default(false)
+  testRunId            String?
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+
+  user             User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  shippingMethod   ShippingMethod     @relation(fields: [shippingMethodId], references: [id], onDelete: Restrict)
+  pickupPoint      PickupPoint?       @relation(fields: [pickupPointId], references: [id], onDelete: SetNull)
+  coupon           Coupon?            @relation(fields: [couponId], references: [id], onDelete: SetNull)
+  items            OrderItem[]
+  payments         Payment[]
+  history          OrderStatusHistory[]
+  couponRedemption CouponRedemption?
+
+  @@unique([userId, idempotencyKey])
+  @@index([userId, createdAt])
+  @@index([status])
+  @@index([testRunId])
+}
+
+model OrderItem {
+  id                  Int     @id @default(autoincrement())
+  orderId             Int
+  /// Null when the product was later removed from the database (snapshot fields keep history).
+  productId           Int?
+  sku                 String
+  name                String
+  brandName           String
+  imageUrl            String?
+  unitPriceCents      Int
+  compareAtPriceCents Int?
+  quantity            Int
+  lineTotalCents      Int
+
+  order   Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+
+  @@index([orderId])
+  @@index([productId])
+}
+
+model OrderStatusHistory {
+  id          Int          @id @default(autoincrement())
+  orderId     Int
+  fromStatus  OrderStatus?
+  toStatus    OrderStatus
+  note        String?
+  actorType   ActorType
+  actorUserId Int?
+  createdAt   DateTime     @default(now())
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+}
+
+model Payment {
+  id                Int           @id @default(autoincrement())
+  orderId           Int
+  method            PaymentMethod
+  status            PaymentStatus
+  amountCents       Int
+  /// Simulator scenario resolved from the test card (APPROVED, DECLINED, ...).
+  scenario          String
+  cardBrand         String?
+  cardLast4         String?
+  cardHolder        String?
+  failureCode       String?
+  failureMessage    String?
+  providerReference String        @unique
+  idempotencyKey    String?
+  idempotencyHash   String?
+  resolveAt         DateTime?
+  resolvedAt        DateTime?
+  refundedAt        DateTime?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@unique([orderId, idempotencyKey])
+  @@index([status, resolveAt])
+}
+
+// ─────────────────────────────── Engagement ───────────────────────────────
+
+model Favorite {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  productId Int
+  createdAt DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, productId])
+}
+
+model Review {
+  id                 Int      @id @default(autoincrement())
+  userId             Int
+  productId          Int
+  rating             Int
+  title              String
+  comment            String
+  isVerifiedPurchase Boolean  @default(false)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, productId])
+  @@index([productId, createdAt])
+}
+
+// ─────────────────────────────── Testing infrastructure ───────────────────────────────
+
+model TestAuditLog {
+  id        Int      @id @default(autoincrement())
+  action    String
+  runId     String?
+  ip        String?
+  details   Json?
+  createdAt DateTime @default(now())
+
+  @@index([runId])
+  @@index([createdAt])
+}
