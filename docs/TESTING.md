@@ -81,6 +81,19 @@ The seed **always produces the same dataset**. After a global reset (`POST /api/
 | `disabled@qacommerce.test` | `Customer123!` | CUSTOMER | **Disabled**: login → `403 ACCOUNT_DISABLED` |
 | `reviewer01…12@qacommerce.test` | `Customer123!` | CUSTOMER | Authors of the ~500 sample reviews |
 
+Users prepared for specific test cases (same passwords; recreated identically by every seed/reset):
+
+| E-mail | Password | Role | Ready for |
+|---|---|---|---|
+| `cart@qacommerce.test` | `Customer123!` | CUSTOMER | Cart with 3 in-stock products (QCL-LAP-007, QCL-MOU-004, 2 × QCL-ACC-003) and an address: **ready to check out** |
+| `coupon@qacommerce.test` | `Customer123!` | CUSTOMER | Cart (QCL-AUD-001, QCL-KBD-005) with **`WELCOME10` already applied**; has never used it |
+| `cartissues@qacommerce.test` | `Customer123!` | CUSTOMER | Cart with **every kind of issue**: out of stock (QCL-GPU-003), discontinued (QCL-DSK-010), 2 units of a single-unit product (QCL-PHN-003) and a €10 price drop (QCL-SSD-002) → `hasIssues = true`, checkout blocked |
+| `returnable@qacommerce.test` | `Customer123!` | CUSTOMER | One order `QCL-SEED-0010` **delivered 3 days ago**: can request a return and write a *verified purchase* review of QCL-AUD-010 |
+| `cancellable@qacommerce.test` | `Customer123!` | CUSTOMER | One **PAID** order `QCL-SEED-0011` placed today: can cancel it (refund + restock) |
+| `fulladdresses@qacommerce.test` | `Customer123!` | CUSTOMER | **10 addresses** (the maximum): adding another returns `422 ADDRESS_LIMIT_REACHED` |
+| `edge.case+qa@qacommerce.test` | `Customer123!` | CUSTOMER | **Edge-case data**: name `María José O'Connor-Núñez de la Fuente`, plus-addressed e-mail, `+34` phone, very long address and label with an apostrophe, marketing opt-in |
+| `support@qacommerce.test` | `Admin123!` | ADMIN | **Second administrator**: test admin actions on another admin (disable it, remove its role) |
+
 Orders of `orders@qacommerce.test`:
 
 | No. | Status | Notes |
@@ -95,7 +108,7 @@ Orders of `orders@qacommerce.test`:
 | QCL-SEED-0008 | RETURN_REQUESTED | |
 | QCL-SEED-0009 | RETURNED | Refunded |
 
-> ⚠️ Reference users are **shared**. Use them for read-only tests or in dedicated environments. For tests that change state, create your own data (sections 3-5).
+> ⚠️ Reference users are **shared**. Use them for read-only tests or in dedicated environments. For tests that change state (e.g. checking out with `cart@`), restore them afterwards with `POST /api/test/seed`, or create your own data with the testing API or scenarios (sections 3-5) when suites run in parallel.
 
 ### Catalog
 

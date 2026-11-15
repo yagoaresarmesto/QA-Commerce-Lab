@@ -57,6 +57,8 @@ Sample local credentials (lab only):
 | `orders@qacommerce.test` | `Customer123!` | Orders in every status |
 | `favorites@qacommerce.test` · `addresses@qacommerce.test` · `noorders@qacommerce.test` | `Customer123!` | Favorites · several addresses · no orders |
 | `disabled@qacommerce.test` | `Customer123!` | Disabled account |
+| `cart@` · `coupon@` · `cartissues@` · `returnable@` · `cancellable@` · `fulladdresses@` · `edge.case+qa@` (all `@qacommerce.test`) | `Customer123!` | Ready-made cases: cart to check out, coupon applied, cart with issues, returnable order, cancellable order, address limit, edge-case data |
+| `support@qacommerce.test` | `Admin123!` | Second administrator |
 
 Approved test card: `4242 4242 4242 4242`, any future date and CVC. Local testing API: header `X-Test-Api-Key: local-test-api-key`. More data in [docs/TESTING.md](docs/TESTING.md).
 

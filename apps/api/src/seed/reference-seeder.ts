@@ -25,11 +25,36 @@ import {
   FAVORITE_SKUS,
   REFERENCE_USERS,
   REVIEWERS,
+  SCENARIO_USERS,
   REVIEW_TEMPLATES,
   USER_ADDRESSES,
+  USER_CARTS,
 } from './data/people.data';
 
 const DAY = 86_400_000;
+
+type OrderSpec = {
+  n: number;
+  status: OrderStatus;
+  items: Array<[string, number]>;
+  createdDaysAgo: number;
+  method?: 'STANDARD' | 'EXPRESS';
+  payment?: 'CARD' | 'BANK_TRANSFER';
+  coupon?: boolean;
+};
+
+/** Orders of orders@qacommerce.test: one per status (QCL-SEED-0001 … 0009) */
+const ORDERS_USER_SPECS: OrderSpec[] = [
+  { n: 1, status: OrderStatus.DELIVERED, items: [['QCL-LAP-007', 1], ['QCL-MOU-002', 1]], createdDaysAgo: 45, coupon: true },
+  { n: 2, status: OrderStatus.DELIVERED, items: [['QCL-AUD-003', 1]], createdDaysAgo: 6 },
+  { n: 3, status: OrderStatus.SHIPPED, items: [['QCL-MON-008', 1], ['QCL-ACC-003', 2]], createdDaysAgo: 3, method: 'EXPRESS' },
+  { n: 4, status: OrderStatus.PREPARING, items: [['QCL-SSD-002', 2]], createdDaysAgo: 2 },
+  { n: 5, status: OrderStatus.PAID, items: [['QCL-KBD-001', 1]], createdDaysAgo: 1 },
+  { n: 6, status: OrderStatus.PENDING, items: [['QCL-TAB-001', 1]], createdDaysAgo: 0, payment: 'BANK_TRANSFER' },
+  { n: 7, status: OrderStatus.CANCELLED, items: [['QCL-PHN-004', 1]], createdDaysAgo: 20 },
+  { n: 8, status: OrderStatus.RETURN_REQUESTED, items: [['QCL-AUD-006', 1]], createdDaysAgo: 9 },
+  { n: 9, status: OrderStatus.RETURNED, items: [['QCL-ACC-008', 1]], createdDaysAgo: 30 },
+];
 
 export const SKU_PREFIX: Record<string, string> = {
   laptops: 'LAP',
@@ -290,7 +315,7 @@ export class ReferenceSeeder {
     // ── Reference users (their data is wiped and recreated)
     const [adminHash, customerHash] = await Promise.all([hashPassword(ADMIN_PASSWORD), hashPassword(CUSTOMER_PASSWORD)]);
     const userIds = new Map<string, number>();
-    for (const [i, u] of [...REFERENCE_USERS, ...REVIEWERS].entries()) {
+    for (const [i, u] of [...REFERENCE_USERS, ...REVIEWERS, ...SCENARIO_USERS].entries()) {
       const data = {
         firstName: u.firstName,
         lastName: u.lastName,
@@ -298,7 +323,7 @@ export class ReferenceSeeder {
         role: u.role as Role,
         status: u.status as UserStatus,
         passwordHash: u.role === 'ADMIN' ? adminHash : customerHash,
-        marketingOptIn: false,
+        marketingOptIn: u.marketingOptIn ?? false,
         isReference: true,
         testRunId: null,
         lastLoginAt: null,
@@ -344,7 +369,27 @@ export class ReferenceSeeder {
       });
     }
 
-    const orders = await this.seedOrders(userIds.get('orders')!, productIds, at);
+    const priceBySku = new Map(products.map((p) => [p.sku, p.priceCents]));
+    for (const [key, cart] of Object.entries(USER_CARTS)) {
+      const coupon = cart.coupon ? await this.prisma.coupon.findUniqueOrThrow({ where: { code: cart.coupon } }) : null;
+      await this.prisma.cart.create({
+        data: {
+          userId: userIds.get(key)!,
+          couponId: coupon?.id ?? null,
+          items: {
+            create: cart.items.map(([sku, quantity, previousPriceDelta]) => ({
+              productId: productIds.get(sku)!,
+              quantity,
+              unitPriceCentsSnapshot: priceBySku.get(sku)! + (previousPriceDelta ?? 0),
+            })),
+          },
+        },
+      });
+    }
+
+    let orders = await this.seedOrders(userIds.get('orders')!, ORDERS_USER_SPECS, 'JAVIER RUIZ', at);
+    orders += await this.seedOrders(userIds.get('returnable')!, [{ n: 10, status: OrderStatus.DELIVERED, items: [['QCL-AUD-010', 1]], createdDaysAgo: 5 }], 'ANDRES VIDAL', at);
+    orders += await this.seedOrders(userIds.get('cancellable')!, [{ n: 11, status: OrderStatus.PAID, items: [['QCL-ACC-006', 1]], createdDaysAgo: 0 }], 'CARMEN LOZANO', at);
     const reviews = await this.seedReviews(products, productIds, REVIEWERS.map((r) => userIds.get(r.key)!), now);
 
     // ── Derived counters that must stay consistent with existing (run-scoped) data
@@ -414,31 +459,11 @@ export class ReferenceSeeder {
   }
 
   /** Orders of orders@qacommerce.test covering every status (deterministic timeline). */
-  private async seedOrders(userId: number, productIds: Map<string, number>, at: (d: number, h?: number) => Date): Promise<number> {
+  private async seedOrders(userId: number, specs: OrderSpec[], cardHolder: string, at: (d: number, h?: number) => Date): Promise<number> {
     const address = await this.prisma.address.findFirstOrThrow({ where: { userId, isDefault: true } });
     const standard = await this.prisma.shippingMethod.findUniqueOrThrow({ where: { code: 'STANDARD' } });
     const express = await this.prisma.shippingMethod.findUniqueOrThrow({ where: { code: 'EXPRESS' } });
     const welcome = await this.prisma.coupon.findUniqueOrThrow({ where: { code: 'WELCOME10' } });
-    type Spec = {
-      n: number;
-      status: OrderStatus;
-      items: Array<[string, number]>;
-      createdDaysAgo: number;
-      method?: 'STANDARD' | 'EXPRESS';
-      payment?: 'CARD' | 'BANK_TRANSFER';
-      coupon?: boolean;
-    };
-    const specs: Spec[] = [
-      { n: 1, status: OrderStatus.DELIVERED, items: [['QCL-LAP-007', 1], ['QCL-MOU-002', 1]], createdDaysAgo: 45, coupon: true },
-      { n: 2, status: OrderStatus.DELIVERED, items: [['QCL-AUD-003', 1]], createdDaysAgo: 6 },
-      { n: 3, status: OrderStatus.SHIPPED, items: [['QCL-MON-008', 1], ['QCL-ACC-003', 2]], createdDaysAgo: 3, method: 'EXPRESS' },
-      { n: 4, status: OrderStatus.PREPARING, items: [['QCL-SSD-002', 2]], createdDaysAgo: 2 },
-      { n: 5, status: OrderStatus.PAID, items: [['QCL-KBD-001', 1]], createdDaysAgo: 1 },
-      { n: 6, status: OrderStatus.PENDING, items: [['QCL-TAB-001', 1]], createdDaysAgo: 0, payment: 'BANK_TRANSFER' },
-      { n: 7, status: OrderStatus.CANCELLED, items: [['QCL-PHN-004', 1]], createdDaysAgo: 20 },
-      { n: 8, status: OrderStatus.RETURN_REQUESTED, items: [['QCL-AUD-006', 1]], createdDaysAgo: 9 },
-      { n: 9, status: OrderStatus.RETURNED, items: [['QCL-ACC-008', 1]], createdDaysAgo: 30 },
-    ];
     const products = await this.prisma.product.findMany({
       where: { sku: { in: specs.flatMap((s) => s.items.map(([sku]) => sku)) } },
       include: { brand: true, images: { orderBy: { position: 'asc' }, take: 1 } },
@@ -544,7 +569,7 @@ export class ReferenceSeeder {
                   scenario: 'APPROVED',
                   cardBrand: 'VISA',
                   cardLast4: '4242',
-                  cardHolder: 'JAVIER RUIZ',
+                  cardHolder,
                   providerReference: `PAY-SEED-${s.n}`,
                   createdAt: created,
                   resolvedAt: step(0.1),

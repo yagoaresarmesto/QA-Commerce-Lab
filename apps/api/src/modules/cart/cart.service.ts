@@ -42,7 +42,7 @@ export function itemIssues(item: { quantity: number; product: Pick<Product, 'isA
     return [
       {
         code: 'INSUFFICIENT_STOCK',
-        message: `Only ${item.product.stock} units left`,
+        message: `Only ${item.product.stock} ${item.product.stock === 1 ? 'unit' : 'units'} left`,
         availableStock: item.product.stock,
       },
     ];
@@ -242,7 +242,7 @@ export class CartService {
       );
     }
     if (quantity > product.stock) {
-      throw conflict(ErrorCode.INSUFFICIENT_STOCK, `Only ${product.stock} units left`, {
+      throw conflict(ErrorCode.INSUFFICIENT_STOCK, `Only ${product.stock} ${product.stock === 1 ? 'unit' : 'units'} left`, {
         availableStock: product.stock,
         requested: quantity,
       });

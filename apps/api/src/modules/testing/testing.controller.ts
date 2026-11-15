@@ -11,7 +11,7 @@ import { PaymentsService } from '../orders/payments.service';
 import { OrdersService } from '../orders/orders.service';
 import { toPaymentDto } from '../orders/order.mapper';
 import { TEST_CARDS } from '../orders/payment-simulator';
-import { REFERENCE_USERS, REVIEWERS, ADMIN_PASSWORD, CUSTOMER_PASSWORD } from '../../seed/data/people.data';
+import { REFERENCE_USERS, REVIEWERS, SCENARIO_USERS, ADMIN_PASSWORD, CUSTOMER_PASSWORD } from '../../seed/data/people.data';
 import { DISCONTINUED_SKUS, STOCK_OVERRIDES } from '../../seed/reference-seeder';
 import { CleanupService } from './cleanup.service';
 import {
@@ -72,7 +72,7 @@ export class TestingController {
       globalResetAllowed: this.config.testApi.allowGlobalReset,
       globalFaultsAllowed: this.config.testApi.allowGlobalFaults,
       defaultTestPassword: DEFAULT_TEST_PASSWORD,
-      referenceUsers: [...REFERENCE_USERS, ...REVIEWERS.slice(0, 1)].map((u) => ({
+      referenceUsers: [...REFERENCE_USERS, ...SCENARIO_USERS, ...REVIEWERS.slice(0, 1)].map((u) => ({
         email: u.email,
         password: u.role === 'ADMIN' ? ADMIN_PASSWORD : CUSTOMER_PASSWORD,
         role: u.role,
